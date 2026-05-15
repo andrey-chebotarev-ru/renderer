@@ -1,0 +1,40 @@
+#include "Camera.h"
+
+#include <cmath>
+#include <algorithm>
+
+#include "Math.h"
+
+void Camera::moveForward(float distance)
+{
+    Vec3 direction = Vec3::normalize(Vec3(cosf(rotation.x) * sinf(rotation.y), -sinf(rotation.x), cosf(rotation.x) * cosf(rotation.y)));
+    //Vec3 shift = Vec3(sinf(rotation.y), 0, cosf(rotation.y));
+
+    position += (direction * distance);
+}
+
+void Camera::moveRight(float distance)
+{
+    Vec3 direction = Vec3::normalize(Vec3(cosf(rotation.y), 0, -sinf(rotation.y)));
+
+    position += (direction * distance);
+}
+
+void Camera::pitch(float deg)
+{
+    float min = Math::degToRad(-90);
+    float max = Math::degToRad(90);
+
+    rotation.x += Math::degToRad(deg);
+    rotation.x = std::clamp(rotation.x, min, max);
+}
+
+void Camera::yaw(float deg)
+{
+    rotation.y += Math::degToRad(deg);
+}
+
+void Camera::roll(float deg)
+{
+    rotation.z += Math::degToRad(deg);
+}
