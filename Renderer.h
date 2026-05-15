@@ -9,6 +9,7 @@
 #include "Model.h"
 #include "Camera.h"
 #include "Clipper.h"
+#include "World.h"
 
 struct Data
 {
@@ -27,6 +28,8 @@ struct Transform
     }
 };
 
+
+
 class Renderer
 {
 public:
@@ -44,9 +47,9 @@ public:
     void setFramebuffer(int pitch, uint8_t* pixels);
     void setTexture(const Texture& texture, size_t index);
     
-    void drawScene(const std::vector<Model>& models, const Camera& cam, Data& data);
+    void drawScene(const World& world, const std::vector<Model>& models, const Camera& cam, Data& data);
 
-    int drawModel(const Model& model, const Camera& cam);
+    
 
 private:
     static const float nearPlaneDistance, farPlaneDistance;
@@ -75,6 +78,9 @@ private:
     Vec2 project(const Vec3& vec);
     Triangle2 project(const Triangle3& tri, const Texture& tex);
     
-    float testTriangle(Triangle3 triangle, Vec3 position);  
+    float testTriangle(Triangle3 triangle, Vec3 position);
+
+    int drawModel(const Model& model, const Camera& cam);
+    int drawWorld(const World& world, const Camera& cam);
 };
 

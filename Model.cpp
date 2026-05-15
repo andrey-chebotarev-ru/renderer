@@ -4,10 +4,10 @@
 
 const int Model::reserved = 100;
 
-Model::Model(Vec3 position, Vec3 rotation, size_t textureIndex, std::initializer_list<Triangle3> triangleList)
-    : position(position), rotation(rotation), textureIndex(textureIndex), triangleList(triangleList)
+Model::Model(Vec3 position, Vec3 rotation, size_t texId, const Triangle3DList& tris)
+    : position(position), rotation(rotation), texId(texId), tris(tris)
 {
-    this->triangleList.reserve(reserved);
+    this->tris.reserve(reserved);
 }
 
 void Model::pitch(float deg)
@@ -52,25 +52,25 @@ Vec3 Model::getRotation() const
 
 size_t Model::getSize() const
 {
-    return triangleList.size();
+    return tris.size();
 }
 
 size_t Model::getTextureIndex() const
 {
-    return textureIndex;
+    return texId;
 }
 
 const Triangle3& Model::getTriangle(size_t index) const
 {
-    return triangleList[index];
+    return tris[index];
 }
 
 Triangle3& Model::getTriangle(size_t index)
 {
-    return triangleList[index];
+    return tris[index];
 }
 
 void Model::addTriangle(const Triangle3& triangle)
 {
-    triangleList.push_back(triangle);
+    tris.push_back(triangle);
 }

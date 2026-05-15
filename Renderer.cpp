@@ -12,6 +12,7 @@
 #include "Triangle.h"
 #include "Model.h"
 #include "Clipper.h"
+#include "World.h"
 
 const float Renderer::nearPlaneDistance = 1.0f;
 const float Renderer::farPlaneDistance = 500.0f;
@@ -78,8 +79,6 @@ void Renderer::transformToWorld(Triangle3& tri, const Transform& tr)
     for (int i = 0; i < 3; i++) {
         transformToWorld(tri.v[i].position, tr);
     }
-
-    tri.normal = Vec3::normalize(Vec3::cross(tri.v1.position - tri.v0.position, tri.v2.position - tri.v0.position));
 }
 
 void Renderer::transformToView(Vec3& vec, const Camera& cam)
@@ -96,8 +95,6 @@ void Renderer::transformToView(Triangle3& tri, const Camera& cam)
     for (int i = 0; i < 3; i++) {
         transformToView(tri.v[i].position, cam);
     }
-
-    tri.normal = Vec3::normalize(Vec3::cross(tri.v1.position - tri.v0.position, tri.v2.position - tri.v0.position));
 }
 
 Vec2 Renderer::project(const Vec3& vec)
@@ -132,7 +129,7 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
 
 float Renderer::testTriangle(Triangle3 triangle, Vec3 position)
 {
-    return Vec3::dot(triangle.normal, position - triangle.v0.position);
+    return Vec3::dot(triangle.getNormal(), position - triangle.v0.position);
 }
 
 int Renderer::drawModel(const Model& model, const Camera& cam)
@@ -183,11 +180,55 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
     return count;
 }
 
-void Renderer::drawScene(const std::vector<Model>& models, const Camera& cam, Data& data)
+int Renderer::drawWorld(const World& world, const Camera& cam)
+{
+    int count = 0;
+
+    for (int i = 0; i < world.getSize(); i++) {
+
+        Triangle3 tri = world.getTriangle(i);
+
+        // Backface culling
+        if (testTriangle(tri, cam.position) < 0.0f) {
+            continue;
+        }
+
+        // Transform
+        transformToView(tri, cam);
+
+        // 3D clipping
+        Triangle3DList clippedTriangles = clipper.clipTriangle(tri, nearPlaneDistance, farPlaneDistance);
+
+        if (clippedTriangles.empty()) {
+            continue;
+        }
+
+        Texture tex = rasterizer.getTexture(tri.texId);
+
+        for (const Triangle3& clipped : clippedTriangles) {
+
+            // Projection
+            Triangle2 projected = project(clipped, tex);
+
+            // Viewport clipping
+            Triangle2DList vpClippedTriangles = viewportClipper.clipTriangle(projected, viewport);
+
+            // Drawing
+            for (const Triangle2& vpClipped : vpClippedTriangles) {
+                rasterizer.drawTriangle(vpClipped, tex);
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Camera& cam, Data& data)
 {
     rasterizer.clearBuffers();
 
-    data.count = 0;
+    data.count = drawWorld(world, cam);
 
     for (const Model& model : models) {
         data.count += drawModel(model, cam);

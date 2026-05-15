@@ -15,6 +15,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Constructor.h"
+#include "World.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -27,8 +28,11 @@ static SDL_Renderer* sdlRenderer = NULL;
 static SDL_Texture* sdlFramebufferTexture = NULL;
 static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f);
 static Camera camera;
-static std::vector<Model> models = { Constructor::room(Vec3(0, 0, 0), Vec3(0, 0, 0), Vec2(1, 1), Vec3(256, 256, 256), 1), Constructor::cube(Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(40, 40, 40), 2) };
+static std::vector<Model> models = {};
+static World world;
+
 static std::vector<SDL_Surface*> sdlTexture(100);
+
 
 // // { Constructor::test(Vec3(0, 0, 100), Vec3(0, 0, 0), 1) };
 
@@ -71,6 +75,13 @@ void freeTexture()
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
+
+    
+    world.addGeometry(Constructor::room(Vec2(1, 1), Vec3(256, 256, 256), 1));
+    models.push_back(Model(Vec3(0, 0, 0), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1.0f, 1.0f), Vec3(40, 40, 40), 2)));
+
+
+
     
     //camera.position = Vec3(0, 0, 0);
     //camera.yaw = 0;
@@ -261,15 +272,15 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
 
     if (boxYawSpeed != 0) {
-        models[1].yaw(boxYawSpeed * moveSpeed * deltaTime);
+        models[0].yaw(boxYawSpeed * moveSpeed * deltaTime);
     }
 
     if (boxPitchSpeed != 0) {
-        models[1].pitch(boxPitchSpeed * moveSpeed * deltaTime);
+        models[0].pitch(boxPitchSpeed * moveSpeed * deltaTime);
     }
 
     if (boxForwardSpeed != 0) {
-        models[1].move(Vec3(0, 0, boxForwardSpeed * moveSpeed * deltaTime));
+        models[0].move(Vec3(0, 0, boxForwardSpeed * moveSpeed * deltaTime));
     }
     
     Data data;
@@ -277,7 +288,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     {
 
         gameRenderer.setFramebuffer(pitch, pixels);
-        gameRenderer.drawScene(models, camera, data);
+        gameRenderer.drawScene(world, models, camera, data);
 
 
 

@@ -9,7 +9,7 @@ class Model
 {
 public:
 
-    Model(Vec3 position, Vec3 rotation, size_t textureIndex, std::initializer_list<Triangle3> triangleList);
+    Model(Vec3 position, Vec3 rotation, size_t texId, const Triangle3DList& tris);
 
     void pitch(float deg);
     void yaw(float deg);
@@ -36,7 +36,7 @@ private:
     Vec3 position;
     Vec3 rotation;
 
-    size_t textureIndex;
+    size_t texId;
 
-    std::vector<Triangle3> triangleList;
+    Triangle3DList tris;
 };

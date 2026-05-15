@@ -150,6 +150,7 @@
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -165,6 +166,7 @@
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="SDL3-3.4.4\VisualC\SDL\SDL.vcxproj">
