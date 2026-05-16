@@ -106,7 +106,7 @@ Span Rasterizer::makeSpan(int y, const Edge2D& a, const Edge2D& b)
 
 
 
-void Rasterizer::drawSpan(const Span& span, const Texture& tex)
+void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -170,12 +170,16 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
 
         for (int i = 0; i < blockLength; i++) {
 
-            if (zBuffer[zindex] < iz) {
-                *(Color*)(framebuffer + pos) = tex.getSample(u, v);
-                zBuffer[zindex] = iz;
+            if (zTest) {
+                if (zBuffer[zindex] < iz) {
+                    *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+                    zBuffer[zindex] = iz;
+                }
             }
-
-
+            else {
+                *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+            }
+            
             u += duDx;
             v += dvDx;
             iz += span.izStep;
@@ -194,7 +198,7 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
     }
 }
 
-void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
+void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
 {
     sortTriangle(tri);
 
@@ -213,7 +217,7 @@ void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSpan(span, tex);
+            drawSpan(span, tex, zTest);
             longEdge.step();
             topEdge.step();
         }
@@ -224,7 +228,7 @@ void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSpan(span, tex);
+            drawSpan(span, tex, zTest);
             longEdge.step();
             bottomEdge.step();
         }

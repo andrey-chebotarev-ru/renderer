@@ -3,8 +3,22 @@
 #include <cstdint>
 
 #include "Vector.h"
+#include "Triangle.h"
 
 typedef int32_t fixed_t;
+
+struct Transform
+{
+    Vec3 scale;
+    Vec3 rotation;
+    Vec3 position;
+    
+    Transform(Vec3 scale, Vec3 rotation, Vec3 position)
+        : scale(scale), rotation(rotation), position(position)
+    {
+    }
+};
+
 
 class Math
 {
@@ -60,4 +74,10 @@ public:
     static float lerp(float a, float b, float t) {
         return a + (b - a) * t;
     }
+
+    static Vec3 rotateY(const Vec3& vec, float yaw);
+    static Vec3 rotateX(const Vec3& vec, float pitch);
+    static Vec3 rotateZ(const Vec3& vec, float roll);
+    static Vec3 rotate(const Vec3& vec, const Vec3& rot);
+    static Vec3 transform(const Vec3& vec, const Transform& tr);
 };

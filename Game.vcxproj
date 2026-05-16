@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BSP.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Clipper.cpp" />
     <ClCompile Include="Color.cpp" />
@@ -153,6 +154,7 @@
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BSP.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clipper.h" />
     <ClInclude Include="Color.h" />

@@ -27,73 +27,24 @@ void Renderer::setTexture(const Texture& texture, size_t index)
     rasterizer.setTexture(texture, index);
 }
 
-Vec3 Renderer::rotateY(Vec3& vec, float yaw)
-{
-    Vec3 out;
-
-    out.x = vec.x * cosf(yaw) + vec.z * sinf(yaw);
-    out.y = vec.y;
-    out.z = -vec.x * sinf(yaw) + vec.z * cosf(yaw);
-
-    return out;
-}
-
-Vec3 Renderer::rotateX(Vec3& vec, float pitch)
-{
-    Vec3 out;
-
-    out.x = vec.x;
-    out.y = vec.y * cosf(pitch) - vec.z * sinf(pitch);
-    out.z = vec.y * sinf(pitch) + vec.z * cosf(pitch);
-
-    return out;
-}
-
-Vec3 Renderer::rotateZ(Vec3& vec, float roll)
-{
-    Vec3 out;
-
-    out.x = vec.x * cosf(roll) - vec.y * sinf(roll);
-    out.y = vec.x * sinf(roll) + vec.y * cosf(roll);
-    out.z = vec.z;
-
-    return out;
-}
-
-void Renderer::transformToWorld(Vec3& vec, const Transform& tr)
-{
-    // Scale
-    vec *= tr.scale;
-
-    // Rotate
-    vec = rotateY(vec, tr.rotation.y);
-    vec = rotateX(vec, tr.rotation.x);
-    vec = rotateZ(vec, tr.rotation.z);
-
-    // Translate
-    vec += tr.position;
-}
-
 void Renderer::transformToWorld(Triangle3& tri, const Transform& tr)
 {
     for (int i = 0; i < 3; i++) {
-        transformToWorld(tri.v[i].position, tr);
+        tri.v[i].position = Math::transform(tri.v[i].position, tr);
     }
 }
 
-void Renderer::transformToView(Vec3& vec, const Camera& cam)
+Vec3 Renderer::transformToView(const Vec3& vec, const Camera& cam)
 {
-    vec -= cam.position;
+    Vec3 out = vec - cam.position;
 
-    vec = rotateY(vec, -cam.rotation.y);
-    vec = rotateX(vec, -cam.rotation.x);
-    vec = rotateZ(vec, -cam.rotation.z);
+    return Math::rotate(out, -cam.rotation);
 }
 
 void Renderer::transformToView(Triangle3& tri, const Camera& cam)
 {
     for (int i = 0; i < 3; i++) {
-        transformToView(tri.v[i].position, cam);
+        tri.v[i].position = transformToView(tri.v[i].position, cam);
     }
 }
 
@@ -127,11 +78,6 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
     return proj;
 }
 
-float Renderer::testTriangle(Triangle3 triangle, Vec3 position)
-{
-    return Vec3::dot(triangle.getNormal(), position - triangle.v0.position);
-}
-
 int Renderer::drawModel(const Model& model, const Camera& cam)
 {
     int count = 0;
@@ -139,13 +85,13 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
     for (int i = 0; i < model.getSize(); i++) {
 
         Triangle3 tri = model.getTriangle(i);
-        Transform tr = Transform(model.getPosition(), model.getRotation(), Vec3(1.0f, 1.0f, 1.0f));
+        Transform tr = Transform(Vec3(1.0f, 1.0f, 1.0f), model.getRotation(), model.getPosition());
         
         // Transform
         transformToWorld(tri, tr);
 
         // Backface culling
-        if (testTriangle(tri, cam.position) < 0.0f) {
+        if (tri.test(cam.position) < 0.0f) {
             continue;
         }
 
@@ -171,7 +117,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex);
+                rasterizer.drawTriangle(vpClipped, tex, zTest);
                 count++;
             }
         }
@@ -189,7 +135,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
         Triangle3 tri = world.getTriangle(i);
 
         // Backface culling
-        if (testTriangle(tri, cam.position) < 0.0f) {
+        if (tri.test(cam.position) < 0.0f) {
             continue;
         }
 
@@ -215,7 +161,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex);
+                rasterizer.drawTriangle(vpClipped, tex, zTest);
                 count++;
             }
         }

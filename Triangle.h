@@ -17,6 +17,17 @@ struct Triangle2
     Triangle2(Vertex2D v0, Vertex2D v1, Vertex2D v2) : v0(v0), v1(v1), v2(v2) {}
 };
 
+struct Plane
+{
+    Vec3 normal;
+    float distance;
+
+    Plane(const Vec3& normal, float distance)
+        : normal(normal), distance(distance)
+    {
+    }
+};
+
 struct Triangle3
 {
     union {
@@ -26,7 +37,9 @@ struct Triangle3
         Vertex3D v[3];
     };
     
-    Vec3 getNormal();
+    Plane getPlane() const;
+
+    float test(const Vec3& vec) const;
 
     size_t texId;
 
@@ -34,8 +47,8 @@ struct Triangle3
     Triangle3() {}
 };
 
-typedef std::vector<Triangle2> Triangle2DList;
-typedef std::vector<Triangle3> Triangle3DList;
+using Triangle2DList = std::vector<Triangle2>;
+using Triangle3DList = std::vector<Triangle3>;
 
 using Polygon2D = std::vector<Vertex2D>;
 using Polygon3D = std::vector<Vertex3D>;

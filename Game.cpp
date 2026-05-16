@@ -76,9 +76,11 @@ void freeTexture()
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
 
+    world.addGeometry(Constructor::wall(Vec2(1, 1), Vec2(300, 300), Transform(Vec3(1.0f, 1.0f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f)), 1));
+    world.addGeometry(Constructor::wall(Vec2(1, 1), Vec2(300, 300), Transform(Vec3(1.0f, 1.0f, 1.0f), Vec3(0.0f, Math::degToRad(90.0f), 0.0f), Vec3(0.0f, 0.0f, 0.0f)), 2));
     
-    world.addGeometry(Constructor::room(Vec2(1, 1), Vec3(256, 256, 256), 1));
-    models.push_back(Model(Vec3(0, 0, 0), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1.0f, 1.0f), Vec3(40, 40, 40), 2)));
+    //world.addGeometry(Constructor::room(Vec2(1, 1), Vec3(256, 256, 256), 1));
+    //models.push_back(Model(Vec3(0, 0, 0), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1.0f, 1.0f), Vec3(40, 40, 40), 2)));
 
 
 
