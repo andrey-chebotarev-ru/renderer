@@ -95,7 +95,9 @@ Triangle3DList Clipper::clipTriangle(const Triangle3& triangle, float nearDistan
 		clippedTriangle.v0 = polygon[0];
 		clippedTriangle.v1 = polygon[i];
 		clippedTriangle.v2 = polygon[i + 1];
-		
+		clippedTriangle.texId = triangle.texId;
+		clippedTriangle.fill = triangle.fill;
+
 		clippedTriangles.push_back(clippedTriangle);
 	}
 

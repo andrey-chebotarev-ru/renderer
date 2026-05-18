@@ -24,7 +24,9 @@ class Renderer
 {
 public:
 
+    bool backfaceCulling;
     bool zTest;
+    bool fill;
 
 
     Renderer(size_t screenWidth, size_t screenHeight, float fov)
@@ -34,7 +36,9 @@ public:
         focusDistance = screenCenter.x / tanf(Math::degToRad(fov) / 2);
         aspect = float(screenWidth) / screenHeight;
 
+        backfaceCulling = false;
         zTest = false;
+        fill = false;
     }
 
     

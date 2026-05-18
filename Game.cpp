@@ -16,6 +16,7 @@
 #include "Model.h"
 #include "Constructor.h"
 #include "World.h"
+#include "BSP.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -28,13 +29,14 @@ static SDL_Renderer* sdlRenderer = NULL;
 static SDL_Texture* sdlFramebufferTexture = NULL;
 static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f);
 static Camera camera;
-static std::vector<Model> models = {};
+static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1, 1), Vec3(20, 20, 20), 0)) };
 static World world;
+static BSP bsp;
+static Node* rootNode;
+static bool fill = false;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
 
-
-// // { Constructor::test(Vec3(0, 0, 100), Vec3(0, 0, 0), 1) };
 
 bool loadTexture(const char* filename, int index)
 {
@@ -76,16 +78,26 @@ void freeTexture()
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
 
-    world.addGeometry(Constructor::wall(Vec2(1, 1), Vec2(300, 300), Transform(Vec3(1.0f, 1.0f, 1.0f), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f)), 1));
-    world.addGeometry(Constructor::wall(Vec2(1, 1), Vec2(300, 300), Transform(Vec3(1.0f, 1.0f, 1.0f), Vec3(0.0f, Math::degToRad(90.0f), 0.0f), Vec3(0.0f, 0.0f, 0.0f)), 2));
+    Vec2List points = {
+        {0, 0},
+        {100, 0},
+        {100, 150},
+        {120, 150},
+        {120, 100},
+        {200, 100},
+        {200, 0},
+        {300, 0},
+        {300, 200},
+        {0, 200}
+    };
+
+    Triangle3DList list = Constructor::map(points, 100, 1);
+
+    rootNode = bsp.compile(list);
+    gameRenderer.backfaceCulling = true;
+
     
-    //world.addGeometry(Constructor::room(Vec2(1, 1), Vec3(256, 256, 256), 1));
-    //models.push_back(Model(Vec3(0, 0, 0), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1.0f, 1.0f), Vec3(40, 40, 40), 2)));
-
-
-
-    
-    //camera.position = Vec3(0, 0, 0);
+    camera.position = Vec3(20, 0, 20);
     //camera.yaw = 0;
     
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -119,7 +131,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
 
     
-    if (!loadTexture("texture.jpg", 1) || !loadTexture("texture2.jpg", 2)) {
+    if (!loadTexture("wall.jpg", 1) || !loadTexture("box.jpg", 2) || !loadTexture("floor.jpg", 3) || !loadTexture("ceil.jpg", 4)) {
         return SDL_APP_FAILURE;
     }
    
@@ -131,6 +143,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 static float forwardDistance = 0, rightDistance = 0, yawSpeed = 0, pitchSpeed = 0;
 static float boxForwardSpeed = 0, boxYawSpeed = 0, boxPitchSpeed = 0;
+static bool boxMode = false;
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
@@ -139,15 +152,16 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
     static bool dragging = false;
 
+
     switch (event->type) {
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
     case SDL_EVENT_KEY_DOWN:
-        if (event->key.key == SDLK_PAGEUP) {
-            pitchSpeed = 0.2f;
+        if (event->key.key == SDLK_E) {
+            boxMode = !boxMode;
         }
-        if (event->key.key == SDLK_PAGEDOWN) {
-            pitchSpeed = -0.2f;
+        if (event->key.key == SDLK_Q) {
+            fill = !fill;
         }
         if (event->key.key == SDLK_W) {
             forwardDistance = 0.4;
@@ -173,12 +187,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         if (event->key.key == SDLK_DOWN) {
             boxPitchSpeed = 0.2;
         }
-        if (event->key.key == SDLK_R) {
-            boxForwardSpeed = 0.2;
-        }
-        if (event->key.key == SDLK_F) {
-            boxForwardSpeed = -0.2;
-        }
         if (event->key.key == SDLK_ESCAPE) {
             return SDL_APP_SUCCESS;
         }
@@ -195,9 +203,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_UP || event->key.key == SDLK_DOWN) {
             boxPitchSpeed = 0;
-        }
-        if (event->key.key == SDLK_R || event->key.key == SDLK_F) {
-            boxForwardSpeed = 0;
         }
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -266,11 +271,21 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
 
     if (forwardDistance != 0) {
-        camera.moveForward(forwardDistance * moveSpeed * deltaTime);
+        if (boxMode) {
+            models[0].move(Vec3(0, 0, forwardDistance * moveSpeed * deltaTime));
+        }
+        else {
+            camera.moveForward(forwardDistance * moveSpeed * deltaTime);
+        }
     }
 
     if (rightDistance != 0) {
-        camera.moveRight(rightDistance * moveSpeed * deltaTime);
+        if (boxMode) {
+            models[0].move(Vec3(rightDistance * moveSpeed * deltaTime, 0, 0));
+        }
+        else {
+            camera.moveRight(rightDistance * moveSpeed * deltaTime);
+        }
     }
 
     if (boxYawSpeed != 0) {
@@ -281,17 +296,16 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         models[0].pitch(boxPitchSpeed * moveSpeed * deltaTime);
     }
 
-    if (boxForwardSpeed != 0) {
-        models[0].move(Vec3(0, 0, boxForwardSpeed * moveSpeed * deltaTime));
-    }
-    
     Data data;
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
 
+        world.clear();
+        bsp.traverse(rootNode, camera, world);
+
+        gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
         gameRenderer.drawScene(world, models, camera, data);
-
 
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */

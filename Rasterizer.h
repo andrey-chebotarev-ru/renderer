@@ -16,6 +16,8 @@ struct Span
     float uzStep;
     float vzStep;
     float izStep;
+
+    Color fill;
 };
 
 struct Edge2D
@@ -59,7 +61,7 @@ public:
     void setTexture(const Texture& texture, size_t index);
     Texture getTexture(size_t index) const;
 
-    void drawTriangle(Triangle2 tri, const Texture& tex, bool zTest);
+    void drawTriangle(Triangle2 tri, const Texture& tex, bool zTest, bool fill);
    
     int crossProduct(Vec2 v1, Vec2 v2);
     
@@ -81,6 +83,6 @@ private:
     Edge2D makeEdge(const Vertex2D& a, const Vertex2D& b);
     Span makeSpan(int y, const Edge2D& a, const Edge2D& b);
     void sortTriangle(Triangle2& triangle);
-    void drawSpan(const Span& span, const Texture& tex, bool zTest);
+    void drawSpan(const Span& span, const Texture& tex, bool zTest, bool fill);
 };
 

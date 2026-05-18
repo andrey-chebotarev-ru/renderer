@@ -7,9 +7,3 @@ Plane Triangle3::getPlane() const
 
 	return Plane(normal, distance);
 }
-
-float Triangle3::test(const Vec3& vec) const
-{
-	Plane p = getPlane();
-	return Vec3::dot(p.normal, vec) - p.distance;
-}

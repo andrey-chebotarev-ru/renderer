@@ -70,3 +70,8 @@ Vec3 Math::transform(const Vec3& vec, const Transform& tr)
 
     return out;
 }
+
+float Math::distanceToPlane(const Plane& plane, const Vec3& vec)
+{
+    return Vec3::dot(plane.normal, vec) - plane.distance;
+}

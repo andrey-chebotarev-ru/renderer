@@ -80,4 +80,5 @@ public:
     static Vec3 rotateZ(const Vec3& vec, float roll);
     static Vec3 rotate(const Vec3& vec, const Vec3& rot);
     static Vec3 transform(const Vec3& vec, const Transform& tr);
+    static float distanceToPlane(const Plane& plane, const Vec3& vec);
 };

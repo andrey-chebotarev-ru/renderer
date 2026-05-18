@@ -138,6 +138,8 @@ Triangle2DList ViewportClipper::clipTriangle(const Triangle2& triangle, const Vi
 		clippedTriangle.v1 = polygon[i];
 		clippedTriangle.v2 = polygon[i + 1];
 
+		clippedTriangle.fill = triangle.fill;
+
 		clippedTriangles.push_back(clippedTriangle);
 	}
 

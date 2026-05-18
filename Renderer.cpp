@@ -75,6 +75,8 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
         proj.v[i].iz = invZ;
     }
 
+    proj.fill = tri.fill;
+
     return proj;
 }
 
@@ -91,7 +93,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         transformToWorld(tri, tr);
 
         // Backface culling
-        if (tri.test(cam.position) < 0.0f) {
+        if (backfaceCulling && Math::distanceToPlane(tri.getPlane(), cam.position) < 0.0f) {
             continue;
         }
 
@@ -117,7 +119,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex, zTest);
+                rasterizer.drawTriangle(vpClipped, tex, zTest, fill);
                 count++;
             }
         }
@@ -135,7 +137,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
         Triangle3 tri = world.getTriangle(i);
 
         // Backface culling
-        if (tri.test(cam.position) < 0.0f) {
+        if (backfaceCulling && Math::distanceToPlane(tri.getPlane(), cam.position) < 0.0f) {
             continue;
         }
 
@@ -161,7 +163,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex, zTest);
+                rasterizer.drawTriangle(vpClipped, tex, zTest, fill);
                 count++;
             }
         }
@@ -174,8 +176,10 @@ void Renderer::drawScene(const World& world, const std::vector<Model>& models, c
 {
     rasterizer.clearBuffers();
 
+    zTest = false;
     data.count = drawWorld(world, cam);
 
+    zTest = true;
     for (const Model& model : models) {
         data.count += drawModel(model, cam);
     }

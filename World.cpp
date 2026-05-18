@@ -12,6 +12,11 @@ void World::addGeometry(const Triangle3DList& tris)
     }
 }
 
+void World::addGeometry(const Triangle3& tri)
+{
+    this->tris.push_back(tri);
+}
+
 size_t World::getSize() const
 {
     return tris.size();
@@ -25,4 +30,9 @@ const Triangle3& World::getTriangle(size_t index) const
 Triangle3& World::getTriangle(size_t index)
 {
     return tris[index];
+}
+
+void World::clear()
+{
+    tris.clear();
 }

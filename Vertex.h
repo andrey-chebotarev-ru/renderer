@@ -26,5 +26,5 @@ struct Vertex3D
     static Vertex3D lerp(const Vertex3D& v1, const Vertex3D& v2, float t);
 };
 
-typedef std::vector<Vertex2D> Vertex2DList;
-typedef std::vector<Vertex3D> Vertex3DList;
+using Vertex2DList = std::vector<Vertex2D>;
+using Vertex3DList = std::vector<Vertex3D>;

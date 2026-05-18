@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 struct Vec2
 {
     float x, y;
@@ -160,3 +162,4 @@ struct Vec3
     static float dot(const Vec3& v1, const Vec3& v2);
 };
 
+using Vec2List = std::vector<Vec2>;
