@@ -5,19 +5,20 @@
 
 #include "Math.h"
 
-void Camera::moveForward(float distance)
+Vec3 Camera::getForwardVector()
 {
-    Vec3 direction = Vec3::normalize(Vec3(cosf(rotation.x) * sinf(rotation.y), -sinf(rotation.x), cosf(rotation.x) * cosf(rotation.y)));
-    //Vec3 shift = Vec3(sinf(rotation.y), 0, cosf(rotation.y));
-
-    position += (direction * distance);
+    //Vec3 direction = Vec3::normalize(Vec3(cosf(rotation.x) * sinf(rotation.y), -sinf(rotation.x), cosf(rotation.x) * cosf(rotation.y)));
+    return Vec3::normalize(Vec3(sinf(rotation.y), 0, cosf(rotation.y)));
 }
 
-void Camera::moveRight(float distance)
+Vec3 Camera::getRightVector()
 {
-    Vec3 direction = Vec3::normalize(Vec3(cosf(rotation.y), 0, -sinf(rotation.y)));
+    return Vec3::normalize(Vec3(cosf(rotation.y), 0, -sinf(rotation.y)));
+}
 
-    position += (direction * distance);
+void Camera::move(const Vec3& dist)
+{
+    position += dist;
 }
 
 void Camera::pitch(float deg)

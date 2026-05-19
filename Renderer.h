@@ -23,9 +23,6 @@ struct Data
 class Renderer
 {
 public:
-
-    bool backfaceCulling;
-    bool zTest;
     bool fill;
 
 
@@ -53,6 +50,9 @@ public:
 private:
     static const float nearPlaneDistance, farPlaneDistance;
     int screenWidth, screenHeight;
+
+    bool backfaceCulling;
+    bool zTest;
 
     Vec2 screenCenter;
     float focusDistance;

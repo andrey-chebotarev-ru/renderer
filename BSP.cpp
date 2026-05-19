@@ -5,11 +5,12 @@
 Side BSP::test(const Plane& plane, const Vec3& vec)
 {
 	float dist = Math::distanceToPlane(plane, vec);
+	const float epsilon = 0.0001f;
 
-	if (dist > 0.0f) {
+	if (dist > epsilon) {
 		return Front;
 	}
-	else if (dist < 0.0f) {
+	else if (dist < -epsilon) {
 		return Back;
 	}
 	else {
@@ -28,6 +29,32 @@ static Color generateColor()
 	return c;
 }
 
+static Color changeColor(const Color& c, int j)
+{
+	Color out = c;
+	if (out.r >= 128) {
+		out.r -= j;
+	}
+	else {
+		out.r += j;
+	}
+
+	if (out.g >= 128) {
+		out.g -= j;
+	}
+	else {
+		out.g += j;
+	}
+
+	if (out.b >= 128) {
+		out.b -= j;
+	}
+	else {
+		out.b += j;
+	}
+
+	return out;
+}
 
 Vertex3D BSP::intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane)
 {
@@ -63,7 +90,7 @@ SplittedPolygon BSP::splitAgainstPlane(const Polygon3D& input, const Plane& plan
 		}
 	}
 	
-	// Coplane
+	// Coplanar
 	if (frontCount == 0 && backCount == 0) {
 		polygon.front.insert(polygon.front.end(), input.begin(), input.end());
 		return polygon;
@@ -158,71 +185,157 @@ SplittedTriangle BSP::splitTriangle(const Triangle3& tri, const Plane& plane)
 	return splittedTri;
 }
 
-Node* BSP::compile(const Triangle3DList& tris)
+int BSP::findSplitter(const Triangle3DList& tris)
 {
-	if (tris.size() == 0) {
-		return nullptr;
+	if (tris.size() <= 1) {
+		return -1;
 	}
 
-	Triangle3 splitPoly = tris[0];
+	for (int j = 0; j < tris.size(); j++) {
+		const Triangle3& tri = tris[j];
 
-	Triangle3DList front, back;
-	Node* node = new Node();
+		for (int i = 0; i < tris.size(); i++) {
+			if (i == j) {
+				continue;
+			}
 
-	for (int i = 1; i < tris.size(); i++) {
-		SplittedTriangle splittedTri = splitTriangle(tris[i], splitPoly.getPlane());
+			SplittedTriangle splittedTri = splitTriangle(tris[i], tri.getPlane());
 
-		for (const Triangle3& frontTri : splittedTri.front) {
-			front.push_back(frontTri);
+			if (splittedTri.back.size() > 0) {
+				return j;
+			}
 		}
-
-		for (const Triangle3& backTri : splittedTri.back) {
-			back.push_back(backTri);
-		}
 	}
 
-	if (front.size() != 0) {
-		node->front = compile(front);
-	}
-
-	if (back.size() != 0) {
-		node->back = compile(back);
-	}
-
-	node->tri = splitPoly;
-
-	return node;
+	return -1;
 }
 
-void BSP::traverse(Node* node, const Camera& cam, World& world)
+void BSP::compile(const Triangle3DList& tris)
 {
-	Side side = test(node->tri.getPlane(), cam.position);
+	nodes.clear();
+	rootNode = build(tris);
+}
 
-	if (side == Front) {
+void BSP::render(const Camera& cam, World& world)
+{
+	traverse(rootNode, cam, world);
+}
 
-		if (node->back != nullptr) {
-			traverse(node->back, cam, world);
-		}
-		world.addGeometry(node->tri);
-		if (node->front != nullptr) {
-			traverse(node->front, cam, world);
-		}
+int BSP::build(const Triangle3DList& tris)
+{
+	if (tris.size() == 0) {
+		return -1;
 	}
-	else if (side == Back) {
-		if (node->front != nullptr) {
-			traverse(node->front, cam, world);
+
+	Node node;
+
+	int splitterIndex = findSplitter(tris);
+
+	if (splitterIndex != -1) {
+		Triangle3DList front, back;
+
+		node.isLeaf = false;
+		node.plane = tris[splitterIndex].getPlane();
+		for (int i = 0; i < tris.size(); i++) {
+
+			if (i == splitterIndex) {
+				continue;
+			}
+
+			
+			SplittedTriangle splittedTri = splitTriangle(tris[i], node.plane);
+
+			for (const Triangle3& frontTri : splittedTri.front) {
+				front.push_back(frontTri);
+			}
+
+			for (const Triangle3& backTri : splittedTri.back) {
+				back.push_back(backTri);
+			}
 		}
-		world.addGeometry(node->tri);
-		if (node->back != nullptr) {
-			traverse(node->back, cam, world);
+
+		front.push_back(tris[splitterIndex]);
+
+		if (front.size() != 0) {
+			node.frontIndex = build(front);
 		}
+		else {
+			node.frontIndex = -1;
+		}
+
+		if (back.size() != 0) {
+			node.backIndex = build(back);
+		}
+		else {
+			node.backIndex = -1;
+		}
+
 	}
 	else {
-		if (node->front != nullptr) {
-			traverse(node->front, cam, world);
+		node.isLeaf = true;
+		node.frontIndex = -1;
+		node.backIndex = -1;
+
+		Color c = generateColor();
+		for (int j = 0; j < tris.size(); j++) {
+			Triangle3 tri = tris[j];
+			tri.fill = changeColor(c, j);
+			node.tris.push_back(tri);
 		}
-		if (node->back != nullptr) {
-			traverse(node->back, cam, world);
+
+		//node.tris.insert(node.tris.begin(), tris.begin(), tris.end());
+	}
+
+	nodes.push_back(node);
+
+	return nodes.size() - 1;
+}
+
+void BSP::traverse(int nodeIndex, const Camera& cam, World& world)
+{
+	if (nodeIndex == -1) {
+		return;
+	}
+
+	const Node& node = nodes[nodeIndex];
+
+	if (node.isLeaf)
+	{
+		world.addGeometry(node.tris);
+	}
+	else
+	{
+		Side side = test(node.plane, cam.position);
+
+		if (side == Front) {
+			traverse(node.backIndex, cam, world);
+			traverse(node.frontIndex, cam, world);
+		}
+		else {
+			traverse(node.frontIndex, cam, world);
+			traverse(node.backIndex, cam, world);
+		}
+
+	}
+}
+
+int BSP::leaf(const Camera& cam)
+{
+	int nodeId = rootNode;
+	while (true) {
+		const Node& node = nodes[nodeId];
+
+		if (node.isLeaf) {
+			return nodeId;
+		}
+
+		if (test(node.plane, cam.position) == Back) {
+			nodeId = node.backIndex;
+		}
+		else {
+			nodeId = node.frontIndex;
 		}
 	}
+
+	return 0;
 }

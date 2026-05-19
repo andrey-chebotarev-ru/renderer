@@ -1,19 +1,5 @@
 #include "Renderer.h"
 
-#include <cstring>
-#include <iostream>
-#include <assert.h>
-#include <vector>
-#include <algorithm>
-
-#include "Math.h"
-#include "Vector.h"
-#include "Camera.h"
-#include "Triangle.h"
-#include "Model.h"
-#include "Clipper.h"
-#include "World.h"
-
 const float Renderer::nearPlaneDistance = 1.0f;
 const float Renderer::farPlaneDistance = 500.0f;
 
@@ -175,6 +161,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
 void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Camera& cam, Data& data)
 {
     rasterizer.clearBuffers();
+    backfaceCulling = true;
 
     zTest = false;
     data.count = drawWorld(world, cam);

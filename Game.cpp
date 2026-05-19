@@ -32,7 +32,6 @@ static Camera camera;
 static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1, 1), Vec3(20, 20, 20), 0)) };
 static World world;
 static BSP bsp;
-static Node* rootNode;
 static bool fill = false;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
@@ -93,10 +92,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     Triangle3DList list = Constructor::map(points, 100, 1);
 
-    rootNode = bsp.compile(list);
-    gameRenderer.backfaceCulling = true;
+    bsp.compile(list);
 
-    
     camera.position = Vec3(20, 0, 20);
     //camera.yaw = 0;
     
@@ -141,18 +138,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-static float forwardDistance = 0, rightDistance = 0, yawSpeed = 0, pitchSpeed = 0;
-static float boxForwardSpeed = 0, boxYawSpeed = 0, boxPitchSpeed = 0;
+static float boxYawSpeed = 0, boxPitchSpeed = 0;
 static bool boxMode = false;
+
+static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
-    static Vec2 lastMousePosition;
-
-    static bool dragging = false;
-
-
     switch (event->type) {
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
@@ -164,39 +157,45 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
             fill = !fill;
         }
         if (event->key.key == SDLK_W) {
-            forwardDistance = 0.4;
+            moveForward = true;
         }
         if (event->key.key == SDLK_S) {
-            forwardDistance = -0.4;
+            moveBackward = true;
         }
         if (event->key.key == SDLK_D) {
-            rightDistance = 0.4;
+            moveRight = true;
         }
         if (event->key.key == SDLK_A) {
-            rightDistance = -0.4;
+            moveLeft = true;
         }
         if (event->key.key == SDLK_LEFT) {
-            boxYawSpeed = 0.2;
+            boxYawSpeed = 20;
         }
         if (event->key.key == SDLK_RIGHT) {
-            boxYawSpeed = -0.2;
+            boxYawSpeed = -20;
         }
-        if(event->key.key == SDLK_UP) {
-            boxPitchSpeed = -0.2;
+        if (event->key.key == SDLK_UP) {
+            boxPitchSpeed = -20;
         }
         if (event->key.key == SDLK_DOWN) {
-            boxPitchSpeed = 0.2;
+            boxPitchSpeed = 20;
         }
         if (event->key.key == SDLK_ESCAPE) {
             return SDL_APP_SUCCESS;
         }
         break;
     case SDL_EVENT_KEY_UP:
-        if (event->key.key == SDLK_W || event->key.key == SDLK_S) {
-            forwardDistance = 0;
+        if (event->key.key == SDLK_W) {
+            moveForward = false;
         }
-        if (event->key.key == SDLK_D || event->key.key == SDLK_A) {
-            rightDistance = 0;
+        if (event->key.key == SDLK_S) {
+            moveBackward = false;
+        }
+        if (event->key.key == SDLK_D) {
+            moveRight = false;
+        }
+        if (event->key.key == SDLK_A) {
+            moveLeft = false;
         }
         if (event->key.key == SDLK_LEFT || event->key.key == SDLK_RIGHT) {
             boxYawSpeed = 0;
@@ -207,20 +206,13 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
         if (event->button.button == SDL_BUTTON_RIGHT) {
-            dragging = true;
-            lastMousePosition.x = event->button.x;
-            lastMousePosition.y = event->button.y;
         }
         break;
     case SDL_EVENT_MOUSE_BUTTON_UP:
         if (event->button.button == SDL_BUTTON_RIGHT) {
-            dragging = false;
         }
         break;
     case SDL_EVENT_MOUSE_MOTION:
-        if (dragging) {
-            
-        }
         break;
     }
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -236,7 +228,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     uint8_t* pixels = nullptr;
     int pitch;
 
-    static float moveSpeed = 200.0f;
+    static float moveSpeed = 50.0f;
 
     float dx, dy;
     float sensitivity = 0.1;
@@ -269,39 +261,46 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         camera.pitch(-dy * sensitivity);
     }
 
-
-    if (forwardDistance != 0) {
-        if (boxMode) {
-            models[0].move(Vec3(0, 0, forwardDistance * moveSpeed * deltaTime));
-        }
-        else {
-            camera.moveForward(forwardDistance * moveSpeed * deltaTime);
-        }
+    Vec3 move = Vec3(0, 0, 0);
+    if (moveForward) {
+        move += camera.getForwardVector();
+    }
+    if (moveBackward) {
+        move -= camera.getForwardVector();
+    }
+    if (moveRight) {
+        move += camera.getRightVector();
+    }
+    if (moveLeft) {
+        move -= camera.getRightVector();
     }
 
-    if (rightDistance != 0) {
-        if (boxMode) {
-            models[0].move(Vec3(rightDistance * moveSpeed * deltaTime, 0, 0));
+    if (move.length() > 0.0f) {
+        move = Vec3::normalize(move);
+        if (!boxMode) {
+            camera.move(move * moveSpeed * deltaTime);
         }
         else {
-            camera.moveRight(rightDistance * moveSpeed * deltaTime);
+            models[0].move(move * moveSpeed * deltaTime);
         }
+        
     }
 
     if (boxYawSpeed != 0) {
-        models[0].yaw(boxYawSpeed * moveSpeed * deltaTime);
+        models[0].yaw(boxYawSpeed * deltaTime);
     }
 
     if (boxPitchSpeed != 0) {
-        models[0].pitch(boxPitchSpeed * moveSpeed * deltaTime);
+        models[0].pitch(boxPitchSpeed * deltaTime);
     }
 
     Data data;
+
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
-
+        
         world.clear();
-        bsp.traverse(rootNode, camera, world);
+        bsp.render(camera, world);
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
@@ -324,6 +323,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "%.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "%i", data.count);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "x: %f y: %f z: %f", camera.position.x, camera.position.y, camera.position.z);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "%i", bsp.leaf(camera));
     /*
     Triangle2 triProj = gameRenderer.projectedTrianglesList[0];
     Triangle3 tri = gameRenderer.clippedTrianglesList[0];

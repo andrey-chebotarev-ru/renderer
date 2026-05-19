@@ -29,6 +29,8 @@ struct Plane
         : normal(normal), distance(distance)
     {
     }
+
+    Plane() {}
 };
 
 struct Triangle3

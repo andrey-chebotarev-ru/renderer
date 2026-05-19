@@ -5,8 +5,10 @@
 class Camera
 {
 public:
-    void moveForward(float distance);
-    void moveRight(float distance);
+    void move(const Vec3& dist);
+
+    Vec3 getForwardVector();
+    Vec3 getRightVector();
 
     void pitch(float deg);
     float pitch();

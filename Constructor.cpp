@@ -1,10 +1,5 @@
 #include "Constructor.h"
 
-#include "Vector.h"
-#include "Model.h"
-#include "Math.h"
-
-
 Triangle3DList Constructor::room(const Vec2& uv, const Vec3& size, size_t texId)
 {
 	Vec3 sideSize = size / 2;
@@ -62,8 +57,12 @@ Triangle3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float heigh
 
     tris.reserve(2);
 
-    tris.push_back(Triangle3({ {{vec1.x, -h, vec1.y}, {0, 0}}, {{ vec2.x, -h, vec2.y}, {1, 0}}, {{vec1.x, h, vec1.y}, {0, 1}}, texId }));
-    tris.push_back(Triangle3({ {{vec2.x, -h, vec2.y}, {1, 0}}, {{ vec2.x, h, vec2.y}, {1, 1}}, {{vec1.x, h, vec1.y}, {0, 1}}, texId }));
+    float len = (vec2 - vec1).length();
+
+    Vec2 uv = Vec2(len * 10 / 512, height * 10 / 512);
+
+    tris.push_back(Triangle3({ {{vec1.x, -h, vec1.y}, {0, 0}}, {{ vec2.x, -h, vec2.y}, {uv.x, 0}}, {{vec1.x, h, vec1.y}, {0, uv.y}}, texId }));
+    tris.push_back(Triangle3({ {{vec2.x, -h, vec2.y}, {uv.x, 0}}, {{ vec2.x, h, vec2.y}, {uv.x, uv.y}}, {{vec1.x, h, vec1.y}, {0, uv.y}}, texId }));
     
     return tris;
 }
@@ -105,15 +104,15 @@ Triangle3DList Constructor::map(const Vec2List list, float height, size_t texId)
 
     float h = height / 2;
 
-    Vec2 floor = Vec2((max.x - min.x) * 10 / 512, (max.y - min.y) * 10 / 512);
+    Vec2 uv = Vec2((max.x - min.x) * 10 / 512, (max.y - min.y) * 10 / 512);
 
     // Floor
-    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {floor.x, floor.y}}, {{min.x, h, max.y}, {0, floor.y}}, 3 }));
-    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {floor.x, 0}}, {{max.x, h, max.y}, {floor.x, floor.y}}, 3 }));
+    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {uv.x, uv.y}}, {{min.x, h, max.y}, {0, uv.y}}, 3 }));
+    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {uv.x, 0}}, {{max.x, h, max.y}, {uv.x, uv.y}}, 3 }));
 
     // Ceil
-    tris.push_back(Triangle3({ {{min.x, -h, max.y}, {0, floor.y}}, {{ max.x, -h, max.y}, {floor.x, floor.y}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
-    tris.push_back(Triangle3({ {{max.x, -h, max.y}, {floor.x, floor.y}}, {{ max.x, -h, min.y}, {floor.x, 0}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
+    tris.push_back(Triangle3({ {{min.x, -h, max.y}, {0, uv.y}}, {{ max.x, -h, max.y}, {uv.x, uv.y}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
+    tris.push_back(Triangle3({ {{max.x, -h, max.y}, {uv.x, uv.y}}, {{ max.x, -h, min.y}, {uv.x, 0}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
 
     return tris;
 

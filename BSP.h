@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Vector.h"
 #include "Triangle.h"
 #include "Math.h"
@@ -8,10 +10,12 @@
 
 struct Node
 {
-	Triangle3 tri;
-
-	Node* front = nullptr;
-	Node* back = nullptr;
+	bool isLeaf;
+	Plane plane;
+	Triangle3DList tris;
+	
+	int frontIndex;
+	int backIndex;
 };
 
 enum Side
@@ -33,15 +37,25 @@ struct SplittedTriangle
 	Triangle3DList back;
 };
 
+using NodeList = std::vector<Node>;
+
 class BSP
 {
 public:
-	SplittedTriangle splitTriangle(const Triangle3& tri, const Plane& plane);
-	Side test(const Plane& plane, const Vec3& vec);
-	Node* compile(const Triangle3DList& tris);
-	void traverse(Node* node, const Camera& cam, World& world);
+	
+	void compile(const Triangle3DList& tris);
+	void render(const Camera& cam, World& world);
+	int leaf(const Camera& cam);
 
 private:
+	int rootNode = 0;
+	NodeList nodes;
+
+	int findSplitter(const Triangle3DList& tris);
+	int build(const Triangle3DList& tris);
+	void traverse(int nodeIndex, const Camera& cam, World& world);
+	SplittedTriangle splitTriangle(const Triangle3& tri, const Plane& plane);
+	Side test(const Plane& plane, const Vec3& vec);
 	Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
 	SplittedPolygon splitAgainstPlane(const Polygon3D& input, const Plane& plane);
 };

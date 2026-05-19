@@ -1,7 +1,5 @@
 #include "Vector.h"
 
-#include <cmath>
-
 Vec3 Vec3::normalize(const Vec3& v)
 {
     float invLength = 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);

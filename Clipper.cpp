@@ -1,8 +1,5 @@
 #include "Clipper.h"
 
-#include "Vector.h"
-#include "Triangle.h"
-
 enum Clipper::ClipPlane
 {
 	Near,

@@ -35,9 +35,9 @@ void Model::setRotation(const Vec3& rotation)
     this->rotation = rotation;
 }
 
-void Model::move(Vec3 distance)
+void Model::move(const Vec3& dist)
 {
-    position += distance;
+    position += dist;
 }
 
 Vec3 Model::getPosition() const

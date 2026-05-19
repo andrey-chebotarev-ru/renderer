@@ -18,7 +18,7 @@ public:
     void setPosition(const Vec3& position);
     void setRotation(const Vec3& rotation);
 
-    void move(Vec3 distance);
+    void move(const Vec3& dist);
 
     Vec3 getPosition() const;
     Vec3 getRotation() const;
