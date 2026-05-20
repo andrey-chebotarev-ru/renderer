@@ -1,5 +1,7 @@
 #include "BSP.h"
 
+#include <cstdlib>
+
 #include <SDL3/SDL.h>
 
 Side BSP::test(const Plane& plane, const Vec3& vec)
@@ -92,7 +94,7 @@ SplittedPolygon BSP::splitAgainstPlane(const Polygon3D& input, const Plane& plan
 	
 	// Coplanar
 	if (frontCount == 0 && backCount == 0) {
-		polygon.front.insert(polygon.front.end(), input.begin(), input.end());
+		polygon.coplanar = true;
 		return polygon;
 	}
 	// Front
@@ -153,6 +155,11 @@ SplittedTriangle BSP::splitTriangle(const Triangle3& tri, const Plane& plane)
 
 	splittedPoly = splitAgainstPlane(poly, plane);
 
+	if (splittedPoly.coplanar) {
+		splittedTri.coplanar = true;
+		return splittedTri;
+	}
+
 	if (splittedPoly.front.size() >= 3) {
 		for (int i = 1; i < splittedPoly.front.size() - 1; i++) {
 			Triangle3 out;
@@ -187,38 +194,56 @@ SplittedTriangle BSP::splitTriangle(const Triangle3& tri, const Plane& plane)
 
 int BSP::findSplitter(const Triangle3DList& tris)
 {
+	int index = -1;
+
 	if (tris.size() <= 1) {
-		return -1;
+		return index;
 	}
 
+	
+
+	int minScore = tris.size() * 2;
+
 	for (int j = 0; j < tris.size(); j++) {
-		const Triangle3& tri = tris[j];
+		const Triangle3& splitter = tris[j];
 
 		for (int i = 0; i < tris.size(); i++) {
 			if (i == j) {
 				continue;
 			}
 
-			SplittedTriangle splittedTri = splitTriangle(tris[i], tri.getPlane());
+			SplittedTriangle splitted = splitTriangle(tris[i], splitter.getPlane());
 
-			if (splittedTri.back.size() > 0) {
-				return j;
+
+			if (splitted.back.size() > 0) {
+				int score = abs((int)(splitted.back.size() - splitted.front.size()));
+				if (score <= minScore) {
+					index = j;
+					minScore = score;
+				}
 			}
 		}
 	}
 
-	return -1;
+	return index;
+}
+
+int BSP::addToList(const Triangle3& tri)
+{
+	list.push_back(tri);
+	return list.size() - 1;
 }
 
 void BSP::compile(const Triangle3DList& tris)
 {
 	nodes.clear();
-	rootNode = build(tris);
+	list.clear();
+	rootNodeIndex = build(tris);
 }
 
 void BSP::render(const Camera& cam, World& world)
 {
-	traverse(rootNode, cam, world);
+	traverse(rootNodeIndex, cam, world);
 }
 
 int BSP::build(const Triangle3DList& tris)
@@ -233,9 +258,10 @@ int BSP::build(const Triangle3DList& tris)
 
 	if (splitterIndex != -1) {
 		Triangle3DList front, back;
-
+		Triangle3 splitter = tris[splitterIndex];
 		node.isLeaf = false;
-		node.plane = tris[splitterIndex].getPlane();
+		node.plane = splitter.getPlane();
+		node.coplanar.push_back(addToList(splitter));
 		for (int i = 0; i < tris.size(); i++) {
 
 			if (i == splitterIndex) {
@@ -244,6 +270,10 @@ int BSP::build(const Triangle3DList& tris)
 
 			
 			SplittedTriangle splittedTri = splitTriangle(tris[i], node.plane);
+
+			if (splittedTri.coplanar) {
+				node.coplanar.push_back(addToList(tris[i]));
+			}
 
 			for (const Triangle3& frontTri : splittedTri.front) {
 				front.push_back(frontTri);
@@ -254,7 +284,9 @@ int BSP::build(const Triangle3DList& tris)
 			}
 		}
 
-		front.push_back(tris[splitterIndex]);
+
+		
+		
 
 		if (front.size() != 0) {
 			node.frontIndex = build(front);
@@ -280,7 +312,7 @@ int BSP::build(const Triangle3DList& tris)
 		for (int j = 0; j < tris.size(); j++) {
 			Triangle3 tri = tris[j];
 			tri.fill = changeColor(c, j);
-			node.tris.push_back(tri);
+			node.indices.push_back(addToList(tri));
 		}
 
 		//node.tris.insert(node.tris.begin(), tris.begin(), tris.end());
@@ -301,7 +333,9 @@ void BSP::traverse(int nodeIndex, const Camera& cam, World& world)
 
 	if (node.isLeaf)
 	{
-		world.addGeometry(node.tris);
+		for (int index : node.indices) {
+			world.addGeometry(list[index]);
+		}
 	}
 	else
 	{
@@ -309,7 +343,21 @@ void BSP::traverse(int nodeIndex, const Camera& cam, World& world)
 
 		if (side == Front) {
 			traverse(node.backIndex, cam, world);
+
+			for (int index : node.coplanar) {
+				world.addGeometry(list[index]);
+			}
+			
 			traverse(node.frontIndex, cam, world);
+		}
+		else if (side == Back) {
+			traverse(node.frontIndex, cam, world);
+
+			for (int index : node.coplanar) {
+				world.addGeometry(list[index]);
+			}
+
+			traverse(node.backIndex, cam, world);
 		}
 		else {
 			traverse(node.frontIndex, cam, world);
@@ -321,7 +369,7 @@ void BSP::traverse(int nodeIndex, const Camera& cam, World& world)
 
 int BSP::leaf(const Camera& cam)
 {
-	int nodeId = rootNode;
+	int nodeId = rootNodeIndex;
 	while (true) {
 		const Node& node = nodes[nodeId];
 

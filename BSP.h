@@ -8,12 +8,15 @@
 #include "World.h"
 #include "Camera.h"
 
+using IndicesList = std::vector<int>;
+
 struct Node
 {
 	bool isLeaf;
 	Plane plane;
-	Triangle3DList tris;
-	
+	IndicesList coplanar;
+	IndicesList indices;
+
 	int frontIndex;
 	int backIndex;
 };
@@ -27,12 +30,14 @@ enum Side
 
 struct SplittedPolygon
 {
+	bool coplanar = false;
 	Polygon3D front;
 	Polygon3D back;
 };
 
 struct SplittedTriangle
 {
+	bool coplanar = false;
 	Triangle3DList front;
 	Triangle3DList back;
 };
@@ -48,8 +53,12 @@ public:
 	int leaf(const Camera& cam);
 
 private:
-	int rootNode = 0;
+	int rootNodeIndex = 0;
 	NodeList nodes;
+	Triangle3DList list;
+
+	int addToList(const Triangle3& tri);
+	Triangle3 getFromList(int index);
 
 	int findSplitter(const Triangle3DList& tris);
 	int build(const Triangle3DList& tris);
