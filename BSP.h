@@ -36,6 +36,11 @@ enum Side
 	Coplane
 };
 
+struct BoundingBox
+{
+	Vec3 min, max;
+};
+
 struct SplittedPolygon
 {
 	bool coplanar = false;
@@ -84,5 +89,7 @@ private:
 	Polygon3D clipPolygon(const Polygon3D& poly, const PlaneList& bounds);
 
 	Triangle3DList triangulate(const Polygon3D& poly, size_t texId, const Color& fill);
+	BoundingBox makeBoundingBox(const Triangle3DList& tris);
+	PlaneList getPlanes(const BoundingBox& bbox); 
 };
 

@@ -77,6 +77,7 @@ void freeTexture()
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
+   
 
     Vec2List points = {
         {0, 0},
@@ -87,9 +88,26 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {200, 100},
         {200, 0},
         {300, 0},
+        {450, 60},
+        {500, 110},
         {300, 200},
-        {0, 200}
+        {-50, 200}
     };
+
+    /*
+    Vec2List points = {
+        {0, 0},
+        {100, 0},
+        {100, 100},
+        {200, 50},
+        {200, 200},
+        {120, 200},
+        {220, 250},
+        {110, 400},
+        {50, 400},
+        {0, 250}
+    };
+    */
 
     Triangle3DList list = Constructor::map(points, 100, 1);
 
@@ -173,16 +191,16 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
             moveLeft = true;
         }
         if (event->key.key == SDLK_LEFT) {
-            boxYawSpeed = 20;
+            boxYawSpeed = 60;
         }
         if (event->key.key == SDLK_RIGHT) {
-            boxYawSpeed = -20;
+            boxYawSpeed = -60;
         }
         if (event->key.key == SDLK_UP) {
-            boxPitchSpeed = -20;
+            boxPitchSpeed = -60;
         }
         if (event->key.key == SDLK_DOWN) {
-            boxPitchSpeed = 20;
+            boxPitchSpeed = 60;
         }
         if (event->key.key == SDLK_ESCAPE) {
             return SDL_APP_SUCCESS;

@@ -245,11 +245,8 @@ void BSP::compile(const Triangle3DList& tris)
 	nodes.clear();
 	list.clear();
 
-	PlaneList bounds;
-
-	for (const Triangle3& tri : tris) {
-		bounds.push_back(tri.getPlane());
-	}
+	BoundingBox worldBBox = makeBoundingBox(tris);
+	PlaneList bounds = getPlanes(worldBBox);
 
 	rootNodeIndex = build(tris, bounds);
 }
@@ -280,7 +277,10 @@ int BSP::build(const Triangle3DList& tris, const PlaneList& bounds)
 		node.portal = makePolygonOnPlane(node.plane);
 		node.portal = clipPolygon(node.portal, bounds);
 
-		for (const Triangle3& portalTri : triangulate(node.portal, 1, Color(0, 0, 0))) {
+		for (Triangle3 portalTri : triangulate(node.portal, 1, generateColor())) {
+			portalTri.v0.position += portalTri.getPlane().normal * 0.1f;
+			portalTri.v1.position += portalTri.getPlane().normal * 0.1f;
+			portalTri.v2.position += portalTri.getPlane().normal * 0.1f;
 			portalTris.push_back(portalTri);
 		}
 		
@@ -466,4 +466,67 @@ Polygon3D BSP::clipPolygon(const Polygon3D& poly, const PlaneList& bounds)
 	}
 
 	return out;
+}
+
+BoundingBox BSP::makeBoundingBox(const Triangle3DList& tris)
+{
+	BoundingBox bbox;
+
+	if (tris.size() == 0) {
+		return bbox;
+	}
+
+	// FIX
+
+	bbox.min = bbox.max = tris[0].v0.position;
+
+	for (const Triangle3& tri : tris) {
+
+		for (int i = 0; i < 3; i++) {
+			bbox.min.x = std::min(bbox.min.x, tri.v[i].position.x);
+			bbox.min.y = std::min(bbox.min.y, tri.v[i].position.y);
+			bbox.min.z = std::min(bbox.min.z, tri.v[i].position.z);
+
+			bbox.max.x = std::max(bbox.max.x, tri.v[i].position.x);
+			bbox.max.y = std::max(bbox.max.y, tri.v[i].position.y);
+			bbox.max.z = std::max(bbox.max.z, tri.v[i].position.z);
+		}
+	}
+
+	return bbox;
+}
+
+PlaneList BSP::getPlanes(const BoundingBox& bbox)
+{
+	//Triangle3DList tris;
+
+	//PlaneList planes;
+
+	/*
+	planes.push_back(Triangle3({ {{bbox.min.x, bbox.min.y, bbox.min.z}, {0, 0}}, {{bbox.max.x, bbox.min.y, bbox.min.z}, {1, 0}}, {{bbox.min.x, bbox.max.y, bbox.min.z}, {0, 1}}, 1 }).getPlane());
+	
+	planes.push_back(Triangle3({ {{bbox.max.x, bbox.min.y, bbox.min.z}, {0, 0}}, {{bbox.max.x, bbox.min.y, bbox.max.z}, {1, 0}}, {{bbox.max.x, bbox.max.y, bbox.min.z}, {0, 1}}, 1 }).getPlane());
+	
+	planes.push_back(Triangle3({ {{bbox.min.x, bbox.max.y, bbox.max.z}, {0, 1}}, {{bbox.max.x, bbox.min.y, bbox.max.z}, {1, 0}}, {{ bbox.min.x, bbox.min.y, bbox.max.z }, {0, 0}}, 1 }).getPlane());
+	
+	planes.push_back(Triangle3({ {{bbox.min.x, bbox.max.y, bbox.min.z}, {0, 1}}, {{bbox.min.x, bbox.min.y, bbox.max.z}, {1, 0}}, {{bbox.min.x, bbox.min.y, bbox.min.z}, {0, 0}}, 1 }).getPlane());
+	
+	planes.push_back(Triangle3({ {{bbox.max.x, bbox.max.y, bbox.min.z}, {0, 1}}, {{bbox.min.x, bbox.max.y, bbox.max.z}, {1, 0}}, {{bbox.min.x, bbox.max.y, bbox.min.z}, {0, 0}}, 1 }).getPlane());
+	
+	planes.push_back(Triangle3({ {{bbox.min.x, bbox.min.y, bbox.min.z}, {0, 0}}, {{bbox.min.x, bbox.min.y, bbox.max.z}, {1, 0}}, {{bbox.max.x, bbox.min.y, bbox.min.z}, {0, 1}}, 1 }).getPlane());
+	*/
+
+	PlaneList planes;
+
+	planes.push_back(Plane(Vec3(-1, 0, 0), -bbox.max.x));
+	planes.push_back(Plane(Vec3(1, 0, 0), bbox.min.x));
+
+	planes.push_back(Plane(Vec3(0, -1, 0), -bbox.max.y));
+	planes.push_back(Plane(Vec3(0, 1, 0), bbox.min.y));
+
+	planes.push_back(Plane(Vec3(0, 0, -1), -bbox.max.z));
+	planes.push_back(Plane(Vec3(0, 0, 1), bbox.min.z));
+	return planes;
+	
+	
 }
