@@ -105,7 +105,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex, zTest, fill);
+                rasterizer.drawTriangle(vpClipped, tex, zTest);
                 count++;
             }
         }
@@ -114,7 +114,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
     return count;
 }
 
-int Renderer::drawWorld(const World& world, const Camera& cam)
+int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 {
     int count = 0;
 
@@ -149,7 +149,12 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
 
             // Drawing
             for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex, zTest, fill);
+                if (fill) {
+                    rasterizer.drawSolidTriangle(vpClipped, zTest, false);
+                }
+                else {
+                    rasterizer.drawTriangle(vpClipped, tex, zTest);
+                }
                 count++;
             }
         }
@@ -158,13 +163,53 @@ int Renderer::drawWorld(const World& world, const Camera& cam)
     return count;
 }
 
-void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Camera& cam, Data& data)
+int Renderer::drawExtras(const Triangle3DList& tris, const Camera& cam)
+{
+    int count = 0;
+
+    for (Triangle3 tri : tris) {
+        // Transform
+        transformToView(tri, cam);
+
+        // 3D clipping
+        Triangle3DList clippedTriangles = clipper.clipTriangle(tri, nearPlaneDistance, farPlaneDistance);
+
+        if (clippedTriangles.empty()) {
+            continue;
+        }
+
+        Texture tex = rasterizer.getTexture(tri.texId);
+
+        for (const Triangle3& clipped : clippedTriangles) {
+
+            // Projection
+            Triangle2 projected = project(clipped, tex);
+
+            // Viewport clipping
+            Triangle2DList vpClippedTriangles = viewportClipper.clipTriangle(projected, viewport);
+
+            // Drawing
+            for (const Triangle2& vpClipped : vpClippedTriangles) {
+                rasterizer.drawSolidTriangle(vpClipped, zTest, true);
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Triangle3DList& extras, const Camera& cam, Data& data)
 {
     rasterizer.clearBuffers();
+    
     backfaceCulling = true;
 
     zTest = false;
-    data.count = drawWorld(world, cam);
+    data.count = drawWorld(world, cam, fill);
+
+    zTest = true;
+    drawExtras(extras, cam);
 
     zTest = true;
     for (const Model& model : models) {

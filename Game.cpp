@@ -33,6 +33,7 @@ static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Co
 static World world;
 static BSP bsp;
 static bool fill = false;
+static bool portals = false;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
 
@@ -155,6 +156,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_Q) {
             fill = !fill;
+        }
+        if (event->key.key == SDLK_F) {
+            portals = !portals;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -304,7 +308,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
-        gameRenderer.drawScene(world, models, camera, data);
+
+        gameRenderer.drawScene(world, models, (portals ? bsp.portalTris : Triangle3DList()), camera, data);
 
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */

@@ -217,7 +217,7 @@ int BSP::findSplitter(const Triangle3DList& tris)
 
 			if (splitted.back.size() > 0) {
 				int score = abs((int)(splitted.back.size() - splitted.front.size()));
-				if (score <= minScore) {
+				if (score < minScore) {
 					index = j;
 					minScore = score;
 				}
@@ -234,11 +234,24 @@ int BSP::addToList(const Triangle3& tri)
 	return list.size() - 1;
 }
 
+int BSP::addLeaf(const Leaf& leaf)
+{
+	leaves.push_back(leaf);
+	return leaves.size() - 1;
+}
+
 void BSP::compile(const Triangle3DList& tris)
 {
 	nodes.clear();
 	list.clear();
-	rootNodeIndex = build(tris);
+
+	PlaneList bounds;
+
+	for (const Triangle3& tri : tris) {
+		bounds.push_back(tri.getPlane());
+	}
+
+	rootNodeIndex = build(tris, bounds);
 }
 
 void BSP::render(const Camera& cam, World& world)
@@ -246,7 +259,7 @@ void BSP::render(const Camera& cam, World& world)
 	traverse(rootNodeIndex, cam, world);
 }
 
-int BSP::build(const Triangle3DList& tris)
+int BSP::build(const Triangle3DList& tris, const PlaneList& bounds)
 {
 	if (tris.size() == 0) {
 		return -1;
@@ -259,9 +272,18 @@ int BSP::build(const Triangle3DList& tris)
 	if (splitterIndex != -1) {
 		Triangle3DList front, back;
 		Triangle3 splitter = tris[splitterIndex];
-		node.isLeaf = false;
+		node.leafIndex = -1;
 		node.plane = splitter.getPlane();
+		splitter.fill = Color(255, 255, 255);
 		node.coplanar.push_back(addToList(splitter));
+
+		node.portal = makePolygonOnPlane(node.plane);
+		node.portal = clipPolygon(node.portal, bounds);
+
+		for (const Triangle3& portalTri : triangulate(node.portal, 1, Color(0, 0, 0))) {
+			portalTris.push_back(portalTri);
+		}
+		
 		for (int i = 0; i < tris.size(); i++) {
 
 			if (i == splitterIndex) {
@@ -272,7 +294,9 @@ int BSP::build(const Triangle3DList& tris)
 			SplittedTriangle splittedTri = splitTriangle(tris[i], node.plane);
 
 			if (splittedTri.coplanar) {
-				node.coplanar.push_back(addToList(tris[i]));
+				Triangle3 coplanarTri = tris[i];
+				coplanarTri.fill = Color(255, 255, 255);
+				node.coplanar.push_back(addToList(coplanarTri));
 			}
 
 			for (const Triangle3& frontTri : splittedTri.front) {
@@ -284,27 +308,20 @@ int BSP::build(const Triangle3DList& tris)
 			}
 		}
 
+		PlaneList frontBounds = bounds;
+		frontBounds.push_back(node.plane);
 
-		
-		
+		PlaneList backBounds = bounds;
+		backBounds.push_back(node.plane.flip());
 
-		if (front.size() != 0) {
-			node.frontIndex = build(front);
-		}
-		else {
-			node.frontIndex = -1;
-		}
 
-		if (back.size() != 0) {
-			node.backIndex = build(back);
-		}
-		else {
-			node.backIndex = -1;
-		}
+		node.frontIndex = build(front, frontBounds);
+		node.backIndex = build(back, backBounds);
 
 	}
 	else {
-		node.isLeaf = true;
+		Leaf leaf;
+
 		node.frontIndex = -1;
 		node.backIndex = -1;
 
@@ -312,10 +329,10 @@ int BSP::build(const Triangle3DList& tris)
 		for (int j = 0; j < tris.size(); j++) {
 			Triangle3 tri = tris[j];
 			tri.fill = changeColor(c, j);
-			node.indices.push_back(addToList(tri));
+			leaf.indices.push_back(addToList(tri));
 		}
 
-		//node.tris.insert(node.tris.begin(), tris.begin(), tris.end());
+		node.leafIndex = addLeaf(leaf);
 	}
 
 	nodes.push_back(node);
@@ -331,9 +348,11 @@ void BSP::traverse(int nodeIndex, const Camera& cam, World& world)
 
 	const Node& node = nodes[nodeIndex];
 
-	if (node.isLeaf)
+	if (node.leafIndex != -1)
 	{
-		for (int index : node.indices) {
+		Leaf leaf = leaves[node.leafIndex];
+
+		for (int index : leaf.indices) {
 			world.addGeometry(list[index]);
 		}
 	}
@@ -373,8 +392,8 @@ int BSP::leaf(const Camera& cam)
 	while (true) {
 		const Node& node = nodes[nodeId];
 
-		if (node.isLeaf) {
-			return nodeId;
+		if (node.leafIndex != -1) {
+			return node.leafIndex;
 		}
 
 		if (test(node.plane, cam.position) == Back) {
@@ -386,4 +405,65 @@ int BSP::leaf(const Camera& cam)
 	}
 
 	return 0;
+}
+
+// AI
+Polygon3D BSP::makePolygonOnPlane(const Plane& plane)
+{
+	Vec3 center = plane.normal * plane.distance;
+
+	Vec3 temp = fabs(plane.normal.y) < 0.99f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
+
+	Vec3 axisU = Vec3::normalize(Vec3::cross(temp, plane.normal));
+	Vec3 axisV = Vec3::normalize(Vec3::cross(plane.normal, axisU));
+
+	constexpr float size = 1000.0f;
+
+	Polygon3D poly;
+
+	poly.push_back(Vertex3D(center - axisU * size - axisV * size, Vec2(0, 0)));
+	poly.push_back(Vertex3D(center + axisU * size - axisV * size, Vec2(1, 0)));
+	poly.push_back(Vertex3D(center + axisU * size + axisV * size, Vec2(1, 1)));
+	poly.push_back(Vertex3D(center - axisU * size + axisV * size, Vec2(0, 1)));
+
+	return poly;
+}
+
+Triangle3DList BSP::triangulate(const Polygon3D& poly, size_t texId, const Color& fill)
+{
+	Triangle3DList tris;
+
+	if (poly.size() < 3) {
+		return tris;
+	}
+
+	for (int i = 1; i < poly.size() - 1; i++) {
+		Triangle3 tri;
+
+		tri.v0 = poly[0];
+		tri.v1 = poly[i];
+		tri.v2 = poly[i + 1];
+		tri.texId = texId;
+		tri.fill = fill;
+
+		tris.push_back(tri);
+	}
+
+	return tris;
+}
+
+Polygon3D BSP::clipPolygon(const Polygon3D& poly, const PlaneList& bounds)
+{
+	Polygon3D out = poly;
+
+	for (const Plane& plane : bounds)
+	{
+		SplittedPolygon splitted = splitAgainstPlane(out, plane);
+
+		if (!splitted.coplanar && splitted.front.size() > 0 && splitted.back.size() > 0) {
+			out = splitted.front;
+		}
+	}
+
+	return out;
 }

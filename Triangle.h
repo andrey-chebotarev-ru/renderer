@@ -31,6 +31,10 @@ struct Plane
     }
 
     Plane() {}
+
+    Plane flip() const {
+        return Plane(-normal, -distance);
+    }
 };
 
 struct Triangle3
@@ -57,3 +61,5 @@ using Triangle3DList = std::vector<Triangle3>;
 
 using Polygon2D = std::vector<Vertex2D>;
 using Polygon3D = std::vector<Vertex3D>;
+
+using PlaneList = std::vector<Plane>;

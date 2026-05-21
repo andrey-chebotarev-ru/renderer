@@ -43,7 +43,7 @@ public:
     void setFramebuffer(int pitch, uint8_t* pixels);
     void setTexture(const Texture& texture, size_t index);
     
-    void drawScene(const World& world, const std::vector<Model>& models, const Camera& cam, Data& data);
+    void drawScene(const World& world, const std::vector<Model>& models, const Triangle3DList& extras, const Camera& cam, Data& data);
 
     
 
@@ -73,6 +73,7 @@ private:
     Triangle2 project(const Triangle3& tri, const Texture& tex);
     
     int drawModel(const Model& model, const Camera& cam);
-    int drawWorld(const World& world, const Camera& cam);
+    int drawWorld(const World& world, const Camera& cam, bool fill);
+    int drawExtras(const Triangle3DList& tris, const Camera& cam);
 };
 

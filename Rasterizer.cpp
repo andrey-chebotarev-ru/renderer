@@ -105,7 +105,7 @@ Span Rasterizer::makeSpan(int y, const Edge2D& a, const Edge2D& b)
 
 
 
-void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest, bool fill)
+void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -178,7 +178,7 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest, bool
                 }
             }
             else {
-                *(Color*)(framebuffer + pos) = (fill ? span.fill : tex.getSample(u, v));
+                *(Color*)(framebuffer + pos) = tex.getSample(u, v);
                 zBuffer[zindex] = iz;
             }
 
@@ -200,7 +200,69 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest, bool
     }
 }
 
-void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest, bool fill)
+void Rasterizer::drawSolidSpan(const Span& span, bool zTest, bool transparent)
+{
+    if (span.y < 0 || span.y >= screenHeight) {
+        return;
+    }
+
+    if ((span.x1 < 0 && span.x2 < 0) || (span.x1 >= screenWidth && span.x2 >= screenWidth)) {
+        return;
+    }
+
+    if (span.x1 == span.x2 || span.x2 <= span.x1) {
+        return;
+    }
+
+    int x1 = span.x1;
+    int x2 = span.x2;
+
+    float iz = span.iz1;
+
+    if (x1 < 0)
+    {
+        iz = span.iz1 - x1 * span.izStep;
+
+        x1 = 0;
+    }
+
+    if (x2 >= screenWidth) {
+        x2 = screenWidth - 1;
+    }
+
+    int pos = (static_cast<unsigned long long>(x1) << 2) + span.y * pitch;
+    int zindex = x1 + span.y * screenWidth;
+
+    int x = x1;
+
+    while (x < x2)
+    {
+        if (zTest) {
+            if (zBuffer[zindex] < iz) {
+                if (transparent && (((x ^ span.y) & 1) == 0)) {
+                    //*(Color*)(framebuffer + pos) = span.fill;
+                }
+                else {
+                    *(Color*)(framebuffer + pos) = span.fill;
+                }
+                
+                zBuffer[zindex] = iz;
+            }
+        }
+        else {
+            *(Color*)(framebuffer + pos) = span.fill;
+            zBuffer[zindex] = iz;
+        }
+
+        
+        zindex++;
+        x++;
+        pos += 4;
+        iz += span.izStep;
+    }
+}
+
+void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
 {
     sortTriangle(tri);
 
@@ -220,7 +282,7 @@ void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest, boo
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
             span.fill = tri.fill;
-            drawSpan(span, tex, zTest, fill);
+            drawSpan(span, tex, zTest);
             longEdge.step();
             topEdge.step();
         }
@@ -232,9 +294,66 @@ void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest, boo
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
             span.fill = tri.fill;
-            drawSpan(span, tex, zTest, fill);
+            drawSpan(span, tex, zTest);
             longEdge.step();
             bottomEdge.step();
         }
     }
+}
+
+void Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
+{
+    sortTriangle(tri);
+
+    if (tri.v0.pos.y == tri.v2.pos.y) {
+        return;
+    }
+
+    const Vertex2D& top = tri.v0;
+    const Vertex2D& middle = tri.v1;
+    const Vertex2D& bottom = tri.v2;
+
+    Edge2D longEdge = makeEdge(top, bottom);
+
+    if (middle.pos.y != top.pos.y) {
+        Edge2D topEdge = makeEdge(top, middle);
+
+        for (int y = topEdge.y1; y < topEdge.y2; y++) {
+            Span span = makeSpan(y, longEdge, topEdge);
+            span.fill = tri.fill;
+            drawSolidSpan(span, zTest, transparent);
+            longEdge.step();
+            topEdge.step();
+        }
+    }
+
+    if (middle.pos.y != bottom.pos.y) {
+        Edge2D bottomEdge = makeEdge(middle, bottom);
+
+        for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
+            Span span = makeSpan(y, longEdge, bottomEdge);
+            span.fill = tri.fill;
+            drawSolidSpan(span, zTest, transparent);
+            longEdge.step();
+            bottomEdge.step();
+        }
+    }
+}
+
+Color Rasterizer::blend(const Color& dstColor, const Color& srcColor, float alpha)
+{
+    int r = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
+    int g = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
+    int b = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
+
+    return Color(r, g, b);
+}
+
+Color Rasterizer::darken(const Color& color)
+{
+    Color c;
+    c.val = (color.val >> 2) & 0x003F3F3F;
+    c.a = 255;
+
+    return c;
 }

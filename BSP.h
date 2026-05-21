@@ -12,14 +12,22 @@ using IndicesList = std::vector<int>;
 
 struct Node
 {
-	bool isLeaf;
 	Plane plane;
 	IndicesList coplanar;
-	IndicesList indices;
 
+	Polygon3D portal;
+
+	int leafIndex;
 	int frontIndex;
 	int backIndex;
 };
+
+struct Leaf
+{
+	IndicesList indices;
+};
+
+using LeafList = std::vector<Leaf>;
 
 enum Side
 {
@@ -52,20 +60,29 @@ public:
 	void render(const Camera& cam, World& world);
 	int leaf(const Camera& cam);
 
+	Triangle3DList portalTris;
+
 private:
 	int rootNodeIndex = 0;
 	NodeList nodes;
+	LeafList leaves;
 	Triangle3DList list;
 
 	int addToList(const Triangle3& tri);
+	int addLeaf(const Leaf& leaf);
 	Triangle3 getFromList(int index);
 
 	int findSplitter(const Triangle3DList& tris);
-	int build(const Triangle3DList& tris);
+	int build(const Triangle3DList& tris, const PlaneList& bounds);
 	void traverse(int nodeIndex, const Camera& cam, World& world);
 	SplittedTriangle splitTriangle(const Triangle3& tri, const Plane& plane);
 	Side test(const Plane& plane, const Vec3& vec);
 	Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
 	SplittedPolygon splitAgainstPlane(const Polygon3D& input, const Plane& plane);
+
+	Polygon3D makePolygonOnPlane(const Plane& plane);
+	Polygon3D clipPolygon(const Polygon3D& poly, const PlaneList& bounds);
+
+	Triangle3DList triangulate(const Polygon3D& poly, size_t texId, const Color& fill);
 };
 
