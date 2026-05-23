@@ -26,77 +26,60 @@ Vertex3D Clipper::intersect(const Vertex3D& v1, const Vertex3D& v2, float distan
 	return v;
 }
 
-Polygon3D Clipper::clipAgainstPlane(const Polygon3D& input, ClipPlane plane, float distance)
+Poly3D Clipper::clipAgainstPlane(const Poly3D& in, ClipPlane plane, float distance)
 {
-	Polygon3D output;
+	Poly3D out;
 
-	if (input.empty()) {
-		return output;
+	out.texId = in.texId;
+	out.fill = in.fill;
+
+	if (in.verts.empty()) {
+		return out;
 	}
 
-	const Vertex3D* previous = &input.back();
+	const Vertex3D* previous = &in.verts.back();
 	bool previousInside = inside(*previous, plane, distance);
 
-	for (const Vertex3D& current : input) {
+	for (const auto& current : in.verts) {
 		bool currentInside = inside(current, plane, distance);
 
 		if (previousInside && currentInside) {
-			output.push_back(current);
+			out.verts.push_back(current);
 		}
 		else if (previousInside && !currentInside) {
-			output.push_back(intersect(*previous, current, distance));
+			out.verts.push_back(intersect(*previous, current, distance));
 		}
 		else if (!previousInside && currentInside) {
-			output.push_back(intersect(*previous, current, distance));
-			output.push_back(current);
+			out.verts.push_back(intersect(*previous, current, distance));
+			out.verts.push_back(current);
 		}
 
 		previous = &current;
 		previousInside = currentInside;
 	}
 
-	return output;
+	return out;
 }
 
-Polygon3D Clipper::clipToFrustrum(const Polygon3D& input, float nearDistance, float farDistance)
+Poly3D Clipper::clip(const Poly3D& in, float nearDistance, float farDistance)
 {
-	Polygon3D output;
+	Poly3D out;
 
-	output = clipAgainstPlane(input, ClipPlane::Near, nearDistance);
-	output = clipAgainstPlane(output, ClipPlane::Far, farDistance);
+	out = clipAgainstPlane(in, ClipPlane::Near, nearDistance);
+	out = clipAgainstPlane(out, ClipPlane::Far, farDistance);
 
-	return output;
+	return out;
 }
 
-Triangle3DList Clipper::clipTriangle(const Triangle3& triangle, float nearDistance, float farDistance)
+Triangle3DList Clipper::clip(const Triangle3& in, float nearDistance, float farDistance)
 {
-	Triangle3DList clippedTriangles;
-	Polygon3D polygon;
+	Poly3D out(in);
 
-	clippedTriangles.reserve(5);
-	polygon.reserve(8);
+	out = clip(out, nearDistance, farDistance);
 
-	polygon.push_back(triangle.v0);
-	polygon.push_back(triangle.v1);
-	polygon.push_back(triangle.v2);
-
-	polygon = clipToFrustrum(polygon, nearDistance, farDistance);
-
-	if (polygon.size() < 3) {
-		return clippedTriangles;
+	if (out.verts.size() < 3) {
+		return {};
 	}
 
-	for (int i = 1; i < polygon.size() - 1; i++) {
-		Triangle3 clippedTriangle;
-
-		clippedTriangle.v0 = polygon[0];
-		clippedTriangle.v1 = polygon[i];
-		clippedTriangle.v2 = polygon[i + 1];
-		clippedTriangle.texId = triangle.texId;
-		clippedTriangle.fill = triangle.fill;
-
-		clippedTriangles.push_back(clippedTriangle);
-	}
-
-	return clippedTriangles;
+	return out.triangulate();
 }

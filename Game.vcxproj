@@ -140,6 +140,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Clipper.cpp" />
     <ClCompile Include="Color.cpp" />
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="ViewportClipper.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clipper.h" />
     <ClInclude Include="Color.h" />
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="ViewportClipper.h" />

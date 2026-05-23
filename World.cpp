@@ -2,37 +2,37 @@
 
 World::World()
 {
-    tris.reserve(1000);
+    polys.reserve(1000);
 }
 
-void World::addGeometry(const Triangle3DList& tris)
+void World::addGeometry(const Poly3DList& polys)
 {
-    for (const Triangle3& tri : tris) {
-        this->tris.push_back(tri);
+    for (const Poly3D& poly : polys) {
+        this->polys.push_back(poly);
     }
 }
 
-void World::addGeometry(const Triangle3& tri)
+void World::addGeometry(const Poly3D& poly)
 {
-    this->tris.push_back(tri);
+    this->polys.push_back(poly);
 }
 
 size_t World::getSize() const
 {
-    return tris.size();
+    return polys.size();
 }
 
-const Triangle3& World::getTriangle(size_t index) const
+const Poly3D& World::getPolygon(size_t index) const
 {
-    return tris[index];
+    return polys[index];
 }
 
-Triangle3& World::getTriangle(size_t index)
+Poly3D& World::getPolygon(size_t index)
 {
-    return tris[index];
+    return polys[index];
 }
 
 void World::clear()
 {
-    tris.clear();
+    polys.clear();
 }

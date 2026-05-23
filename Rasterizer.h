@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Triangle.h"
 #include "ViewportClipper.h"
 #include "Texture.h"
 #include "Color.h"
+#include "Debug.h"
 
 struct Span
 {
@@ -49,8 +51,8 @@ class Rasterizer
 {
 public:
     
-    Rasterizer(size_t screenWidth, size_t screenHeight)
-        : screenWidth(screenWidth), screenHeight(screenHeight)
+    Rasterizer(size_t screenWidth, size_t screenHeight, const Debug& debug)
+        : screenWidth(screenWidth), screenHeight(screenHeight), debug(debug)
     {
         zBuffer.resize(screenWidth * screenHeight);
         textures.resize(100);
@@ -61,8 +63,11 @@ public:
     void setTexture(const Texture& texture, size_t index);
     Texture getTexture(size_t index) const;
 
-    void drawTriangle(Triangle2 tri, const Texture& tex, bool zTest);
-    void drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent);
+    bool drawTriangle(Triangle2 tri, const Texture& tex, bool zTest);
+    bool drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent);
+
+    int drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest);
+    int drawSolidPolygon(const Poly2D& poly, bool zTest, bool transparent);
 
     Color blend(const Color& dstColor, const Color& srcColor, float alpha);
     Color darken(const Color& color);
@@ -83,6 +88,8 @@ private:
     std::vector<Texture> textures;
 
     uint8_t* framebuffer = nullptr;
+
+    Debug debug;
 
     Edge2D makeEdge(const Vertex2D& a, const Vertex2D& b);
     Span makeSpan(int y, const Edge2D& a, const Edge2D& b);

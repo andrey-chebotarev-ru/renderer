@@ -20,6 +20,13 @@ void Renderer::transformToWorld(Triangle3& tri, const Transform& tr)
     }
 }
 
+void Renderer::transformToWorld(Poly3D& poly, const Transform& tr)
+{
+    for (auto& vert : poly.verts) {
+        vert.position = Math::transform(vert.position, tr);
+    }
+}
+
 Vec3 Renderer::transformToView(const Vec3& vec, const Camera& cam)
 {
     Vec3 out = vec - cam.position;
@@ -31,6 +38,13 @@ void Renderer::transformToView(Triangle3& tri, const Camera& cam)
 {
     for (int i = 0; i < 3; i++) {
         tri.v[i].position = transformToView(tri.v[i].position, cam);
+    }
+}
+
+void Renderer::transformToView(Poly3D& poly, const Camera& cam)
+{
+    for (auto& vert : poly.verts) {
+        vert.position = transformToView(vert.position, cam);
     }
 }
 
@@ -66,6 +80,31 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
     return proj;
 }
 
+Poly2D Renderer::project(const Poly3D& poly, const Texture& tex)
+{
+    Poly2D proj;
+
+    int texWidth = tex.getWidth();
+    int texHeight = tex.getHeight();
+
+    for (const auto& vert : poly.verts) {
+        float invZ = 1.0f / vert.position.z;
+
+        Vertex2D projVert;
+
+        projVert.pos = project(vert.position);
+        projVert.uz = (vert.uv.x * texWidth) * invZ;
+        projVert.vz = (vert.uv.y * texHeight) * invZ;
+        projVert.iz = invZ;
+
+        proj.verts.push_back(projVert);
+    }
+
+    proj.fill = poly.fill;
+
+    return proj;
+}
+
 int Renderer::drawModel(const Model& model, const Camera& cam)
 {
     int count = 0;
@@ -87,24 +126,24 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         transformToView(tri, cam);
 
         // 3D clipping
-        Triangle3DList clippedTriangles = clipper.clipTriangle(tri, nearPlaneDistance, farPlaneDistance);
+        Triangle3DList clippedTris = clipper.clip(tri, nearPlaneDistance, farPlaneDistance);
 
-        if (clippedTriangles.empty()) {
+        if (clippedTris.empty()) {
             continue;
         }
 
         Texture tex = rasterizer.getTexture(model.getTextureIndex());
 
-        for (const Triangle3& clipped : clippedTriangles) {
+        for (const Triangle3& clipped : clippedTris) {
 
             // Projection
             Triangle2 projected = project(clipped, tex);
 
             // Viewport clipping
-            Triangle2DList vpClippedTriangles = viewportClipper.clipTriangle(projected, viewport);
+            Triangle2DList vpClippedTriangles = viewportClipper.clip(projected, viewport);
 
             // Drawing
-            for (const Triangle2& vpClipped : vpClippedTriangles) {
+            for (const auto& vpClipped : vpClippedTriangles) {
                 rasterizer.drawTriangle(vpClipped, tex, zTest);
                 count++;
             }
@@ -120,86 +159,73 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 
     for (int i = 0; i < world.getSize(); i++) {
 
-        Triangle3 tri = world.getTriangle(i);
+        Poly3D poly = world.getPolygon(i);
 
         // Backface culling
-        if (backfaceCulling && Math::distanceToPlane(tri.getPlane(), cam.position) < 0.0f) {
+        if (backfaceCulling && Math::distanceToPlane(poly.getPlane(), cam.position) < 0.0f) {
             continue;
         }
 
         // Transform
-        transformToView(tri, cam);
+        transformToView(poly, cam);
 
         // 3D clipping
-        Triangle3DList clippedTriangles = clipper.clipTriangle(tri, nearPlaneDistance, farPlaneDistance);
+        Poly3D clippedPoly = clipper.clip(poly, nearPlaneDistance, farPlaneDistance);
 
-        if (clippedTriangles.empty()) {
+        if (clippedPoly.verts.empty()) {
             continue;
         }
 
-        Texture tex = rasterizer.getTexture(tri.texId);
+        Texture tex = rasterizer.getTexture(poly.texId);
 
-        for (const Triangle3& clipped : clippedTriangles) {
+        // Projection
+        Poly2D projected = project(clippedPoly, tex);
 
-            // Projection
-            Triangle2 projected = project(clipped, tex);
+        // Viewport clipping
+        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
 
-            // Viewport clipping
-            Triangle2DList vpClippedTriangles = viewportClipper.clipTriangle(projected, viewport);
-
-            // Drawing
-            for (const Triangle2& vpClipped : vpClippedTriangles) {
-                if (fill) {
-                    rasterizer.drawSolidTriangle(vpClipped, zTest, false);
-                }
-                else {
-                    rasterizer.drawTriangle(vpClipped, tex, zTest);
-                }
-                count++;
-            }
+        // Drawing
+        if (fill) {
+            count += rasterizer.drawSolidPolygon(vpClippedPoly, zTest, false);
+        }
+        else {
+            count += rasterizer.drawPolygon(vpClippedPoly, tex, zTest);
         }
     }
 
     return count;
 }
 
-int Renderer::drawExtras(const Triangle3DList& tris, const Camera& cam)
+int Renderer::drawExtras(const Poly3DList& polys, const Camera& cam)
 {
     int count = 0;
 
-    for (Triangle3 tri : tris) {
+    for (auto poly : polys) {
         // Transform
-        transformToView(tri, cam);
+        transformToView(poly, cam);
 
         // 3D clipping
-        Triangle3DList clippedTriangles = clipper.clipTriangle(tri, nearPlaneDistance, farPlaneDistance);
+        Poly3D clippedPoly = clipper.clip(poly, nearPlaneDistance, farPlaneDistance);
 
-        if (clippedTriangles.empty()) {
+        if (clippedPoly.verts.empty()) {
             continue;
         }
 
-        Texture tex = rasterizer.getTexture(tri.texId);
+        Texture tex = rasterizer.getTexture(poly.texId);
 
-        for (const Triangle3& clipped : clippedTriangles) {
+        // Projection
+        Poly2D projected = project(clippedPoly, tex);
 
-            // Projection
-            Triangle2 projected = project(clipped, tex);
+        // Viewport clipping
+        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
 
-            // Viewport clipping
-            Triangle2DList vpClippedTriangles = viewportClipper.clipTriangle(projected, viewport);
-
-            // Drawing
-            for (const Triangle2& vpClipped : vpClippedTriangles) {
-                rasterizer.drawSolidTriangle(vpClipped, zTest, true);
-                count++;
-            }
-        }
+        count += rasterizer.drawSolidPolygon(vpClippedPoly, zTest, true);
     }
 
     return count;
 }
 
-void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Triangle3DList& extras, const Camera& cam, Data& data)
+void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Poly3DList& extras, const Camera& cam, Data& data)
 {
     rasterizer.clearBuffers();
     
@@ -215,4 +241,7 @@ void Renderer::drawScene(const World& world, const std::vector<Model>& models, c
     for (const Model& model : models) {
         data.count += drawModel(model, cam);
     }
+
+    
+    
 }

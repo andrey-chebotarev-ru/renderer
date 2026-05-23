@@ -5,21 +5,6 @@
 #include "Vertex.h"
 #include "Color.h"
 
-struct Triangle2
-{
-    union {
-        struct {
-            Vertex2D v0, v1, v2;
-        };
-        Vertex2D v[3];
-    };
-
-    Color fill;
-
-    Triangle2() {}
-    Triangle2(Vertex2D v0, Vertex2D v1, Vertex2D v2) : v0(v0), v1(v1), v2(v2) {}
-};
-
 struct Plane
 {
     Vec3 normal;
@@ -35,6 +20,24 @@ struct Plane
     Plane flip() const {
         return Plane(-normal, -distance);
     }
+};
+
+
+
+
+struct Triangle2
+{
+    union {
+        struct {
+            Vertex2D v0, v1, v2;
+        };
+        Vertex2D v[3];
+    };
+
+    Color fill;
+
+    Triangle2() {}
+    Triangle2(Vertex2D v0, Vertex2D v1, Vertex2D v2) : v0(v0), v1(v1), v2(v2) {}
 };
 
 struct Triangle3
@@ -63,3 +66,62 @@ using Polygon2D = std::vector<Vertex2D>;
 using Polygon3D = std::vector<Vertex3D>;
 
 using PlaneList = std::vector<Plane>;
+
+using Vertex3DList = std::vector<Vertex3D>;
+using Vertex2DList = std::vector<Vertex2D>;
+
+
+struct Poly2D
+{
+    
+    Vertex2DList verts;
+    Color fill;
+
+    Poly2D() {}
+
+    Poly2D(const Vertex2DList& verts)
+        : verts(verts) {}
+
+    Poly2D(const Triangle2& tri)
+    {
+        verts.reserve(3);
+
+        verts.push_back(tri.v0);
+        verts.push_back(tri.v1);
+        verts.push_back(tri.v2);
+
+        fill = tri.fill;
+    }
+
+    Triangle2DList triangulate() const;
+};
+
+struct Poly3D
+{
+    Vertex3DList verts;
+    size_t texId;
+    Color fill;
+
+    Poly3D() {}
+
+    Poly3D(const Vertex3DList& verts, size_t texId)
+        : verts(verts), texId(texId) {}
+
+    Poly3D(const Triangle3& tri)
+    {
+        verts.reserve(3);
+
+        verts.push_back(tri.v0);
+        verts.push_back(tri.v1);
+        verts.push_back(tri.v2);
+
+        texId = tri.texId;
+        fill = tri.fill;
+    }
+
+    Plane getPlane() const;
+    Triangle3DList triangulate() const;
+};
+
+using Poly3DList = std::vector<Poly3D>;
+using Poly2DList = std::vector<Poly2D>;

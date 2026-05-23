@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <functional>
+#include <string>
 
 #include "Vector.h"
 #include "Triangle.h"
@@ -15,7 +17,7 @@ struct Node
 	Plane plane;
 	IndicesList coplanar;
 
-	Polygon3D portal;
+	Poly3D portal;
 
 	int leafIndex;
 	int frontIndex;
@@ -29,11 +31,19 @@ struct Leaf
 
 using LeafList = std::vector<Leaf>;
 
-enum Side
+enum class Side
 {
 	Front,
 	Back,
-	Coplane
+	Coplanar
+};
+
+enum class SplitResult
+{
+	Front,
+	Back,
+	Coplanar,
+	Intersected,
 };
 
 struct BoundingBox
@@ -43,16 +53,8 @@ struct BoundingBox
 
 struct SplittedPolygon
 {
-	bool coplanar = false;
-	Polygon3D front;
-	Polygon3D back;
-};
-
-struct SplittedTriangle
-{
-	bool coplanar = false;
-	Triangle3DList front;
-	Triangle3DList back;
+	SplitResult result;
+	Poly3D front, back, coplanar;
 };
 
 using NodeList = std::vector<Node>;
@@ -61,35 +63,33 @@ class BSP
 {
 public:
 	
-	void compile(const Triangle3DList& tris);
+	void compile(const Poly3DList& polys);
 	void render(const Camera& cam, World& world);
 	int leaf(const Camera& cam);
 
-	Triangle3DList portalTris;
+	Poly3DList portalPolys;
 
 private:
 	int rootNodeIndex = 0;
 	NodeList nodes;
 	LeafList leaves;
-	Triangle3DList list;
+	Poly3DList list;
 
-	int addToList(const Triangle3& tri);
+	int addToList(const Poly3D& poly);
 	int addLeaf(const Leaf& leaf);
-	Triangle3 getFromList(int index);
+	Poly3D getFromList(int index);
 
-	int findSplitter(const Triangle3DList& tris);
-	int build(const Triangle3DList& tris, const PlaneList& bounds);
+	int findSplitter(const Poly3DList& polys);
+	int build(const Poly3DList& polys, const PlaneList& bounds);
 	void traverse(int nodeIndex, const Camera& cam, World& world);
-	SplittedTriangle splitTriangle(const Triangle3& tri, const Plane& plane);
 	Side test(const Plane& plane, const Vec3& vec);
 	Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
-	SplittedPolygon splitAgainstPlane(const Polygon3D& input, const Plane& plane);
+	SplittedPolygon splitAgainstPlane(const Poly3D& in, const Plane& plane);
 
-	Polygon3D makePolygonOnPlane(const Plane& plane);
-	Polygon3D clipPolygon(const Polygon3D& poly, const PlaneList& bounds);
+	Poly3D makePolygonOnPlane(const Plane& plane);
+	Poly3D clipPolygon(const Poly3D& poly, const PlaneList& bounds);
 
-	Triangle3DList triangulate(const Polygon3D& poly, size_t texId, const Color& fill);
-	BoundingBox makeBoundingBox(const Triangle3DList& tris);
+	BoundingBox makeBoundingBox(const Poly3DList& polys);
 	PlaneList getPlanes(const BoundingBox& bbox); 
 };
 

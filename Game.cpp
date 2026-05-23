@@ -17,6 +17,7 @@
 #include "Constructor.h"
 #include "World.h"
 #include "BSP.h"
+#include "Debug.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -27,7 +28,8 @@ static int windowWidth = 0, windowHeight = 0;
 static SDL_Window* window = NULL;
 static SDL_Renderer* sdlRenderer = NULL;
 static SDL_Texture* sdlFramebufferTexture = NULL;
-static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f);
+static Debug debug(&sdlRenderer);
+static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, debug);
 static Camera camera;
 static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1, 1), Vec3(20, 20, 20), 0)) };
 static World world;
@@ -36,6 +38,7 @@ static bool fill = false;
 static bool portals = false;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
+
 
 
 bool loadTexture(const char* filename, int index)
@@ -109,7 +112,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     };
     */
 
-    Triangle3DList list = Constructor::map(points, 100, 1);
+    Poly3DList list = Constructor::map(points, 100, 1);
 
     bsp.compile(list);
 
@@ -327,11 +330,14 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
 
-        gameRenderer.drawScene(world, models, (portals ? bsp.portalTris : Triangle3DList()), camera, data);
+        gameRenderer.drawScene(world, models, (portals ? bsp.portalPolys : Poly3DList()), camera, data);
 
+        
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
     }
+
+    
 
     /* as you can see from this, rendering draws over whatever was drawn before it. */
     SDL_SetRenderDrawColor(sdlRenderer, 66, 66, 66, SDL_ALPHA_OPAQUE);  /* grey, full alpha */
@@ -342,20 +348,20 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     dst_rect.h = windowHeight;
     SDL_RenderTexture(sdlRenderer, sdlFramebufferTexture, NULL, &dst_rect);
 
+
+    char buffer[256];
+    sprintf_s(buffer, "x: %f y: %f z: %f", camera.position.x, camera.position.y, camera.position.z);
+
+
+    debug.drawText(10, 30, buffer);
+
+
     SDL_SetRenderDrawColor(sdlRenderer, 51, 102, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "%.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "%i", data.count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "x: %f y: %f z: %f", camera.position.x, camera.position.y, camera.position.z);
+    
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "%i", bsp.leaf(camera));
-    /*
-    Triangle2 triProj = gameRenderer.projectedTrianglesList[0];
-    Triangle3 tri = gameRenderer.clippedTrianglesList[0];
 
-
-    SDL_SetRenderDrawColor(sdlRenderer, 51, 102, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "Vert: (%f %f %f) (%f %f %f) (%f %f %f)", tri.v0.position.x, tri.v0.position.y, tri.v0.position.z, tri.v1.position.x, tri.v1.position.y, tri.v1.position.z, tri.v2.position.x, tri.v2.position.y, tri.v2.position.z);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 50, "Proj: (%f %f %f) (%f %f %f) (%f %f %f)", triProj.v0.position.x, triProj.v0.position.y, triProj.v0.invZ, triProj.v1.position.x, triProj.v1.position.y, triProj.v1.invZ, triProj.v2.position.x, triProj.v2.position.y, triProj.v2.invZ);
-    */
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */

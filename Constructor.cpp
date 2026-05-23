@@ -49,30 +49,34 @@ Triangle3DList Constructor::cube(const Vec2& uv, const Vec3& size, size_t texId)
     return tris;
 }
 
-Triangle3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height, size_t texId)
+Poly3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height, size_t texId)
 {
     float h = height / 2;
 
-    Triangle3DList tris;
+    Poly3DList polys;
 
-    tris.reserve(2);
+    polys.reserve(1);
 
     float len = (vec2 - vec1).length();
 
     Vec2 uv = Vec2(len * 10 / 512, height * 10 / 512);
 
-    tris.push_back(Triangle3({ {{vec1.x, -h, vec1.y}, {0, 0}}, {{ vec2.x, -h, vec2.y}, {uv.x, 0}}, {{vec1.x, h, vec1.y}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{vec2.x, -h, vec2.y}, {uv.x, 0}}, {{ vec2.x, h, vec2.y}, {uv.x, uv.y}}, {{vec1.x, h, vec1.y}, {0, uv.y}}, texId }));
-    
-    return tris;
+    polys.push_back(Poly3D({
+        { {vec1.x, -h, vec1.y}, {0, 0} },
+        { {vec2.x, -h, vec2.y}, {uv.x, 0} },
+        { {vec2.x, h, vec2.y}, {uv.x, uv.y} },
+        { {vec1.x, h, vec1.y}, {0, uv.y} },
+        }, texId));
+
+    return polys;
 }
 
-Triangle3DList Constructor::map(const Vec2List list, float height, size_t texId)
+Poly3DList Constructor::map(const Vec2List list, float height, size_t texId)
 {
-    Triangle3DList tris;
+    Poly3DList polys;
 
     if (list.size() < 2) {
-        return tris;
+        return polys;
     }
 
     Vec2 previous = list.back();
@@ -95,9 +99,9 @@ Triangle3DList Constructor::map(const Vec2List list, float height, size_t texId)
             max.y = current.y;
         }
 
-        Triangle3DList wallTris = wall(previous, current, height, 1);
+        Poly3DList wallPolys = wall(previous, current, height, 1);
 
-        tris.insert(tris.begin(), wallTris.begin(), wallTris.end());
+        polys.insert(polys.begin(), wallPolys.begin(), wallPolys.end());
 
         previous = current;
     }
@@ -107,14 +111,14 @@ Triangle3DList Constructor::map(const Vec2List list, float height, size_t texId)
     Vec2 uv = Vec2((max.x - min.x) * 10 / 512, (max.y - min.y) * 10 / 512);
 
     // Floor
-    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {uv.x, uv.y}}, {{min.x, h, max.y}, {0, uv.y}}, 3 }));
-    tris.push_back(Triangle3({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {uv.x, 0}}, {{max.x, h, max.y}, {uv.x, uv.y}}, 3 }));
+    polys.push_back(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {uv.x, uv.y}}, {{min.x, h, max.y}, {0, uv.y}} }, 3));
+    polys.push_back(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {uv.x, 0}}, {{max.x, h, max.y}, {uv.x, uv.y}} }, 3));
 
     // Ceil
-    tris.push_back(Triangle3({ {{min.x, -h, max.y}, {0, uv.y}}, {{ max.x, -h, max.y}, {uv.x, uv.y}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
-    tris.push_back(Triangle3({ {{max.x, -h, max.y}, {uv.x, uv.y}}, {{ max.x, -h, min.y}, {uv.x, 0}}, {{min.x, -h, min.y}, {0, 0}}, 4 }));
+    polys.push_back(Poly3D({ {{min.x, -h, max.y}, {0, uv.y}}, {{ max.x, -h, max.y}, {uv.x, uv.y}}, {{min.x, -h, min.y}, {0, 0}} }, 4));
+    polys.push_back(Poly3D({ {{max.x, -h, max.y}, {uv.x, uv.y}}, {{ max.x, -h, min.y}, {uv.x, 0}}, {{min.x, -h, min.y}, {0, 0}} }, 4));
 
-    return tris;
+    return polys;
 
 }
 

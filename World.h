@@ -8,13 +8,13 @@
 class World
 {
 public:
-    Triangle3DList tris;
+    Poly3DList polys;
 
     World();
-    void addGeometry(const Triangle3DList& tris);
-    void addGeometry(const Triangle3& tri);
+    void addGeometry(const Poly3DList& polys);
+    void addGeometry(const Poly3D& poly);
     size_t getSize() const;
-    const Triangle3& getTriangle(size_t index) const;
-    Triangle3& getTriangle(size_t index);
+    const Poly3D& getPolygon(size_t index) const;
+    Poly3D& getPolygon(size_t index);
     void clear();
 };

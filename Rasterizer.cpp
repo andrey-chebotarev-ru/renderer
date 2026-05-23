@@ -263,12 +263,12 @@ void Rasterizer::drawSolidSpan(const Span& span, bool zTest, bool transparent)
     }
 }
 
-void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
+bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
 {
     sortTriangle(tri);
 
     if (tri.v0.pos.y == tri.v2.pos.y) {
-        return;
+        return false;
     }
 
     const Vertex2D& top = tri.v0;
@@ -300,14 +300,16 @@ void Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
             bottomEdge.step();
         }
     }
+
+    return true;
 }
 
-void Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
+bool Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
 {
     sortTriangle(tri);
 
     if (tri.v0.pos.y == tri.v2.pos.y) {
-        return;
+        return false;
     }
 
     const Vertex2D& top = tri.v0;
@@ -339,6 +341,36 @@ void Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
             bottomEdge.step();
         }
     }
+
+    return true;
+}
+
+int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest)
+{
+    Triangle2DList tris = poly.triangulate();
+    int count = 0;
+
+    for (int i = 0; i < tris.size(); i++) {
+        if (drawTriangle(tris[i], tex, zTest)) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+int Rasterizer::drawSolidPolygon(const Poly2D& poly, bool zTest, bool transparent)
+{
+    Triangle2DList tris = poly.triangulate();
+    int count = 0;
+
+    for (int i = 0; i < tris.size(); i++) {
+        if (drawSolidTriangle(tris[i], zTest, transparent)) {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 Color Rasterizer::blend(const Color& dstColor, const Color& srcColor, float alpha)

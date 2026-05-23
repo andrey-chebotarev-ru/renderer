@@ -69,79 +69,61 @@ void ViewportClipper::snapToClipSide(Vertex2D& v, ClipSide side, const Viewport&
 	}
 }
 
-Polygon2D ViewportClipper::clipAgainstPlane(const Polygon2D& input, ClipSide side, const Viewport& viewport)
+Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const Viewport& viewport)
 {
-	Polygon2D output;
+	Poly2D out;
 
-	if (input.empty()) {
-		return output;
+	out.fill = in.fill;
+
+	if (in.verts.empty()) {
+		return out;
 	}
 
-	const Vertex2D* previous = &input.back();
+	const Vertex2D* previous = &in.verts.back();
 	bool previousInside = inside(*previous, side, viewport);
 
-	for (const Vertex2D& current : input) {
+	for (const auto& current : in.verts) {
 		bool currentInside = inside(current, side, viewport);
 
 		if (previousInside && currentInside) {
-			output.push_back(current);
+			out.verts.push_back(current);
 		}
 		else if (previousInside && !currentInside) {
-			output.push_back(intersect(*previous, current, side, viewport));
+			out.verts.push_back(intersect(*previous, current, side, viewport));
 		}
 		else if (!previousInside && currentInside) {
-			output.push_back(intersect(*previous, current, side, viewport));
-			output.push_back(current);
+			out.verts.push_back(intersect(*previous, current, side, viewport));
+			out.verts.push_back(current);
 		}
 
 		previous = &current;
 		previousInside = currentInside;
 	}
 
-	return output;
+	return out;
 }
 
-Polygon2D ViewportClipper::clipToViewport(const Polygon2D& input, const Viewport& viewport)
+Poly2D ViewportClipper::clip(const Poly2D& in, const Viewport& viewport)
 {
-	Polygon2D output;
+	Poly2D out;
 
-	output = clipAgainstPlane(input, ClipSide::Left, viewport);
-	output = clipAgainstPlane(output, ClipSide::Right, viewport);
-	output = clipAgainstPlane(output, ClipSide::Top, viewport);
-	output = clipAgainstPlane(output, ClipSide::Bottom, viewport);
+	out = clipAgainstPlane(in, ClipSide::Left, viewport);
+	out = clipAgainstPlane(out, ClipSide::Right, viewport);
+	out = clipAgainstPlane(out, ClipSide::Top, viewport);
+	out = clipAgainstPlane(out, ClipSide::Bottom, viewport);
 
-	return output;
+	return out;
 }
 
-Triangle2DList ViewportClipper::clipTriangle(const Triangle2& triangle, const Viewport& viewport)
+Triangle2DList ViewportClipper::clip(const Triangle2& in, const Viewport& viewport)
 {
-	Triangle2DList clippedTriangles;
-	Polygon2D polygon;
+	Poly2D out(in);
 	
-	clippedTriangles.reserve(5);
-	polygon.reserve(8);
+	out = clip(out, viewport);
 
-	polygon.push_back(triangle.v0);
-	polygon.push_back(triangle.v1);
-	polygon.push_back(triangle.v2);
-
-	polygon = clipToViewport(polygon, viewport);
-
-	if (polygon.size() < 3) {
-		return clippedTriangles;
+	if (out.verts.size() < 3) {
+		return {};
 	}
 
-	for (int i = 1; i < polygon.size() - 1; i++) {
-		Triangle2 clippedTriangle;
-
-		clippedTriangle.v0 = polygon[0];
-		clippedTriangle.v1 = polygon[i];
-		clippedTriangle.v2 = polygon[i + 1];
-
-		clippedTriangle.fill = triangle.fill;
-
-		clippedTriangles.push_back(clippedTriangle);
-	}
-
-	return clippedTriangles;
+	return out.triangulate();
 }
