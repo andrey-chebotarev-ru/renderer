@@ -1,5 +1,6 @@
 #include "BSP.h"
 
+#include <iostream>
 #include <cstdlib>
 
 #include <SDL3/SDL.h>
@@ -169,7 +170,7 @@ int BSP::findSplitter(const Poly3DList& polys)
 
 		if (frontCount > 0 && backCount > 0) {
 			int score = abs((int)(backCount - frontCount));
-			if (score < minScore) {
+			if (score <= minScore) {
 				index = j;
 				minScore = score;
 			}
@@ -177,6 +178,12 @@ int BSP::findSplitter(const Poly3DList& polys)
 	}
 
 	return index;
+}
+
+int BSP::createNode()
+{
+	nodes.push_back(Node());
+	return nodes.size() - 1;
 }
 
 int BSP::addToList(const Poly3D& poly)
@@ -191,51 +198,139 @@ int BSP::addLeaf(const Leaf& leaf)
 	return leaves.size() - 1;
 }
 
+int BSP::createPortal(const Poly3D& poly, int frontIndex, int backIndex)
+{
+	Portal portal;
+	
+	portal.valid = true;
+	portal.poly = poly;
+	portal.frontIndex = frontIndex;
+	portal.backIndex = backIndex;
+	portal.poly.fill = Color();
+
+	portals.push_back(portal);
+
+	std::cout << "Created portal " << (portals.size() - 1) << ": " << frontIndex << " <=> " << backIndex << "\r\n";
+
+	return portals.size() - 1;
+}
+
 void BSP::compile(const Poly3DList& polys)
 {
 	nodes.clear();
 	list.clear();
+	portalLabels.clear();
+	portalPolys.clear();
 
 	BoundingBox worldBBox = makeBoundingBox(polys);
 	PlaneList bounds = getPlanes(worldBBox);
 
-	rootNodeIndex = build(polys, bounds);
+	rootNodeIndex = createNode();
+
+	build(rootNodeIndex, polys, bounds);
 }
 
-void BSP::render(const Camera& cam, World& world)
+void BSP::render(const Camera& cam, World& world, bool populateLeafs)
 {
 	traverse(rootNodeIndex, cam, world);
+	portalPolys.clear();
+	if (populateLeafs) {
+		int currentLeafIdx = leaf(cam);
+		visibleLabels.clear();
+		
+		for (const auto& portal : portals) {
+			if (portal.valid && node(portal.frontIndex).leafIndex != -1 && node(portal.backIndex).leafIndex != -1) {
+				int leafA = node(portal.frontIndex).leafIndex;
+				int leafB = node(portal.backIndex).leafIndex;
+				if (leafA == currentLeafIdx || leafB == currentLeafIdx) {
+					if (leafA != currentLeafIdx) {
+						std::swap(leafA, leafB);
+					}
+					static char buf[256];
+					sprintf_s(buf, "%i <=> %i", leafA, leafB);
+					visibleLabels.push_back(Label(portal.poly.getCenter(), Color(255, 0, 0), buf));
+					portalPolys.push_back(Poly3D::offset(portal.poly, 0.1f));
+				}
+			}
+		}
+	}
 }
 
-int BSP::build(const Poly3DList& polys, const PlaneList& bounds)
+void BSP::build(int nodeIdx, const Poly3DList& polys, const PlaneList& bounds)
 {
 	if (polys.size() == 0) {
-		return -1;
+		return;
 	}
-
-	Node node;
 
 	int splitterIndex = findSplitter(polys);
 
 	if (splitterIndex != -1) {
+
+		int frontNodeIdx = createNode();
+		int backNodeIdx = createNode();
+
+		node(nodeIdx).frontIndex = frontNodeIdx;
+		node(nodeIdx).backIndex = backNodeIdx;
+
 		Poly3DList front, back;
+		
 		Poly3D splitter = polys[splitterIndex];
-		node.leafIndex = -1;
-		node.plane = splitter.getPlane();
+		Plane plane = splitter.getPlane();
+
+		node(nodeIdx).leafIndex = -1;
+		node(nodeIdx).plane = splitter.getPlane();
 		splitter.fill = Color(255, 255, 255);
-		node.coplanar.push_back(addToList(splitter));
+		node(nodeIdx).coplanar.push_back(addToList(splitter));
 
-		node.portal = makePolygonOnPlane(node.plane);
-		node.portal = clipPolygon(node.portal, bounds);
-		node.portal.fill = Color();
-		node.portal.texId = 1;
 
-		Poly3D portal = node.portal;
-		Vec3 normal = portal.getPlane().normal;
-		for (auto& vert : portal.verts) {
-			vert.position += normal * 0.1f;
+		/*
+		* 
+		* Портал является границей между листьями BSP-дерева - выпуклого объема и лежит на плоскости сплиттера
+		* При создании он ссылается на дочерние ноды, которые еще не обработаны
+		* Следовательно, эти ноды не являются финальными и могут в дальнейшем разделять пространство,
+		* поэтому нужно 
+
+		*  
+		*/
+
+		// Пройдемся по всем порталам которые создала родительская нода и попробуем их разделить плоскостью сплиттера
+		// Классифицируем и обновим его 
+		for (int portalIdx : node(nodeIdx).portals) {
+			SplittedPolygon splittedPortalPoly = splitAgainstPlane(portal(portalIdx).poly, splitter.getPlane());
+
+			portal(portalIdx).valid = false;
+			int otherIdx = portal(portalIdx).frontIndex == nodeIdx ? portal(portalIdx).backIndex : portal(portalIdx).frontIndex;
+			
+			if (splittedPortalPoly.front.isValid()) {
+				int portalIdx = createPortal(splittedPortalPoly.front, frontNodeIdx, otherIdx);
+				node(frontNodeIdx).portals.push_back(portalIdx);
+				node(otherIdx).portals.push_back(portalIdx);
+			}
+
+			if (splittedPortalPoly.back.isValid()) {
+				int portalIdx = createPortal(splittedPortalPoly.back, backNodeIdx, otherIdx);
+				node(backNodeIdx).portals.push_back(portalIdx);
+				node(otherIdx).portals.push_back(portalIdx);
+			}
+
+			// В теории невозможно
+			if (splittedPortalPoly.coplanar.isValid()) {
+				int portalIdx = createPortal(splittedPortalPoly.coplanar, frontNodeIdx, otherIdx);
+				node(frontNodeIdx).portals.push_back(portalIdx);
+				node(otherIdx).portals.push_back(portalIdx);
+			}
+
 		}
-		portalPolys.push_back(portal);
+
+		// Создаем портал используя плоскость сплиттера
+		Poly3D portalPoly = makePolygonOnPlane(plane);
+		portalPoly = clipPolygon(portalPoly, bounds);
+
+		// Новый портал сразу попадает в оба списка дочерних узлов для возможного будущего разделения
+		int portalIdx = createPortal(portalPoly, frontNodeIdx, backNodeIdx);
+		node(frontNodeIdx).portals.push_back(portalIdx);
+		node(backNodeIdx).portals.push_back(portalIdx);
+
 
 		for (int i = 0; i < polys.size(); i++) {
 
@@ -244,12 +339,12 @@ int BSP::build(const Poly3DList& polys, const PlaneList& bounds)
 			}
 
 			
-			SplittedPolygon splittedPoly = splitAgainstPlane(polys[i], node.plane);
+			SplittedPolygon splittedPoly = splitAgainstPlane(polys[i], nodes[nodeIdx].plane);
 
 			if (splittedPoly.result == SplitResult::Coplanar) {
 				Poly3D coplanarPoly = splittedPoly.coplanar;
 				coplanarPoly.fill = Color(255, 255, 255);
-				node.coplanar.push_back(addToList(coplanarPoly));
+				nodes[nodeIdx].coplanar.push_back(addToList(coplanarPoly));
 			}
 			else if (splittedPoly.result == SplitResult::Front) {
 				front.push_back(splittedPoly.front);
@@ -264,21 +359,19 @@ int BSP::build(const Poly3DList& polys, const PlaneList& bounds)
 		}
 
 		PlaneList frontBounds = bounds;
-		frontBounds.push_back(node.plane);
+		frontBounds.push_back(nodes[nodeIdx].plane);
 
 		PlaneList backBounds = bounds;
-		backBounds.push_back(node.plane.flip());
+		backBounds.push_back(nodes[nodeIdx].plane.flip());
 
-
-		node.frontIndex = build(front, frontBounds);
-		node.backIndex = build(back, backBounds);
-
+		build(frontNodeIdx, front, frontBounds);
+		build(backNodeIdx, back, backBounds);
 	}
 	else {
 		Leaf leaf;
 
-		node.frontIndex = -1;
-		node.backIndex = -1;
+		nodes[nodeIdx].frontIndex = -1;
+		nodes[nodeIdx].backIndex = -1;
 
 		Color c;
 		for (int j = 0; j < polys.size(); j++) {
@@ -287,12 +380,8 @@ int BSP::build(const Poly3DList& polys, const PlaneList& bounds)
 			leaf.indices.push_back(addToList(poly));
 		}
 
-		node.leafIndex = addLeaf(leaf);
+		nodes[nodeIdx].leafIndex = addLeaf(leaf);
 	}
-
-	nodes.push_back(node);
-
-	return nodes.size() - 1;
 }
 
 void BSP::traverse(int nodeIndex, const Camera& cam, World& world)

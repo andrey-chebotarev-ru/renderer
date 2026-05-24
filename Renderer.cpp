@@ -245,3 +245,20 @@ void Renderer::drawScene(const World& world, const std::vector<Model>& models, c
     
     
 }
+
+void Renderer::drawLabel(const Label& label, const Camera& cam)
+{
+    Vec3 pos = label.pos;
+
+    // Transform
+    pos = transformToView(pos, cam);
+
+    if (pos.z < 1.0f) {
+        return;
+    }
+
+    // Projection
+    Vec2 proj = project(pos);
+
+    debug.drawText(proj.x, proj.y, label.color, label.label);
+}

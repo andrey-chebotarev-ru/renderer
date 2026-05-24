@@ -3,6 +3,8 @@
 #include <string>
 #include <SDL3/SDL.h>
 
+#include "Color.h"
+
 class Debug
 {
 public:
@@ -11,7 +13,7 @@ public:
 		: renderer(renderer) {
 	}
 
-	void drawText(int x, int y, std::string text) const;
+	void drawText(int x, int y, const Color& color, std::string text) const;
 
 private:
 	SDL_Renderer** renderer;

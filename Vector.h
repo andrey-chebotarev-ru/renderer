@@ -43,42 +43,36 @@ struct Vec2
     Vec2& operator += (const Vec2& vec) {
         x += vec.x;
         y += vec.y;
-
         return *this;
     }
 
     Vec2& operator -= (const Vec2& vec) {
         x -= vec.x;
         y -= vec.y;
-
         return *this;
     }
 
     Vec2& operator *= (const Vec2& vec) {
         x *= vec.x;
         y *= vec.y;
-
         return *this;
     }
 
     Vec2& operator *= (float val) {
         x *= val;
         y *= val;
-
         return *this;
     }
 
     Vec2& operator /= (const Vec2& vec) {
         x /= vec.x;
         y /= vec.y;
-
         return *this;
     }
 
     Vec2& operator /= (float val) {
         x /= val;
         y /= val;
-
         return *this;
     }
 
@@ -154,6 +148,13 @@ struct Vec3
         x /= vec.x;
         y /= vec.y;
         z /= vec.z;
+        return *this;
+    }
+
+    Vec3& operator /= (float val) {
+        x /= val;
+        y /= val;
+        z /= val;
         return *this;
     }
 

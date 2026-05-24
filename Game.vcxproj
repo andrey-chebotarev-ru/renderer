@@ -84,7 +84,7 @@
       <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -100,7 +100,7 @@
       <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -114,7 +114,7 @@
       <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(SolutionDir)SDL3\lib\x64\SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -131,7 +131,7 @@
       <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>

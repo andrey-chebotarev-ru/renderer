@@ -45,7 +45,7 @@ public:
     void setTexture(const Texture& texture, size_t index);
     
     void drawScene(const World& world, const std::vector<Model>& models, const Poly3DList& extras, const Camera& cam, Data& data);
-
+    void drawLabel(const Label& label, const Camera& cam);
     
 
 private:
@@ -81,5 +81,6 @@ private:
     int drawModel(const Model& model, const Camera& cam);
     int drawWorld(const World& world, const Camera& cam, bool fill);
     int drawExtras(const Poly3DList& polys, const Camera& cam);
+    
 };
 

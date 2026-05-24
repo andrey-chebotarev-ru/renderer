@@ -35,7 +35,9 @@ static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Co
 static World world;
 static BSP bsp;
 static bool fill = false;
-static bool portals = false;
+static bool drawPortals = false;
+
+static bool fullscreen = false;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
 
@@ -81,7 +83,7 @@ void freeTexture()
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
    
-
+    // v1
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -98,6 +100,24 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     };
 
     /*
+    // v3
+    Vec2List points = {
+        {0, 0},
+        {100, 0},
+        {100, 100},
+        {100, 0},
+        {200, 0},
+        {200, 100},
+        {200, 200},
+        {150, 200},
+        {200, 200},
+        {200, 400},
+        {0, 400},
+    };
+    */
+
+    /*
+    * // v2
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -111,6 +131,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {0, 250}
     };
     */
+
 
     Poly3DList list = Constructor::map(points, 100, 1);
 
@@ -131,8 +152,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
-    windowWidth = displayMode->w;
-    windowHeight = displayMode->h;
+    if (fullscreen) {
+        windowWidth = displayMode->w;
+        windowHeight = displayMode->h;
+    }
+    else {
+        windowWidth = VIEWPORT_WIDTH;
+        windowHeight = VIEWPORT_HEIGHT;
+    }
 
 
     if (!SDL_CreateWindowAndRenderer("Game", windowWidth, windowHeight, SDL_WINDOW_RESIZABLE, &window, &sdlRenderer)) {
@@ -155,7 +182,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
    
     SDL_SetWindowRelativeMouseMode(window, true);
-    SDL_SetWindowFullscreen(window, true);
+
+    if (fullscreen) {
+        SDL_SetWindowFullscreen(window, true);
+    }
+    
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -179,7 +210,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
             fill = !fill;
         }
         if (event->key.key == SDLK_F) {
-            portals = !portals;
+            drawPortals = !drawPortals;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -325,12 +356,12 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     {
         
         world.clear();
-        bsp.render(camera, world);
+        bsp.render(camera, world, drawPortals);
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
 
-        gameRenderer.drawScene(world, models, (portals ? bsp.portalPolys : Poly3DList()), camera, data);
+        gameRenderer.drawScene(world, models, (drawPortals ? bsp.portalPolys : Poly3DList()), camera, data);
 
         
 
@@ -353,14 +384,18 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     sprintf_s(buffer, "x: %f y: %f z: %f", camera.position.x, camera.position.y, camera.position.z);
 
 
-    debug.drawText(10, 30, buffer);
-
-
-    SDL_SetRenderDrawColor(sdlRenderer, 51, 102, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "%.2f", fps);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "%i", data.count);
+    if (drawPortals) {
+        for (const auto& label : bsp.visibleLabels)
+        {
+            gameRenderer.drawLabel(label, camera);
+        }
+    }
     
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "%i", bsp.leaf(camera));
+    
+    SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", data.count);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i", bsp.leaf(camera));
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 

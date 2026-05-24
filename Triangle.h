@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "Vertex.h"
 #include "Color.h"
@@ -119,9 +120,34 @@ struct Poly3D
         fill = tri.fill;
     }
 
+    bool isValid() {
+        return verts.size() >= 3;
+    }
+
+    size_t getSize() const {
+        return verts.size();
+    }
+
+    Vec3 getCenter() const;
+    
     Plane getPlane() const;
     Triangle3DList triangulate() const;
+
+    static Poly3D offset(const Poly3D& poly, float distance);
 };
 
 using Poly3DList = std::vector<Poly3D>;
 using Poly2DList = std::vector<Poly2D>;
+
+struct Label
+{
+    Vec3 pos;
+    Color color;
+    const std::string label;
+
+    Label(const Vec3& pos, const Color& color, const std::string& label)
+        : pos(pos), color(color), label(label) {
+    }
+};
+
+using LabelList = std::vector<Label>;
