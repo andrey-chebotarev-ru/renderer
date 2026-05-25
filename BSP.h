@@ -9,6 +9,7 @@
 #include "Math.h"
 #include "World.h"
 #include "Camera.h"
+#include "Geometry.h"
 
 using IndicesList = std::vector<int>;
 
@@ -26,25 +27,12 @@ struct Node
 
 struct Leaf
 {
+	bool visited = false;
+	bool valid = false;
 	IndicesList indices;
 };
 
 using LeafList = std::vector<Leaf>;
-
-enum class Side
-{
-	Front,
-	Back,
-	Coplanar
-};
-
-enum class SplitResult
-{
-	Front,
-	Back,
-	Coplanar,
-	Intersected,
-};
 
 struct Portal
 {
@@ -52,7 +40,10 @@ struct Portal
 	bool valid;
 	int frontIndex;
 	int backIndex;
+	bool visited = false;
 };
+
+
 
 using PortalList = std::vector<Portal>;
 
@@ -61,11 +52,7 @@ struct BoundingBox
 	Vec3 min, max;
 };
 
-struct SplittedPolygon
-{
-	SplitResult result;
-	Poly3D front, back, coplanar;
-};
+
 
 using NodeList = std::vector<Node>;
 
@@ -73,9 +60,9 @@ class BSP
 {
 public:
 	
-	void compile(const Poly3DList& polys);
-	void render(const Camera& cam, World& world, bool populateLabels);
-	int leaf(const Camera& cam);
+	void compile(const Poly3DList& polys, const Vec3& start);
+	void render(const Vec3& pos, World& world, bool populateLabels);
+	int leaf(const Vec3& vec);
 
 	Poly3DList portalPolys;
 	LabelList portalLabels;
@@ -106,8 +93,10 @@ private:
 		return portals[index];
 	}
 
+	void floodFill(int leafId);
 		
 	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
+	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const IndicesList coplanarIdxs);
 
 
 	int addToList(const Poly3D& poly);
@@ -117,15 +106,13 @@ private:
 
 	int findSplitter(const Poly3DList& polys);
 	void build(int parentNodeIdx, const Poly3DList& polys, const PlaneList& bounds);
-	void traverse(int nodeIndex, const Camera& cam, World& world);
-	Side test(const Plane& plane, const Vec3& vec);
-	Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
-	SplittedPolygon splitAgainstPlane(const Poly3D& in, const Plane& plane);
+	void traverse(int nodeIndex, const Vec3& pos, World& world);
+	
 
 	Poly3D makePolygonOnPlane(const Plane& plane);
 	Poly3D clipPolygon(const Poly3D& poly, const PlaneList& bounds);
 
 	BoundingBox makeBoundingBox(const Poly3DList& polys);
-	PlaneList getPlanes(const BoundingBox& bbox); 
+	PlaneList getPlanes(const BoundingBox& bbox);
 };
 

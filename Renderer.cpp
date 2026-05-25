@@ -262,3 +262,21 @@ void Renderer::drawLabel(const Label& label, const Camera& cam)
 
     debug.drawText(proj.x, proj.y, label.color, label.label);
 }
+
+void Renderer::drawScene(const Poly2DList& polys, const Poly2D& cutter)
+{
+    rasterizer.clearBuffers();
+
+    Texture tex = rasterizer.getTexture(1);
+
+    for (int i = 0; i < polys.size(); i++) {
+        if (fill) {
+            rasterizer.drawSolidPolygon(polys[i], false, false);
+        }
+        else {
+            rasterizer.drawPolygon(polys[i], tex, false);
+        }
+    }
+
+    rasterizer.drawSolidPolygon(cutter, false, false);
+}

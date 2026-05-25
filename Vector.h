@@ -83,6 +83,10 @@ struct Vec2
     static Vec2 lerp(const Vec2& v1, const Vec2& v2, float t) {
         return v1 + t * (v2 - v1);
     }
+
+    static Vec2 normalize(const Vec2& v);
+    static float cross(const Vec2& vec1, const Vec2& vec2);
+    static float dot(const Vec2& vec1, const Vec2& vec2);
 };
 
 struct Vec3

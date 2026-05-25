@@ -49,6 +49,42 @@ Triangle3DList Constructor::cube(const Vec2& uv, const Vec3& size, size_t texId)
     return tris;
 }
 
+
+Poly3DList Constructor::polyCube(const Vec2& uv, const Vec3& size, const Transform& tr, size_t texId)
+{
+    Vec3 sideSize = size / 2;
+
+    Poly3DList polys;
+
+    polys.reserve(12);
+
+    polys.push_back(Poly3D({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {1, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
+    polys.push_back(Poly3D({ {{sideSize.x, sideSize.y, -sideSize.z}, {1, 1}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {1, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, texId }));
+    
+    polys.push_back(Poly3D({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, {{sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
+    polys.push_back(Poly3D({ {{sideSize.x, sideSize.y, sideSize.z}, {1, 1}} , {{sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, texId }));
+
+    polys.push_back(Poly3D({ {{ -sideSize.x, -sideSize.y, sideSize.z }, {0, 0}} , {{sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {0, 1}}, texId }));
+    polys.push_back(Poly3D({ {{-sideSize.x, sideSize.y, sideSize.z}, {0, 1}} , {{sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {1, 1}}, texId }));
+    
+    polys.push_back(Poly3D({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}} , {{-sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, texId }));
+    polys.push_back(Poly3D({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {1, 1}}, texId }));
+
+    polys.push_back(Poly3D({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, texId }));
+    polys.push_back(Poly3D({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, 1}}, {{-sideSize.x, sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {1, 1}}, texId }));
+    
+    polys.push_back(Poly3D({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 1}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
+    polys.push_back(Poly3D({ {{sideSize.x, -sideSize.y, sideSize.z}, {1, 1}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {1, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 1}}, texId }));
+
+    for (int j = 0; j < polys.size(); j++) {
+        for (int i = 0; i < polys[j].getSize(); i++) {
+            polys[j].verts[i].position = Math::transform(polys[j].verts[i].position, tr);
+        }
+    }
+
+    return polys;
+}
+
 Poly3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height, size_t texId)
 {
     float h = height / 2;

@@ -22,7 +22,7 @@ struct Span
     Color fill;
 };
 
-struct Edge2D
+struct EdgeStep2D
 {
 public:
 
@@ -91,8 +91,8 @@ private:
 
     Debug debug;
 
-    Edge2D makeEdge(const Vertex2D& a, const Vertex2D& b);
-    Span makeSpan(int y, const Edge2D& a, const Edge2D& b);
+    EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
+    Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
     void drawSpan(const Span& span, const Texture& tex, bool zTest);
     void drawSolidSpan(const Span& span, bool zTest, bool transparent);

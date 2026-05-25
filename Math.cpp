@@ -2,6 +2,19 @@
 
 const float Math::pi = 3.1415f;
 
+Vec2 Math::rotate(const Vec2& vec, float roll)
+{
+    Vec2 out;
+
+    float c = cosf(roll);
+    float s = sinf(roll);
+
+    out.x = vec.x * c - vec.y * s;
+    out.y = vec.x * s + vec.y * c;
+    
+    return out;
+}
+
 Vec3 Math::rotateY(const Vec3& vec, float yaw)
 {
     Vec3 out;
@@ -74,4 +87,9 @@ Vec3 Math::transform(const Vec3& vec, const Transform& tr)
 float Math::distanceToPlane(const Plane& plane, const Vec3& vec)
 {
     return Vec3::dot(plane.normal, vec) - plane.distance;
+}
+
+float Math::distanceToLine(const Line& line, const Vec2& vec)
+{
+    return Vec2::dot(line.normal, vec) - line.distance;
 }

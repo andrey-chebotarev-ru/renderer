@@ -75,10 +75,12 @@ public:
         return a + (b - a) * t;
     }
 
+    static Vec2 rotate(const Vec2& vec, float roll);
     static Vec3 rotateY(const Vec3& vec, float yaw);
     static Vec3 rotateX(const Vec3& vec, float pitch);
     static Vec3 rotateZ(const Vec3& vec, float roll);
     static Vec3 rotate(const Vec3& vec, const Vec3& rot);
     static Vec3 transform(const Vec3& vec, const Transform& tr);
     static float distanceToPlane(const Plane& plane, const Vec3& vec);
+    static float distanceToLine(const Line& line, const Vec2& vec);
 };

@@ -48,6 +48,8 @@ public:
     void drawLabel(const Label& label, const Camera& cam);
     
 
+    void drawScene(const Poly2DList& polys, const Poly2D& cutter);
+
 private:
     static const float nearPlaneDistance, farPlaneDistance;
     int screenWidth, screenHeight;
@@ -81,6 +83,9 @@ private:
     int drawModel(const Model& model, const Camera& cam);
     int drawWorld(const World& world, const Camera& cam, bool fill);
     int drawExtras(const Poly3DList& polys, const Camera& cam);
+
+
+
     
 };
 

@@ -1,4 +1,5 @@
 #include "Renderer.h";
+#include "Geometry.h"
 
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 
@@ -18,6 +19,7 @@
 #include "World.h"
 #include "BSP.h"
 #include "Debug.h"
+#include "Math.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -37,7 +39,7 @@ static BSP bsp;
 static bool fill = false;
 static bool drawPortals = false;
 
-static bool fullscreen = false;
+static bool fullscreen = true;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
 
@@ -76,14 +78,11 @@ void freeTexture()
     }
 }
 
-
-
-
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
-   
     // v1
+    
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -96,8 +95,19 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {450, 60},
         {500, 110},
         {300, 200},
-        {-50, 200}
+        {0, 200}
     };
+    
+
+    /*
+    * //v4
+    Vec2List points = {
+        {0, 0},
+        {100, 0},
+        {100, 100},
+        {0, 100},
+    };
+    */
 
     /*
     // v3
@@ -132,10 +142,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     };
     */
 
-
     Poly3DList list = Constructor::map(points, 100, 1);
+    //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
+    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 140)), 5);
 
-    bsp.compile(list);
+    list.insert(list.end(), cube.begin(), cube.end());
+    //list.insert(list.end(), wall.begin(), wall.end());
+
+    bsp.compile(list, Vec3(20, 0, 20));
 
     camera.position = Vec3(20, 0, 20);
     //camera.yaw = 0;
@@ -152,6 +166,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
+    /*
     if (fullscreen) {
         windowWidth = displayMode->w;
         windowHeight = displayMode->h;
@@ -160,6 +175,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         windowWidth = VIEWPORT_WIDTH;
         windowHeight = VIEWPORT_HEIGHT;
     }
+    */
+
+    windowWidth = VIEWPORT_WIDTH;
+    windowHeight = VIEWPORT_HEIGHT;
 
 
     if (!SDL_CreateWindowAndRenderer("Game", windowWidth, windowHeight, SDL_WINDOW_RESIZABLE, &window, &sdlRenderer)) {
@@ -177,7 +196,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
 
     
-    if (!loadTexture("wall.jpg", 1) || !loadTexture("box.jpg", 2) || !loadTexture("floor.jpg", 3) || !loadTexture("ceil.jpg", 4)) {
+    if (!loadTexture("wall.jpg", 1) || !loadTexture("box.jpg", 2) || !loadTexture("floor.jpg", 3) || !loadTexture("ceil.jpg", 4) || !loadTexture("box2.jpg", 5)) {
         return SDL_APP_FAILURE;
     }
    
@@ -263,12 +282,15 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
         if (event->button.button == SDL_BUTTON_RIGHT) {
         }
-        break;
-    case SDL_EVENT_MOUSE_BUTTON_UP:
-        if (event->button.button == SDL_BUTTON_RIGHT) {
+        if (event->button.button == SDL_BUTTON_LEFT) {
         }
         break;
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+        break;
+        
     case SDL_EVENT_MOUSE_MOTION:
+        break;
+    case SDL_EVENT_MOUSE_WHEEL:
         break;
     }
     return SDL_APP_CONTINUE;  /* carry on with the program! */
@@ -289,6 +311,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     float dx, dy;
     float sensitivity = 0.1;
     SDL_GetRelativeMouseState(&dx, &dy);
+    
+
 
     static int frames = 0;
     static double fpsTimer = 0.0;
@@ -352,17 +376,16 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
     Data data;
 
+
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
-        
         world.clear();
-        bsp.render(camera, world, drawPortals);
+        bsp.render(camera.position, world, drawPortals);
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
 
         gameRenderer.drawScene(world, models, (drawPortals ? bsp.portalPolys : Poly3DList()), camera, data);
-
         
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
@@ -379,11 +402,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     dst_rect.h = windowHeight;
     SDL_RenderTexture(sdlRenderer, sdlFramebufferTexture, NULL, &dst_rect);
 
-
-    char buffer[256];
-    sprintf_s(buffer, "x: %f y: %f z: %f", camera.position.x, camera.position.y, camera.position.z);
-
-
     if (drawPortals) {
         for (const auto& label : bsp.visibleLabels)
         {
@@ -395,7 +413,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", data.count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i", bsp.leaf(camera));
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i", bsp.leaf(camera.position));
+
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 

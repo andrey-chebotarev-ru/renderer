@@ -46,9 +46,9 @@ int Rasterizer::crossProduct(Vec2 v1, Vec2 v2)
     return v1.x * v2.y - v1.y * v2.x;
 }
 
-Edge2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
+EdgeStep2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
 {
-    Edge2D edge;
+    EdgeStep2D edge;
 
     edge.y1 = std::ceilf(a.pos.y);
     edge.y2 = std::ceilf(b.pos.y);
@@ -69,12 +69,12 @@ Edge2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
     return edge;
 }
 
-Span Rasterizer::makeSpan(int y, const Edge2D& a, const Edge2D& b)
+Span Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
 {
     Span span;
 
-    const Edge2D* left = &a;
-    const Edge2D* right = &b;
+    const EdgeStep2D* left = &a;
+    const EdgeStep2D* right = &b;
 
     if (left->x > right->x) {
         std::swap(left, right);
@@ -275,10 +275,10 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
     const Vertex2D& middle = tri.v1;
     const Vertex2D& bottom = tri.v2;
 
-    Edge2D longEdge = makeEdge(top, bottom);
+    EdgeStep2D longEdge = makeEdge(top, bottom);
 
     if (middle.pos.y != top.pos.y) {
-        Edge2D topEdge = makeEdge(top, middle);
+        EdgeStep2D topEdge = makeEdge(top, middle);
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
@@ -290,7 +290,7 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
     }
 
     if (middle.pos.y != bottom.pos.y) {
-        Edge2D bottomEdge = makeEdge(middle, bottom);
+        EdgeStep2D bottomEdge = makeEdge(middle, bottom);
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
@@ -316,10 +316,10 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
     const Vertex2D& middle = tri.v1;
     const Vertex2D& bottom = tri.v2;
 
-    Edge2D longEdge = makeEdge(top, bottom);
+    EdgeStep2D longEdge = makeEdge(top, bottom);
 
     if (middle.pos.y != top.pos.y) {
-        Edge2D topEdge = makeEdge(top, middle);
+        EdgeStep2D topEdge = makeEdge(top, middle);
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
@@ -331,7 +331,7 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent)
     }
 
     if (middle.pos.y != bottom.pos.y) {
-        Edge2D bottomEdge = makeEdge(middle, bottom);
+        EdgeStep2D bottomEdge = makeEdge(middle, bottom);
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);

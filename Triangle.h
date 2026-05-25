@@ -12,14 +12,29 @@ struct Plane
     float distance;
 
     Plane(const Vec3& normal, float distance)
-        : normal(normal), distance(distance)
-    {
+        : normal(normal), distance(distance) {
     }
 
     Plane() {}
 
     Plane flip() const {
         return Plane(-normal, -distance);
+    }
+};
+
+struct Line
+{
+    Vec2 normal;
+    float distance;
+
+    Line() {}
+
+    Line(const Vec2& normal, float distance)
+        : normal(normal), distance(distance) {
+    }
+
+    Line flip() const {
+        return Line(-normal, -distance);
     }
 };
 
@@ -52,7 +67,6 @@ struct Triangle3
     
     Plane getPlane() const;
 
-
     size_t texId;
     Color fill;
 
@@ -63,14 +77,25 @@ struct Triangle3
 using Triangle2DList = std::vector<Triangle2>;
 using Triangle3DList = std::vector<Triangle3>;
 
-using Polygon2D = std::vector<Vertex2D>;
-using Polygon3D = std::vector<Vertex3D>;
-
 using PlaneList = std::vector<Plane>;
 
 using Vertex3DList = std::vector<Vertex3D>;
 using Vertex2DList = std::vector<Vertex2D>;
 
+struct Edge2D
+{
+    Vertex2D vert1, vert2;
+    Line line;
+
+    Edge2D(const Vertex2D& vert1, const Vertex2D& vert2);
+};
+
+struct Edge3D
+{
+    Vertex3D vert1, vert2;
+    
+    Edge3D(const Vertex3D& vert1, const Vertex3D& vert2);
+};
 
 struct Poly2D
 {
@@ -94,7 +119,22 @@ struct Poly2D
         fill = tri.fill;
     }
 
+    bool isValid() const {
+        return verts.size() >= 3;
+    }
+
+    size_t getSize() const {
+        return verts.size();
+    }
+
+    Edge2D getEdge(int idx) const;
+
+    float getSignedArea() const;
+    float getArea() const;
+
+
     Triangle2DList triangulate() const;
+    
 };
 
 struct Poly3D
@@ -120,13 +160,18 @@ struct Poly3D
         fill = tri.fill;
     }
 
-    bool isValid() {
+    bool isValid() const {
         return verts.size() >= 3;
     }
 
     size_t getSize() const {
         return verts.size();
     }
+
+    Edge3D getEdge(int idx) const;
+
+    float getSignedArea() const;
+    float getArea() const;
 
     Vec3 getCenter() const;
     

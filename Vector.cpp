@@ -1,9 +1,25 @@
 #include "Vector.h"
 
+Vec2 Vec2::normalize(const Vec2& v)
+{
+    float invLength = 1.0f / sqrtf(v.x * v.x + v.y * v.y);
+    return Vec2(v.x * invLength, v.y * invLength);
+}
+
+
+float Vec2::cross(const Vec2& vec1, const Vec2& vec2)
+{
+    return vec1.x * vec2.y - vec2.x * vec1.y;
+}
+
+float Vec2::dot(const Vec2& vec1, const Vec2& vec2)
+{
+    return vec1.x * vec2.x + vec1.y * vec2.y;
+}
+
 Vec3 Vec3::normalize(const Vec3& v)
 {
     float invLength = 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-
     return Vec3(v.x * invLength, v.y * invLength, v.z * invLength);
 }
 
