@@ -42,12 +42,12 @@ int BSP::findSplitter(const Poly3DList& polys)
 		return index;
 	}
 
-	int minScore = polys.size() * 2;
+	int minScore = polys.size() * 20;
 
 	for (int j = 0; j < polys.size(); j++) {
 		const Poly3D& splitter = polys[j];
 
-		int frontCount = 0, backCount = 0;
+		int frontCount = 0, backCount = 0, splitCount = 0;
 
 		for (int i = 0; i < polys.size(); i++) {
 			if (i == j) {
@@ -65,12 +65,16 @@ int BSP::findSplitter(const Poly3DList& polys)
 			else if (splitted.result == SplitResult3D::Intersected) {
 				frontCount++;
 				backCount++;
+				splitCount++;
 			}
 		}
 
 		if (frontCount > 0 && backCount > 0) {
-			int score = abs((int)(backCount - frontCount));
-			if (score <= minScore) {
+			int score = splitCount * 8 + abs(backCount - frontCount);
+			if (splitter.getPlane().isAxial()) {
+				score -= 4;
+			}
+			if (score < minScore) {
 				index = j;
 				minScore = score;
 			}
@@ -128,19 +132,37 @@ void BSP::compile(const Poly3DList& polys, const Vec3& start)
 	rootNodeIndex = createNode();
 
 	build(rootNodeIndex, polys, bounds);
-	floodFill(leaf(start));
+	floodFill(getLeafIdx(start));
+
+	for (int i = 0; i < nodePolys.size(); i++) {
+		traceNodePoly(nodePolys[i], rootNodeIndex);
+	}
 }
 
-void BSP::render(const Vec3& pos, World& world, bool populateLeafs)
+void BSP::render(const Vec3& pos, World& world, bool populateLeafs, bool renderOnlyCurrentLeaf)
 {
-	traverse(rootNodeIndex, pos, world);
+	if (renderOnlyCurrentLeaf) {
+		int currentLeafIdx = getLeafIdx(pos);
+		Leaf leaf2 = leaf(currentLeafIdx);
+
+		if (leaf2.valid) {
+			for (int index : leaf2.indices) {
+				world.addGeometry(list[index]);
+			}
+		}
+	}
+	else {
+		traverse(rootNodeIndex, pos, world);
+	}
+	
 	portalPolys.clear();
 	if (populateLeafs) {
-		int currentLeafIdx = leaf(pos);
+		int currentLeafIdx = getLeafIdx(pos);
 		visibleLabels.clear();
 		
+		int i = 0;
 		for (const auto& portal : portals) {
-			if (portal.valid && node(portal.frontIndex).leafIndex != -1 && node(portal.backIndex).leafIndex != -1) {
+			if (portal.valid && node(portal.frontIndex).leafIndex != -1 && node(portal.backIndex).leafIndex != -1 && portal.visited) {
 				int leafA = node(portal.frontIndex).leafIndex;
 				int leafB = node(portal.backIndex).leafIndex;
 				if (leafA == currentLeafIdx || leafB == currentLeafIdx) {
@@ -148,11 +170,12 @@ void BSP::render(const Vec3& pos, World& world, bool populateLeafs)
 						std::swap(leafA, leafB);
 					}
 					static char buf[256];
-					sprintf_s(buf, "%i <=> %i", leafA, leafB);
+					sprintf_s(buf, "#%i %i <=> %i", i, leafA, leafB);
 					visibleLabels.push_back(Label(portal.poly.getCenter(), Color(255, 0, 0), buf));
 					portalPolys.push_back(Poly3D::offset(portal.poly, 0.1f));
 				}
 			}
+			i++;
 		}
 	}
 }
@@ -265,6 +288,17 @@ void BSP::build(int nodeIdx, const Poly3DList& polys, const PlaneList& bounds)
 		PlaneList backBounds = bounds;
 		backBounds.push_back(nodes[nodeIdx].plane.flip());
 
+		// Добавляем все сплиттер/coplanar в общий список для дальнейшей нарезки отдельным методом
+		for (auto idx : node(nodeIdx).coplanar) {
+			NodePoly nodePoly;
+			nodePoly.poly = list[idx];
+			nodePoly.nodeIdx = nodeIdx;
+			nodePolys.push_back(nodePoly);
+		}
+		// И очищаем список
+		node(nodeIdx).coplanar.clear();
+
+
 		build(frontNodeIdx, front, frontBounds);
 		build(backNodeIdx, back, backBounds);
 	}
@@ -277,11 +311,18 @@ void BSP::build(int nodeIdx, const Poly3DList& polys, const PlaneList& bounds)
 		Color c;
 		for (int j = 0; j < polys.size(); j++) {
 			Poly3D poly = polys[j];
+
 			poly.fill = changeColor(c, j);
 			leaf.indices.push_back(addToList(poly));
 		}
 
 		nodes[nodeIdx].leafIndex = addLeaf(leaf);
+
+		for (int j = 0; j < polys.size(); j++) {
+			if (polys[j].texId == 5) {
+				std::cout << "Poly in leaf " << nodes[nodeIdx].leafIndex << "\r\n";
+			}
+		}
 	}
 }
 
@@ -296,6 +337,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 	if (node.leafIndex != -1)
 	{
 		Leaf leaf = leaves[node.leafIndex];
+
 		if (leaf.valid) {
 			for (int index : leaf.indices) {
 				world.addGeometry(list[index]);
@@ -304,6 +346,15 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 	}
 	else
 	{
+		/*
+		if (nodes[node.frontIndex].leafIndex != -1 && nodes[node.backIndex].leafIndex != -1) {
+
+			if (leaf(nodes[node.frontIndex].leafIndex).valid && !leaf(nodes[node.backIndex].leafIndex).valid) {
+
+				return;
+			}
+		}
+		*/
 		Side side = Geometry::test(node.plane, pos);
 
 		if (side == Side::Front) {
@@ -332,7 +383,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 	}
 }
 
-int BSP::leaf(const Vec3& vec)
+int BSP::getLeafIdx(const Vec3& vec)
 {
 	int nodeId = rootNodeIndex;
 	while (true) {
@@ -506,8 +557,8 @@ Poly3DList BSP::createPortalPolys(const Plane& plane, const PlaneList& bounds, c
 		Poly2DList preservedPolys2D = portalPolys2D;
 		portalPolys2D.clear();
 		for (const auto& poly2D : preservedPolys2D) {
-			auto result = Geometry::subtract(poly2D, coplanarPoly2D, 10.0f);
-			portalPolys2D.insert(portalPolys2D.begin(), result.begin(), result.end());
+			auto result = Geometry::subtract(poly2D, coplanarPoly2D, 50.0f);
+			portalPolys2D.insert(portalPolys2D.end(), result.begin(), result.end());
 		}
 	}
 
@@ -548,4 +599,41 @@ void BSP::floodFill(int leafId)
 		}
 	}
 
+}
+
+void BSP::traceNodePoly(const NodePoly& nodePoly, int nodeIdx)
+{
+	if (node(nodeIdx).leafIndex != -1)
+	{
+		Vec3 center = nodePoly.poly.getCenter();
+		Vec3 normal = nodePoly.poly.getPlane().normal;
+		int frontLeaf = getLeafIdx(center + normal * 0.1f);
+		int backLeaf = getLeafIdx(center - normal * 0.1f);
+
+		if (leaves[frontLeaf].valid || leaves[backLeaf].valid) {
+			int polyIdx = addToList(nodePoly.poly);
+			node(nodePoly.nodeIdx).coplanar.push_back(polyIdx);
+			//leaves[frontLeaf].indices.push_back(polyIdx);
+			//leaves[backLeaf].indices.push_back(polyIdx);
+		}
+		
+		return;
+	}
+
+	SplittedPoly3D splittedPoly = Geometry::splitAgainstPlane(nodePoly.poly, node(nodeIdx).plane);
+
+	if (splittedPoly.result == SplitResult3D::Coplanar)
+	{
+		traceNodePoly(nodePoly, node(nodeIdx).frontIndex);
+		traceNodePoly(nodePoly, node(nodeIdx).backIndex);
+	}
+	else {
+		if (splittedPoly.front.isValid()) {
+			
+			traceNodePoly(NodePoly(splittedPoly.front, nodePoly.nodeIdx), node(nodeIdx).frontIndex);
+		}
+		if (splittedPoly.back.isValid()) {
+			traceNodePoly(NodePoly(splittedPoly.back, nodePoly.nodeIdx), node(nodeIdx).backIndex);
+		}
+	}
 }

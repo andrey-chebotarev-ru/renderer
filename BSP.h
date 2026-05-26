@@ -27,7 +27,6 @@ struct Node
 
 struct Leaf
 {
-	bool visited = false;
 	bool valid = false;
 	IndicesList indices;
 };
@@ -43,7 +42,19 @@ struct Portal
 	bool visited = false;
 };
 
+struct NodePoly
+{
+	Poly3D poly;
+	int nodeIdx;
 
+	NodePoly() {}
+
+	NodePoly(const Poly3D& poly, int nodeIdx)
+	: poly(poly), nodeIdx(nodeIdx) {
+	}
+};
+
+using NodePolyList = std::vector<NodePoly>;
 
 using PortalList = std::vector<Portal>;
 
@@ -61,12 +72,18 @@ class BSP
 public:
 	
 	void compile(const Poly3DList& polys, const Vec3& start);
-	void render(const Vec3& pos, World& world, bool populateLabels);
-	int leaf(const Vec3& vec);
+	void render(const Vec3& pos, World& world, bool populateLabels, bool renderOnlyCurrentLeaf);
+	int getLeafIdx(const Vec3& vec);
 
 	Poly3DList portalPolys;
 	LabelList portalLabels;
 	LabelList visibleLabels;
+
+	NodePolyList nodePolys;
+
+	const Leaf& leaf(int index) const {
+		return leaves[index];
+	}
 
 private:
 	int rootNodeIndex = 0;
@@ -94,7 +111,8 @@ private:
 	}
 
 	void floodFill(int leafId);
-		
+	void traceNodePoly(const NodePoly& nodePoly, int nodeIdx);
+
 	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
 	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const IndicesList coplanarIdxs);
 

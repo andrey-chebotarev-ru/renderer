@@ -108,6 +108,7 @@ float Poly3D::getArea() const
 
 Vec3 Poly3D::getCenter() const
 {
+	/*
 	Vec3 center = Vec3(0.0f, 0.0f, 0.0f);
 
 	for (const auto& vert : verts) {
@@ -117,9 +118,8 @@ Vec3 Poly3D::getCenter() const
 	center /= (float)getSize();
 
 	return center;
+	*/
 
-
-	/*
 	Vec3 centroid = Vec3(0, 0, 0);
 	float totalArea = 0.0f;
 
@@ -138,7 +138,7 @@ Vec3 Poly3D::getCenter() const
 	}
 
 	return centroid / totalArea;
-	*/
+	
 }
 
 Triangle3DList Poly3D::triangulate() const

@@ -17,6 +17,23 @@ struct Plane
 
     Plane() {}
 
+    bool isAxial()
+    {
+        const float epsilon = 0.0001f;
+        int zeroesCount = 0;
+        if (fabs(normal.x) < epsilon) {
+            zeroesCount++;
+        }
+        if (fabs(normal.y) < epsilon) {
+            zeroesCount++;
+        }
+        if (fabs(normal.z) < epsilon) {
+            zeroesCount++;
+        }
+
+        return zeroesCount == 2;
+    }
+
     Plane flip() const {
         return Plane(-normal, -distance);
     }

@@ -82,7 +82,7 @@ void freeTexture()
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
     // v1
-    
+    /*
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -97,7 +97,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {300, 200},
         {0, 200}
     };
-    
+    */
 
     /*
     * //v4
@@ -109,8 +109,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     };
     */
 
-    /*
+
     // v3
+   /*
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -126,8 +127,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     };
     */
 
-    /*
-    * // v2
+     // v2
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -140,7 +140,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {50, 400},
         {0, 250}
     };
-    */
+    
 
     Poly3DList list = Constructor::map(points, 100, 1);
     //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
@@ -212,6 +212,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 static float boxYawSpeed = 0, boxPitchSpeed = 0;
 static bool boxMode = false;
+static bool renderOnlyCurrentLeaf = false;
 
 static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
@@ -227,6 +228,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_Q) {
             fill = !fill;
+        }
+        if (event->key.key == SDLK_R) {
+            renderOnlyCurrentLeaf = !renderOnlyCurrentLeaf;
         }
         if (event->key.key == SDLK_F) {
             drawPortals = !drawPortals;
@@ -380,7 +384,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
         world.clear();
-        bsp.render(camera.position, world, drawPortals);
+        bsp.render(camera.position, world, drawPortals, renderOnlyCurrentLeaf);
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
@@ -409,11 +413,13 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         }
     }
     
+    int leafIdx = bsp.getLeafIdx(camera.position);
+    auto leaf = bsp.leaf(leafIdx);
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", data.count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i", bsp.leaf(camera.position));
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i (%s)", leafIdx, leaf.valid ? "Inside" : "Void");
 
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
