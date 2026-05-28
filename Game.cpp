@@ -82,7 +82,6 @@ void freeTexture()
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
     // v1
-    /*
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -97,7 +96,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {300, 200},
         {0, 200}
     };
-    */
 
     /*
     * //v4
@@ -111,7 +109,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
     // v3
-   /*
+    /*
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -126,8 +124,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {0, 400},
     };
     */
-
+    
      // v2
+    /*
     Vec2List points = {
         {0, 0},
         {100, 0},
@@ -140,18 +139,75 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {50, 400},
         {0, 250}
     };
-    
+    */
+
+    /*
+    Vec2List points = {
+        {-100, -100},
+        {250, -100},
+        {250, 100},
+        {-100, 100},
+    };
+    */
+
+    Vec2List points2 = {
+        {-200, -200},
+        {350, -200},
+        {350, 200},
+        {-200, 200},
+    };
+
+    Vec2List points3 = {
+        {-400, -400},
+        {550, -400},
+        {550, 400},
+        {-400, 400},
+    };
+
+
+
 
     Poly3DList list = Constructor::map(points, 100, 1);
+    
+    Poly3DList list2 = Constructor::map(points2, 300, 1);
+
+
     //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
-    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 140)), 5);
+    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)), 5);
+
+
+    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(-50, 0, 0)), 5);
+    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(50, 0, 0)), 5);
+    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(150, 0, 0)), 5);
+
+    Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100, 2);
+
+    //list.push_back(poly);
+
+    //list.insert(list.end(), list2.begin(), list2.end());
 
     list.insert(list.end(), cube.begin(), cube.end());
+    list.insert(list.end(), cube1.begin(), cube1.end());
+    list.insert(list.end(), cube2.begin(), cube2.end());
+    list.insert(list.end(), cube3.begin(), cube3.end());
+    
+    
+    
+
+
+    
+
+    //list.insert(list.end(), list3.begin(), list3.end());
+
+   
+    //list.insert(list.end(), wall.begin(), wall.end());
     //list.insert(list.end(), wall.begin(), wall.end());
 
-    bsp.compile(list, Vec3(20, 0, 20));
+    Vec3 pos = { 20, 0, 60 };
 
-    camera.position = Vec3(20, 0, 20);
+    bsp.compile(list, pos);
+
+    camera.position = pos;
     //camera.yaw = 0;
     
     if (!SDL_Init(SDL_INIT_VIDEO)) {

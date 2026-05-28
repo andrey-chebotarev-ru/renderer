@@ -16,8 +16,7 @@ using IndicesList = std::vector<int>;
 struct Node
 {
 	Plane plane;
-	IndicesList coplanar;
-
+	
 	IndicesList portals;
 
 	int leafIndex;
@@ -42,19 +41,25 @@ struct Portal
 	bool visited = false;
 };
 
-struct NodePoly
+enum class WorldPolyType
 {
+	WorldPolyGeometry,
+	WorldPolyBounds,
+	WorldPolyPortal
+};
+
+struct WorldPoly
+{
+	WorldPolyType type;
 	Poly3D poly;
-	int nodeIdx;
 
-	NodePoly() {}
-
-	NodePoly(const Poly3D& poly, int nodeIdx)
-	: poly(poly), nodeIdx(nodeIdx) {
+	WorldPoly() {};
+	WorldPoly(const Poly3D& poly, WorldPolyType type = WorldPolyType::WorldPolyGeometry)
+		: poly(poly), type(type) {
 	}
 };
 
-using NodePolyList = std::vector<NodePoly>;
+using WorldPolyList = std::vector<WorldPoly>;
 
 using PortalList = std::vector<Portal>;
 
@@ -64,6 +69,18 @@ struct BoundingBox
 };
 
 
+struct Context
+{
+	int nodeIdx;
+	PlaneList bounds;
+};
+
+struct Splitter
+{
+	bool valid;
+	Plane plane;
+	int idx;
+};
 
 using NodeList = std::vector<Node>;
 
@@ -79,8 +96,6 @@ public:
 	LabelList portalLabels;
 	LabelList visibleLabels;
 
-	NodePolyList nodePolys;
-
 	const Leaf& leaf(int index) const {
 		return leaves[index];
 	}
@@ -89,7 +104,7 @@ private:
 	int rootNodeIndex = 0;
 	NodeList nodes;
 	LeafList leaves;
-	Poly3DList list;
+	WorldPolyList worldPolys;
 	PortalList portals;
 
 	int createNode();
@@ -111,26 +126,27 @@ private:
 	}
 
 	void floodFill(int leafId);
-	void traceNodePoly(const NodePoly& nodePoly, int nodeIdx);
+	void traceNodePoly(const WorldPoly& nodePoly, int nodeIdx);
 
 	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
-	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const IndicesList coplanarIdxs);
+	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const Poly3DList& coplanarPolys);
 
 
-	int addToList(const Poly3D& poly);
+	int addWorldPoly(const Poly3D& poly, int frontLeafIdx, int backLeafIdx);
 	int addLeaf(const Leaf& leaf);
 
 	Poly3D getFromList(int index);
 
-	int findSplitter(const Poly3DList& polys);
-	void build(int parentNodeIdx, const Poly3DList& polys, const PlaneList& bounds);
+	Splitter findSplitter(const Poly3DList& polys);
+
+	void build(const Poly3DList& polys, const Context& ctx);
 	void traverse(int nodeIndex, const Vec3& pos, World& world);
-	
 
 	Poly3D makePolygonOnPlane(const Plane& plane);
 	Poly3D clipPolygon(const Poly3D& poly, const PlaneList& bounds);
 
 	BoundingBox makeBoundingBox(const Poly3DList& polys);
 	PlaneList getPlanes(const BoundingBox& bbox);
+	WorldPolyList makeWorldBounds(const BoundingBox& bbox, float padding);
 };
 

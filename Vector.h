@@ -46,9 +46,21 @@ struct Vec2
         return *this;
     }
 
+    Vec2& operator += (float val) {
+        x += val;
+        y += val;
+        return *this;
+    }
+
     Vec2& operator -= (const Vec2& vec) {
         x -= vec.x;
         y -= vec.y;
+        return *this;
+    }
+
+    Vec2& operator -= (float val) {
+        x -= val;
+        y -= val;
         return *this;
     }
 
@@ -134,6 +146,13 @@ struct Vec3
         return *this;
     }
 
+    Vec3& operator += (float val) {
+        x += val;
+        y += val;
+        z += val;
+        return *this;
+    }
+
     Vec3& operator -= (const Vec3& vec) {
         x -= vec.x;
         y -= vec.y;
@@ -141,10 +160,24 @@ struct Vec3
         return *this;
     }
 
+    Vec3& operator -= (float val) {
+        x -= val;
+        y -= val;
+        z -= val;
+        return *this;
+    }
+
     Vec3& operator *= (const Vec3& vec) {
         x *= vec.x;
         y *= vec.y;
         z *= vec.z;
+        return *this;
+    }
+
+    Vec3& operator *= (float val) {
+        x *= val;
+        y *= val;
+        z *= val;
         return *this;
     }
 
@@ -160,6 +193,14 @@ struct Vec3
         y /= val;
         z /= val;
         return *this;
+    }
+
+    bool operator == (const Vec3& vec) const {
+        return x == vec.x && y == vec.y && z == vec.z;
+    }
+
+    bool operator != (const Vec3& vec) const {
+        return x != vec.x || y != vec.y || z != vec.z;
     }
 
     float length() const {

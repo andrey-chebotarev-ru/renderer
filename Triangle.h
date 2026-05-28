@@ -34,6 +34,14 @@ struct Plane
         return zeroesCount == 2;
     }
 
+    bool operator == (const Plane& plane) const {
+        return normal == plane.normal && distance == plane.distance;
+    }
+
+    bool operator != (const Plane& plane) const {
+        return normal != plane.normal || distance != plane.distance;
+    }
+
     Plane flip() const {
         return Plane(-normal, -distance);
     }
