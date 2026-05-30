@@ -7,8 +7,8 @@ class Camera
 public:
     void move(const Vec3& dist);
 
-    Vec3 getForwardVector();
-    Vec3 getRightVector();
+    Vec3 getForwardVector() const;
+    Vec3 getRightVector() const;
 
     void pitch(float deg);
     float pitch();

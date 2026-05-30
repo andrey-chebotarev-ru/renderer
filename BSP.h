@@ -19,15 +19,18 @@ struct Node
 	
 	IndicesList portals;
 
-	int leafIndex;
-	int frontIndex;
-	int backIndex;
+	int leafIdx;
+	int frontIdx;
+	int backIdx;
 };
+
+using NodeList = std::vector<Node>;
 
 struct Leaf
 {
 	bool valid = false;
 	IndicesList indices;
+	PlaneList bounds;
 };
 
 using LeafList = std::vector<Leaf>;
@@ -36,30 +39,10 @@ struct Portal
 {
 	Poly3D poly;
 	bool valid;
-	int frontIndex;
-	int backIndex;
+	int frontNodeIdx;
+	int backNodeIdx;
 	bool visited = false;
 };
-
-enum class WorldPolyType
-{
-	WorldPolyGeometry,
-	WorldPolyBounds,
-	WorldPolyPortal
-};
-
-struct WorldPoly
-{
-	WorldPolyType type;
-	Poly3D poly;
-
-	WorldPoly() {};
-	WorldPoly(const Poly3D& poly, WorldPolyType type = WorldPolyType::WorldPolyGeometry)
-		: poly(poly), type(type) {
-	}
-};
-
-using WorldPolyList = std::vector<WorldPoly>;
 
 using PortalList = std::vector<Portal>;
 
@@ -67,7 +50,6 @@ struct BoundingBox
 {
 	Vec3 min, max;
 };
-
 
 struct Context
 {
@@ -82,21 +64,43 @@ struct Splitter
 	int idx;
 };
 
-using NodeList = std::vector<Node>;
+enum class BSPFaceType
+{
+	Geometry,
+	Bounds,
+	Portal
+};
+
+struct BSPFace
+{
+	BSPFaceType type;
+	Face face;
+	int leafIdx;
+
+	BSPFace(BSPFaceType type, const Face& face, int leafIdx)
+		: type(type), face(face), leafIdx(leafIdx) {
+	}
+};
+
+using BSPFaceList = std::vector<BSPFace>;
 
 class BSP
 {
 public:
 	
-	void compile(const Poly3DList& polys, const Vec3& start);
-	void render(const Vec3& pos, World& world, bool populateLabels, bool renderOnlyCurrentLeaf);
-	int getLeafIdx(const Vec3& vec);
+	void compile(const FaceList& polys, const Vec3& start);
+	void render(const Vec3& pos, World& world);
+	FaceList renderPortals(const Vec3& pos);
+	LabelList renderPortalLabels(const Vec3& pos);
 
-	Poly3DList portalPolys;
-	LabelList portalLabels;
-	LabelList visibleLabels;
+	int getLeafIdx(const Vec3& pos);
 
-	const Leaf& leaf(int index) const {
+
+	const Leaf& getLeaf(int index) const {
+		return leaves[index];
+	}
+	
+	Leaf& getLeaf(int index) {
 		return leaves[index];
 	}
 
@@ -104,49 +108,48 @@ private:
 	int rootNodeIndex = 0;
 	NodeList nodes;
 	LeafList leaves;
-	WorldPolyList worldPolys;
+	BSPFaceList worldFaces;
 	PortalList portals;
 
 	int createNode();
 
-	Node& node(int index) {
+	Node& getNode(int index) {
 		return nodes[index];
 	}
 	
-	const Node& node(int index) const {
+	const Node& getNode(int index) const {
 		return nodes[index];
 	}
 
-	Portal& portal(int index) {
+	Portal& getPortal(int index) {
 		return portals[index];
 	}
 
-	const Portal& portal(int index) const {
+	const Portal& getPortal(int index) const {
 		return portals[index];
 	}
 
 	void floodFill(int leafId);
-	void traceNodePoly(const WorldPoly& nodePoly, int nodeIdx);
 
 	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
-	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const Poly3DList& coplanarPolys);
+	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const FaceList& coplanarFaces);
 
 
-	int addWorldPoly(const Poly3D& poly, int frontLeafIdx, int backLeafIdx);
-	int addLeaf(const Leaf& leaf);
+	int addBSPFace(BSPFaceType type, const Face& face, int leafIdx);
+	int createLeaf();
 
 	Poly3D getFromList(int index);
 
-	Splitter findSplitter(const Poly3DList& polys);
+	Splitter findSplitter(const FaceList& polys);
 
-	void build(const Poly3DList& polys, const Context& ctx);
+	void build(const FaceList& faces, const Context& ctx);
 	void traverse(int nodeIndex, const Vec3& pos, World& world);
 
-	Poly3D makePolygonOnPlane(const Plane& plane);
-	Poly3D clipPolygon(const Poly3D& poly, const PlaneList& bounds);
 
-	BoundingBox makeBoundingBox(const Poly3DList& polys);
+	Poly3D makePolygonOnPlane(const Plane& plane);
+
+	BoundingBox makeBoundingBox(const FaceList& polys);
 	PlaneList getPlanes(const BoundingBox& bbox);
-	WorldPolyList makeWorldBounds(const BoundingBox& bbox, float padding);
+	FaceList makeWorldBounds(const BoundingBox& bbox, float padding);
 };
 

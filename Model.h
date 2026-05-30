@@ -40,3 +40,5 @@ private:
 
     Triangle3DList tris;
 };
+
+using ModelList = std::vector<Model>;

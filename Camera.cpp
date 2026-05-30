@@ -5,13 +5,13 @@
 
 #include "Math.h"
 
-Vec3 Camera::getForwardVector()
+Vec3 Camera::getForwardVector() const
 {
     return Vec3::normalize(Vec3(cosf(rotation.x) * sinf(rotation.y), -sinf(rotation.x), cosf(rotation.x) * cosf(rotation.y)));
     //return Vec3::normalize(Vec3(sinf(rotation.y), 0, cosf(rotation.y)));
 }
 
-Vec3 Camera::getRightVector()
+Vec3 Camera::getRightVector() const
 {
     return Vec3::normalize(Vec3(cosf(rotation.y), 0, -sinf(rotation.y)));
 }

@@ -39,16 +39,12 @@ public:
         fill = false;
     }
 
-    
-
     void setFramebuffer(int pitch, uint8_t* pixels);
     void setTexture(const Texture& texture, size_t index);
     
-    void drawScene(const World& world, const std::vector<Model>& models, const Poly3DList& extras, const Camera& cam, Data& data);
-    void drawLabel(const Label& label, const Camera& cam);
-    
-
-    void drawScene(const Poly2DList& polys, const Poly2D& cutter);
+    void drawScene(const World& world, const ModelList& models, const Camera& cam, Data& data);
+    void drawExtras(const FaceList& polys, const Camera& cam);
+    void drawLabels(const LabelList& labels, const Camera& cam);
 
 private:
     static const float nearPlaneDistance, farPlaneDistance;
@@ -77,15 +73,13 @@ private:
     void transformToView(Poly3D& poly, const Camera& cam);
 
     Vec2 project(const Vec3& vec);
+    
     Triangle2 project(const Triangle3& tri, const Texture& tex);
     Poly2D project(const Poly3D& poly, const Texture& tex);
     
     int drawModel(const Model& model, const Camera& cam);
     int drawWorld(const World& world, const Camera& cam, bool fill);
-    int drawExtras(const Poly3DList& polys, const Camera& cam);
 
-
-
-    
+    void drawWireframe(const Poly2D& poly, const Color& color);
 };
 

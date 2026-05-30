@@ -124,7 +124,6 @@ struct Edge3D
 
 struct Poly2D
 {
-    
     Vertex2DList verts;
     Color fill;
 
@@ -137,9 +136,9 @@ struct Poly2D
     {
         verts.reserve(3);
 
-        verts.push_back(tri.v0);
-        verts.push_back(tri.v1);
-        verts.push_back(tri.v2);
+        addVert(tri.v0);
+        addVert(tri.v1);
+        addVert(tri.v2);
 
         fill = tri.fill;
     }
@@ -148,15 +147,22 @@ struct Poly2D
         return verts.size() >= 3;
     }
 
-    size_t getSize() const {
+    size_t getCount() const {
         return verts.size();
+    }
+
+    int getEdgeCount() const {
+        return verts.size();
+    }
+
+    void addVert(const Vertex2D& vert) {
+        verts.push_back(vert);
     }
 
     Edge2D getEdge(int idx) const;
 
     float getSignedArea() const;
     float getArea() const;
-
 
     Triangle2DList triangulate() const;
     
@@ -165,32 +171,50 @@ struct Poly2D
 struct Poly3D
 {
     Vertex3DList verts;
-    size_t texId;
-    Color fill;
+    //size_t texId;
+    //Color fill;
+
+    void copyPropertiesFrom(const Poly3D& poly)
+    {
+
+
+    }
 
     Poly3D() {}
 
-    Poly3D(const Vertex3DList& verts, size_t texId)
-        : verts(verts), texId(texId) {}
+    Poly3D(const Vertex3DList& verts)
+        : verts(verts) {}
 
     Poly3D(const Triangle3& tri)
     {
         verts.reserve(3);
 
-        verts.push_back(tri.v0);
-        verts.push_back(tri.v1);
-        verts.push_back(tri.v2);
+        addVert(tri.v0);
+        addVert(tri.v1);
+        addVert(tri.v2);
 
-        texId = tri.texId;
-        fill = tri.fill;
+       // texId = tri.texId;
+       // fill = tri.fill;
     }
 
     bool isValid() const {
         return verts.size() >= 3;
     }
 
-    size_t getSize() const {
+    size_t getCount() const {
         return verts.size();
+    }
+
+    int getEdgeCount() const {
+        return verts.size();
+    }
+
+    void addVert(const Vertex3D& vert) {
+        verts.push_back(vert);
+    }
+
+    void clear() {
+        verts.clear();
     }
 
     Edge3D getEdge(int idx) const;
@@ -221,3 +245,32 @@ struct Label
 };
 
 using LabelList = std::vector<Label>;
+
+
+
+struct Face
+{
+    Poly3D poly;
+
+    int texIdx;
+    Color debugColor;
+
+    Face() {};
+    Face(const Poly3D& poly, int texIdx, Color debugColor = Color(255, 255, 255))
+        : poly(poly), texIdx(texIdx), debugColor(debugColor) {
+    }
+
+    Face(const Face& face, Poly3D& poly)
+        : poly(poly)
+    {
+        copyPropsFrom(face);
+    }
+
+    void copyPropsFrom(const Face& face)
+    {
+        texIdx = face.texIdx;
+        debugColor = face.debugColor;
+    }
+};
+
+using FaceList = std::vector<Face>;

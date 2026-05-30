@@ -18,8 +18,6 @@ struct Span
     float uzStep;
     float vzStep;
     float izStep;
-
-    Color fill;
 };
 
 struct EdgeStep2D
@@ -63,19 +61,19 @@ public:
     void setTexture(const Texture& texture, size_t index);
     Texture getTexture(size_t index) const;
 
+    void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
+
     bool drawTriangle(Triangle2 tri, const Texture& tex, bool zTest);
-    bool drawSolidTriangle(Triangle2 tri, bool zTest, bool transparent);
+    bool drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest, bool transparent);
 
     int drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest);
-    int drawSolidPolygon(const Poly2D& poly, bool zTest, bool transparent);
+    int drawSolidPolygon(const Poly2D& poly, const Color& fill, bool zTest, bool transparent);
 
     Color blend(const Color& dstColor, const Color& srcColor, float alpha);
     Color darken(const Color& color);
    
     int crossProduct(Vec2 v1, Vec2 v2);
     
-    
-
 private:
     // TODO: framebuffer struct
     size_t screenWidth, screenHeight;
@@ -95,6 +93,7 @@ private:
     Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
     void drawSpan(const Span& span, const Texture& tex, bool zTest);
-    void drawSolidSpan(const Span& span, bool zTest, bool transparent);
+    void drawSolidSpan(const Span& span, const Color& fill, bool zTest, bool transparent);
+    void setPixel(int x, int y, const Color& color);
 };
 

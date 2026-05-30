@@ -86,14 +86,14 @@ Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const 
 		bool currentInside = inside(current, side, viewport);
 
 		if (previousInside && currentInside) {
-			out.verts.push_back(current);
+			out.addVert(current);
 		}
 		else if (previousInside && !currentInside) {
-			out.verts.push_back(intersect(*previous, current, side, viewport));
+			out.addVert(intersect(*previous, current, side, viewport));
 		}
 		else if (!previousInside && currentInside) {
-			out.verts.push_back(intersect(*previous, current, side, viewport));
-			out.verts.push_back(current);
+			out.addVert(intersect(*previous, current, side, viewport));
+			out.addVert(current);
 		}
 
 		previous = &current;

@@ -40,6 +40,20 @@ struct SplittedPoly3D
 	Poly3D front, back, coplanar;
 };
 
+class PlaneBasis
+{
+public:
+
+	PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v);
+
+	Vec2 project(const Vec3& vec);
+	Vec3 unproject(const Vec2& vec);
+
+private:
+
+	Vec3 origin;
+	Vec3 u, v;
+};
 
 class Geometry
 {
@@ -52,9 +66,14 @@ public:
 	static Poly2DList subtract(const Poly2D& poly, const Poly2D& cutter, float minArea);
 	static bool satOverlap(const Poly2D& poly1, const Poly2D& poly2);
 
-	static Side test(const Plane& plane, const Vec3& vec);
+	static Side test(const Vec3& vec, const Plane& plane);
+	static SplitResult3D classify(const Poly3D& poly, const Plane& plane);
 	static Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
-	static SplittedPoly3D splitAgainstPlane(const Poly3D& in, const Plane& plane);
+	static SplittedPoly3D split(const Poly3D& in, const Plane& plane);
+	static Poly3D clip(const Poly3D& poly, const Plane& plane);
+	static Poly3D clip(const Poly3D& poly, const PlaneList& bounds);
+	static Vec3 makePerpendicular(const Vec3& vec);
+	static PlaneBasis makePlaneBasis(const Plane& plane);
 
 private:
 	static void subtractPoly(const Poly2D& poly, const Poly2D& cutter, int edgeIdx, Poly2DList& out, float minArea);

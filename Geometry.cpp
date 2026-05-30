@@ -2,10 +2,26 @@
 
 const float Geometry::epsilon = 0.0001f;
 
+PlaneBasis::PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v)
+	: origin(origin), u(u), v(v) {
+}
+
+Vec2 PlaneBasis::project(const Vec3& p)
+{
+	Vec3 q = p - origin;
+
+	return Vec2(Vec3::dot(q, u), Vec3::dot(q, v));
+}
+
+Vec3 PlaneBasis::unproject(const Vec2& p)
+{
+	return origin + u * p.x + v * p.y;
+}
+
 Side Geometry::test(const Line& line, const Vec2& vec)
 {
 	float dist = Math::distanceToLine(line, vec);
-	
+
 	if (dist > epsilon) {
 		return Side::Front;
 	}
@@ -107,7 +123,7 @@ SplittedPoly2D Geometry::splitAgainstLine(const Poly2D& in, const Line& line)
 
 void Geometry::subtractPoly(const Poly2D& poly, const Poly2D& cutter, int edgeIdx, Poly2DList& out, float minArea)
 {
-	if (edgeIdx >= cutter.getSize()) {
+	if (edgeIdx >= cutter.getCount()) {
 		return;
 	}
 
@@ -148,7 +164,7 @@ void Geometry::satProjectPoly(const Poly2D& poly, const Vec2& axis, float& outMi
 {
 	outMin = outMax = Vec2::dot(poly.verts[0].pos, axis);
 
-	for (int i = 1; i < poly.getSize(); i++) {
+	for (int i = 1; i < poly.getCount(); i++) {
 		float proj = Vec2::dot(poly.verts[i].pos, axis);
 
 		outMin = std::min(outMin, proj);
@@ -159,7 +175,7 @@ void Geometry::satProjectPoly(const Poly2D& poly, const Vec2& axis, float& outMi
 bool Geometry::satOverlap(const Poly2D& poly1, const Poly2D& poly2)
 {
 	auto testAxes = [&](const Poly2D& poly) -> bool {
-		for (int i = 0; i < poly.getSize(); i++) {
+		for (int i = 0; i < poly.getCount(); i++) {
 			Vec2 axis = poly.getEdge(i).line.normal;
 			float min1, max1;
 			float min2, max2;
@@ -170,19 +186,19 @@ bool Geometry::satOverlap(const Poly2D& poly1, const Poly2D& poly2)
 			}
 		}
 		return true;
-	};
+		};
 
 	if (!testAxes(poly1) || !testAxes(poly2)) {
 		return false;
 	}
-	
+
 	return true;
 }
 
-Side Geometry::test(const Plane& plane, const Vec3& vec)
+Side Geometry::test(const Vec3& vec, const Plane& plane)
 {
 	float dist = Math::distanceToPlane(plane, vec);
-	
+
 	if (dist > epsilon) {
 		return Side::Front;
 	}
@@ -194,6 +210,45 @@ Side Geometry::test(const Plane& plane, const Vec3& vec)
 	}
 }
 
+/*
+* Классификация полигона относительно плоскости
+*/
+SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane)
+{
+	int frontCount = 0, backCount = 0;
+
+	for (const auto& vert : poly.verts) {
+		Side side = test(vert.position, plane);
+
+		if (side == Side::Front) {
+			frontCount++;
+		}
+		else if (side == Side::Back) {
+			backCount++;
+		}
+	}
+
+	// Все точки лежат на одной плоскости
+	if (frontCount == 0 && backCount == 0) {
+		return SplitResult3D::Coplanar;
+	}
+	// Все точки лежат на внутренней стороне
+	else if (backCount == 0) {
+		return SplitResult3D::Front;
+	}
+	// Все точки лежат на внешней стороне
+	else if (frontCount == 0) {
+		return SplitResult3D::Back;
+	}
+	// Точки по разные стороны - плоскость рассекает полигон
+	else {
+		return SplitResult3D::Intersected;
+	} 
+}
+
+/*
+* Нахождение точки пересечения
+*/
 Vertex3D Geometry::intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane)
 {
 	float dist1 = Math::distanceToPlane(plane, vert1.position);
@@ -204,78 +259,143 @@ Vertex3D Geometry::intersect(const Vertex3D& vert1, const Vertex3D& vert2, const
 	return Vertex3D::lerp(vert1, vert2, t);
 }
 
-SplittedPoly3D Geometry::splitAgainstPlane(const Poly3D& in, const Plane& plane)
+/*
+* Разбиение полигона
+*/
+SplittedPoly3D Geometry::split(const Poly3D& in, const Plane& plane)
 {
 	SplittedPoly3D splittedPoly;
 
-	splittedPoly.front.texId = splittedPoly.back.texId = in.texId;
-	splittedPoly.front.fill = splittedPoly.back.fill = in.fill;
+	splittedPoly.result = classify(in, plane);
 
-	if (in.verts.empty()) {
-		return splittedPoly;
-	}
-
-	const Vertex3D* previous = &in.verts.back();
-	Side previousSide = test(plane, previous->position);
-
-	int frontCount = 0, backCount = 0;
-
-	for (const auto& vert : in.verts) {
-		Side side = test(plane, vert.position);
-
-		if (side == Side::Front) {
-			frontCount++;
-		}
-		else if (side == Side::Back) {
-			backCount++;
-		}
-	}
-
-	// Coplanar
-	if (frontCount == 0 && backCount == 0) {
-		splittedPoly.result = SplitResult3D::Coplanar;
+	if (splittedPoly.result == SplitResult3D::Coplanar) {
 		splittedPoly.coplanar = in;
 		return splittedPoly;
 	}
-	// Front
-	else if (backCount == 0) {
-		splittedPoly.result = SplitResult3D::Front;
+
+	if (splittedPoly.result == SplitResult3D::Front) {
 		splittedPoly.front = in;
 		return splittedPoly;
 	}
-	// Back
-	else if (frontCount == 0) {
-		splittedPoly.result = SplitResult3D::Back;
+
+	if (splittedPoly.result == SplitResult3D::Back) {
 		splittedPoly.back = in;
 		return splittedPoly;
 	}
 
-	for (const auto& current : in.verts) {
-		Side currentSide = test(plane, current.position);
+	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
+		Edge3D edge = in.getEdge(edgeIdx);
 
-		if (previousSide == Side::Front) {
-			splittedPoly.front.verts.push_back(*previous);
+		Side vert1Side = test(edge.vert1.position, plane);
+		Side vert2Side = test(edge.vert2.position, plane);
+
+		if (vert1Side == Side::Front) {
+			splittedPoly.front.verts.push_back(edge.vert1);
 		}
-		else if (previousSide == Side::Back) {
-			splittedPoly.back.verts.push_back(*previous);
+		else if (vert1Side == Side::Back) {
+			splittedPoly.back.verts.push_back(edge.vert1);
 		}
-		else if (previousSide == Side::Coplanar) {
-			splittedPoly.front.verts.push_back(*previous);
-			splittedPoly.back.verts.push_back(*previous);
+		else if (vert1Side == Side::Coplanar) {
+			splittedPoly.front.verts.push_back(edge.vert1);
+			splittedPoly.back.verts.push_back(edge.vert1);
 		}
 
-		if ((previousSide == Side::Front && currentSide == Side::Back) || (previousSide == Side::Back && currentSide == Side::Front)) {
-			Vertex3D intersection = intersect(*previous, current, plane);
+		if ((vert1Side == Side::Front && vert2Side == Side::Back) || (vert1Side == Side::Back && vert2Side == Side::Front)) {
+			Vertex3D intersection = intersect(edge.vert1, edge.vert2, plane);
 
 			splittedPoly.front.verts.push_back(intersection);
 			splittedPoly.back.verts.push_back(intersection);
 		}
-
-		previous = &current;
-		previousSide = currentSide;
 	}
 
-	splittedPoly.result = SplitResult3D::Intersected;
-
 	return splittedPoly;
+}
+
+Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
+{
+	Poly3D out;
+
+	if (!in.isValid()) {
+		return out;
+	}
+
+	SplitResult3D result = classify(in, plane);
+
+	if (result == SplitResult3D::Coplanar) {
+		return in;
+	}
+
+	if (result == SplitResult3D::Front) {
+		return in;
+	}
+
+	if (result == SplitResult3D::Back) {
+		out.clear();
+		return out;
+	}
+
+	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
+		Edge3D edge = in.getEdge(edgeIdx);
+
+		bool vert1Inside = (test(edge.vert1.position, plane) == Side::Front);
+		bool vert2Inside = (test(edge.vert2.position, plane) == Side::Front);
+
+		if (vert1Inside && vert2Inside) {
+			out.addVert(edge.vert2);
+		}
+		else if (vert1Inside && !vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, plane));
+		}
+		else if (!vert1Inside && vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, plane));
+			out.addVert(edge.vert2);
+		}
+	}
+
+	return out;
+}
+
+Poly3D Geometry::clip(const Poly3D& in, const PlaneList& bounds)
+{
+	Poly3D out = in;
+
+	if (!in.isValid()) {
+		out.clear();
+		return out;
+	}
+
+	for (const Plane& plane : bounds)
+	{
+		out = Geometry::clip(out, plane);
+
+		if (!out.isValid()) {
+			out.clear();
+			break;
+		}
+	}
+
+	return out;
+}
+
+Vec3 Geometry::makePerpendicular(const Vec3& vec)
+{
+	if (fabs(vec.x) < fabs(vec.y) && fabs(vec.x) < fabs(vec.z)) {
+		return Vec3::normalize(Vec3::cross(vec, Vec3(1, 0, 0)));
+	}
+	else if (fabs(vec.y) < fabs(vec.z)) {
+		return Vec3::normalize(Vec3::cross(vec, Vec3(0, 1, 0)));
+	}
+	else {
+		return Vec3::normalize(Vec3::cross(vec, Vec3(0, 0, 1)));
+	}
+}
+
+PlaneBasis Geometry::makePlaneBasis(const Plane& plane)
+{
+	Vec3 origin = plane.normal * plane.distance;
+
+	Vec3 u = Vec3::normalize(makePerpendicular(plane.normal));
+	Vec3 v = Vec3::cross(plane.normal, u);
+
+	return PlaneBasis(origin, u, v);
 }

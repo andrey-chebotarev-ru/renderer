@@ -167,30 +167,31 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
 
-    Poly3DList list = Constructor::map(points, 100, 1);
+    FaceList list = Constructor::map(points, 100, 1);
     
-    Poly3DList list2 = Constructor::map(points2, 300, 1);
+    FaceList list2 = Constructor::map(points2, 300, 1);
 
 
     //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
-    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)), 5);
+    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)));
+    Constructor::insert(list, cube, 5);
 
+    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(40, 0, 50)));
+    Constructor::insert(list, cube1, 5);
 
-    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(-50, 0, 0)), 5);
-    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(50, 0, 0)), 5);
-    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(150, 0, 0)), 5);
+    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(40, 0, 150)));
+    Constructor::insert(list, cube2, 5);
 
-    Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100, 2);
+    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(40, 0, 250)));
+    Constructor::insert(list, cube3, 5);
+
+    //Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100);
+    //Constructor::insert(list, wall, 2);
 
     //list.push_back(poly);
 
     //list.insert(list.end(), list2.begin(), list2.end());
 
-    list.insert(list.end(), cube.begin(), cube.end());
-    list.insert(list.end(), cube1.begin(), cube1.end());
-    list.insert(list.end(), cube2.begin(), cube2.end());
-    list.insert(list.end(), cube3.begin(), cube3.end());
-    
     
     
 
@@ -440,13 +441,18 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
         world.clear();
-        bsp.render(camera.position, world, drawPortals, renderOnlyCurrentLeaf);
+        bsp.render(camera.position, world);
+
+
 
         gameRenderer.fill = fill;
         gameRenderer.setFramebuffer(pitch, pixels);
 
-        gameRenderer.drawScene(world, models, (drawPortals ? bsp.portalPolys : Poly3DList()), camera, data);
-        
+        gameRenderer.drawScene(world, models, camera, data);
+   
+        if (drawPortals) {
+            gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
+        }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
     }
@@ -463,14 +469,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderTexture(sdlRenderer, sdlFramebufferTexture, NULL, &dst_rect);
 
     if (drawPortals) {
-        for (const auto& label : bsp.visibleLabels)
-        {
-            gameRenderer.drawLabel(label, camera);
-        }
+        gameRenderer.drawLabels(bsp.renderPortalLabels(camera.position), camera);
     }
     
     int leafIdx = bsp.getLeafIdx(camera.position);
-    auto leaf = bsp.leaf(leafIdx);
+    auto leaf = bsp.getLeaf(leafIdx);
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);

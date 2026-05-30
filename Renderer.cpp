@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <algorithm>
+
 const float Renderer::nearPlaneDistance = 1.0f;
 const float Renderer::farPlaneDistance = 500.0f;
 
@@ -97,10 +99,8 @@ Poly2D Renderer::project(const Poly3D& poly, const Texture& tex)
         projVert.vz = (vert.uv.y * texHeight) * invZ;
         projVert.iz = invZ;
 
-        proj.verts.push_back(projVert);
+        proj.addVert(projVert);
     }
-
-    proj.fill = poly.fill;
 
     return proj;
 }
@@ -159,24 +159,25 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 
     for (int i = 0; i < world.getSize(); i++) {
 
-        Poly3D poly = world.getPolygon(i);
+        Face face = world.getFace(i);
 
         // Backface culling
-        if (backfaceCulling && Math::distanceToPlane(poly.getPlane(), cam.position) < 0.0f) {
+        if (backfaceCulling && Math::distanceToPlane(face.poly.getPlane(), cam.position) < 0.0f) {
             continue;
         }
 
         // Transform
-        transformToView(poly, cam);
+        transformToView(face.poly, cam);
 
         // 3D clipping
-        Poly3D clippedPoly = clipper.clip(poly, nearPlaneDistance, farPlaneDistance);
+        Poly3D clippedPoly = clipper.clip(face.poly, nearPlaneDistance, farPlaneDistance);
 
         if (clippedPoly.verts.empty()) {
             continue;
         }
 
-        Texture tex = rasterizer.getTexture(poly.texId);
+        Texture tex = rasterizer.getTexture(face.texIdx);
+        Color fillColor = face.debugColor;
 
         // Projection
         Poly2D projected = project(clippedPoly, tex);
@@ -185,8 +186,9 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
         Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
 
         // Drawing
-        if (fill) {
-            count += rasterizer.drawSolidPolygon(vpClippedPoly, zTest, false);
+        if (fill) { 
+            count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, false);
+            drawWireframe(vpClippedPoly, Color(0, 0, 0));
         }
         else {
             count += rasterizer.drawPolygon(vpClippedPoly, tex, zTest);
@@ -196,36 +198,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
     return count;
 }
 
-int Renderer::drawExtras(const Poly3DList& polys, const Camera& cam)
-{
-    int count = 0;
-
-    for (auto poly : polys) {
-        // Transform
-        transformToView(poly, cam);
-
-        // 3D clipping
-        Poly3D clippedPoly = clipper.clip(poly, nearPlaneDistance, farPlaneDistance);
-
-        if (clippedPoly.verts.empty()) {
-            continue;
-        }
-
-        Texture tex = rasterizer.getTexture(poly.texId);
-
-        // Projection
-        Poly2D projected = project(clippedPoly, tex);
-
-        // Viewport clipping
-        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
-
-        count += rasterizer.drawSolidPolygon(vpClippedPoly, zTest, true);
-    }
-
-    return count;
-}
-
-void Renderer::drawScene(const World& world, const std::vector<Model>& models, const Poly3DList& extras, const Camera& cam, Data& data)
+void Renderer::drawScene(const World& world, const ModelList&models, const Camera& cam, Data& data)
 {
     rasterizer.clearBuffers();
     
@@ -235,48 +208,64 @@ void Renderer::drawScene(const World& world, const std::vector<Model>& models, c
     data.count = drawWorld(world, cam, fill);
 
     zTest = true;
-    drawExtras(extras, cam);
-
-    zTest = true;
     for (const Model& model : models) {
         data.count += drawModel(model, cam);
     }
-
-    
-    
 }
 
-void Renderer::drawLabel(const Label& label, const Camera& cam)
+void Renderer::drawExtras(const FaceList& faces, const Camera& cam)
 {
-    Vec3 pos = label.pos;
+    zTest = true;
 
-    // Transform
-    pos = transformToView(pos, cam);
+    for (auto face : faces) {
+        // Transform
+        transformToView(face.poly, cam);
 
-    if (pos.z < 1.0f) {
-        return;
+        // 3D clipping
+        Poly3D clippedPoly = clipper.clip(face.poly, nearPlaneDistance, farPlaneDistance);
+
+        if (clippedPoly.verts.empty()) {
+            continue;
+        }
+
+        Texture tex = rasterizer.getTexture(1);
+        Color fillColor = face.debugColor;
+
+        // Projection
+        Poly2D projected = project(clippedPoly, tex);
+
+        // Viewport clipping
+        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
+
+        rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, true);
     }
-
-    // Projection
-    Vec2 proj = project(pos);
-
-    debug.drawText(proj.x, proj.y, label.color, label.label);
 }
 
-void Renderer::drawScene(const Poly2DList& polys, const Poly2D& cutter)
+void Renderer::drawLabels(const LabelList& labels, const Camera& cam)
 {
-    rasterizer.clearBuffers();
+    for (const auto& label : labels) {
+        Vec3 pos = label.pos;
 
-    Texture tex = rasterizer.getTexture(1);
+        // Transform
+        pos = transformToView(pos, cam);
 
-    for (int i = 0; i < polys.size(); i++) {
-        if (fill) {
-            rasterizer.drawSolidPolygon(polys[i], false, false);
+        // Simple clipping
+        if (pos.z < 1.0f) {
+            continue;
         }
-        else {
-            rasterizer.drawPolygon(polys[i], tex, false);
-        }
+
+        // Projection
+        Vec2 proj = project(pos);
+
+        debug.drawText(proj.x, proj.y, label.color, label.label);
     }
+}
 
-    rasterizer.drawSolidPolygon(cutter, false, false);
+void Renderer::drawWireframe(const Poly2D& poly, const Color& color)
+{
+    for (int edgeIdx = 0; edgeIdx < poly.getEdgeCount(); edgeIdx++) {
+        Edge2D edge = poly.getEdge(edgeIdx);
+
+        rasterizer.drawLine(edge.vert1.pos, edge.vert2.pos, color);
+    }
 }

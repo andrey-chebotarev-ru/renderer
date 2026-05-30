@@ -32,7 +32,7 @@ Edge3D::Edge3D(const Vertex3D& vert1, const Vertex3D& vert2)
 
 Edge2D Poly2D::getEdge(int idx) const
 {
-	size_t count = getSize();
+	size_t count = getCount();
 
 	idx %= count;
 
@@ -43,7 +43,7 @@ float Poly2D::getSignedArea() const
 {
 	float sum = 0.0f;
 
-	for (int i = 0; i < getSize(); i++) {
+	for (int i = 0; i < getCount(); i++) {
 		Edge2D edge = getEdge(i);
 
 		sum += Vec2::cross(edge.vert1.pos, edge.vert2.pos);
@@ -81,7 +81,7 @@ Triangle2DList Poly2D::triangulate() const
 
 Edge3D Poly3D::getEdge(int idx) const
 {
-	size_t count = getSize();
+	size_t count = getCount();
 
 	idx %= count;
 
@@ -92,8 +92,8 @@ float Poly3D::getSignedArea() const
 {
 	Vec3 sum = Vec3(0, 0, 0);
 
-	for (int i = 0; i < getSize(); i++) {
-		Edge3D edge = getEdge(i);
+	for (int edgeIdx = 0; edgeIdx < getCount(); edgeIdx++) {
+		Edge3D edge = getEdge(edgeIdx);
 
 		sum += Vec3::cross(edge.vert1.position, edge.vert2.position);
 	}
@@ -108,21 +108,22 @@ float Poly3D::getArea() const
 
 Vec3 Poly3D::getCenter() const
 {
+	/*
 	Vec3 center = Vec3(0.0f, 0.0f, 0.0f);
 
 	for (const auto& vert : verts) {
 		center += vert.position;
 	}
 
-	center /= (float)getSize();
+	center /= (float)getCount();
 
 	return center;
-
-	/*
+	*/
+	
 	Vec3 centroid = Vec3(0, 0, 0);
 	float totalArea = 0.0f;
 
-	for (int i = 1; i < getSize() - 1; i++)
+	for (int i = 1; i < getCount() - 1; i++)
 	{
 		Vec3 a = verts[0].position;
 		Vec3 b = verts[i].position;
@@ -137,7 +138,6 @@ Vec3 Poly3D::getCenter() const
 	}
 
 	return centroid / totalArea;
-	*/
 }
 
 Triangle3DList Poly3D::triangulate() const
@@ -154,9 +154,7 @@ Triangle3DList Poly3D::triangulate() const
 		tri.v0 = verts[0];
 		tri.v1 = verts[i];
 		tri.v2 = verts[i + 1];
-		tri.texId = texId;
-		tri.fill = fill;
-
+		
 		tris.push_back(tri);
 	}
 
@@ -168,7 +166,7 @@ Poly3D Poly3D::offset(const Poly3D& poly, float distance)
 	Vec3 normal = poly.getPlane().normal;
 	Poly3D out = poly;
 
-	for (int i = 0; i < poly.getSize(); i++) {
+	for (int i = 0; i < poly.getCount(); i++) {
 		out.verts[i].position += normal * distance;
 	}
 

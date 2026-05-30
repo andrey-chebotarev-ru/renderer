@@ -2,37 +2,37 @@
 
 World::World()
 {
-    polys.reserve(1000);
+    faces.reserve(1000);
 }
 
-void World::addGeometry(const Poly3DList& polys)
+void World::addGeometry(const FaceList& faces)
 {
-    for (const Poly3D& poly : polys) {
-        this->polys.push_back(poly);
+    for (const auto& face : faces) {
+        this->faces.push_back(face);
     }
 }
 
-void World::addGeometry(const Poly3D& poly)
+void World::addGeometry(const Face& face)
 {
-    this->polys.push_back(poly);
+    this->faces.push_back(face);
 }
 
 size_t World::getSize() const
 {
-    return polys.size();
+    return faces.size();
 }
 
-const Poly3D& World::getPolygon(size_t index) const
+const Face& World::getFace(int idx) const
 {
-    return polys[index];
+    return faces[idx];
 }
 
-Poly3D& World::getPolygon(size_t index)
+Face& World::getFace(int idx)
 {
-    return polys[index];
+    return faces[idx];
 }
 
 void World::clear()
 {
-    polys.clear();
+    faces.clear();
 }

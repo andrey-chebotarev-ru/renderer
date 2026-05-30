@@ -8,13 +8,13 @@
 class World
 {
 public:
-    Poly3DList polys;
+    FaceList faces;
 
     World();
-    void addGeometry(const Poly3DList& polys);
-    void addGeometry(const Poly3D& poly);
+    void addGeometry(const FaceList& faces);
+    void addGeometry(const Face& face);
     size_t getSize() const;
-    const Poly3D& getPolygon(size_t index) const;
-    Poly3D& getPolygon(size_t index);
+    const Face& getFace(int idx) const;
+    Face& getFace(int idx);
     void clear();
 };
