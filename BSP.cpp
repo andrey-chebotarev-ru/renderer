@@ -118,7 +118,6 @@ void BSP::compile(const FaceList& faces, const Vec3& start)
 	build(p2, ctx);
 
 	for (int portalIdx = 0; portalIdx < portals.size(); portalIdx++) {
-
 		const Portal& portal = getPortal(portalIdx);
 
 		if (!portal.valid || portal.frontNodeIdx == -1 || portal.backNodeIdx == -1) {
@@ -151,6 +150,36 @@ void BSP::compile(const FaceList& faces, const Vec3& start)
 	}
 
 	floodFill(getLeafIdx(start));
+
+	for (int leafIdx = 0; leafIdx < leaves.size(); leafIdx++) {
+		const Leaf& leaf = getLeaf(leafIdx);
+
+		if (leaf.valid) {
+			continue;
+		}
+
+		for (int faceIdx : leaf.indices) {
+			Vec3 n = worldFaces[faceIdx].face.poly.getPlane().normal;
+			Vec3 p = worldFaces[faceIdx].face.poly.getCenter();
+			
+			p += n * 0.1f;
+			int otherLeafIdx = getLeafIdx(p);
+
+			if (otherLeafIdx == leafIdx) {
+				continue;
+			}
+
+			const Leaf& otherLeaf = getLeaf(otherLeafIdx);
+
+			if (!otherLeaf.valid) {
+				continue;
+			}
+			std::cout << "Face returned from " << leafIdx << " to " << otherLeafIdx << "\n";
+			getLeaf(otherLeafIdx).indices.push_back(faceIdx);
+		}
+
+	}
+
 }
 
 void BSP::build(const FaceList& faces, const Context& ctx)
