@@ -13,9 +13,33 @@ Vec2 PlaneBasis::project(const Vec3& p)
 	return Vec2(Vec3::dot(q, u), Vec3::dot(q, v));
 }
 
+Poly2D PlaneBasis::project(const Poly3D& poly)
+{
+	Poly2D proj;
+
+	for (const auto& vert : poly.verts) {
+		Vec2 vec = project(vert.pos);
+		proj.addVert(Vertex2D(vec, vert.uv.x, vert.uv.y, 1.0f));
+	}
+
+	return proj;
+}
+
 Vec3 PlaneBasis::unproject(const Vec2& p)
 {
 	return origin + u * p.x + v * p.y;
+}
+
+Poly3D PlaneBasis::unproject(const Poly2D& poly)
+{
+	Poly3D unproj;
+
+	for (const auto& vert : poly.verts) {
+		Vec3 vec = unproject(vert.pos);
+		unproj.addVert(Vertex3D(vec, Vec2(vert.uz, vert.vz)));
+	}
+
+	return unproj;
 }
 
 Side Geometry::test(const Line& line, const Vec2& vec)
@@ -160,6 +184,20 @@ Poly2DList Geometry::subtract(const Poly2D& in, const Poly2D& cutter, float minA
 	return out;
 }
 
+Poly3DList Geometry::subtract(const Poly3D& in, const Poly3D& cutter, const Plane& plane, float minArea)
+{
+	Poly3DList out;
+	PlaneBasis basis = makePlaneBasis(plane);
+
+	Poly2DList polys = subtract(basis.project(in), basis.project(cutter), minArea);
+
+	for (const auto& poly : polys) {
+		out.push_back(basis.unproject(poly));
+	}
+
+	return out;
+}
+
 void Geometry::satProjectPoly(const Poly2D& poly, const Vec2& axis, float& outMin, float& outMax)
 {
 	outMin = outMax = Vec2::dot(poly.verts[0].pos, axis);
@@ -218,7 +256,7 @@ SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane)
 	int frontCount = 0, backCount = 0;
 
 	for (const auto& vert : poly.verts) {
-		Side side = test(vert.position, plane);
+		Side side = test(vert.pos, plane);
 
 		if (side == Side::Front) {
 			frontCount++;
@@ -243,7 +281,7 @@ SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane)
 	// Точки по разные стороны - плоскость рассекает полигон
 	else {
 		return SplitResult3D::Intersected;
-	} 
+	}
 }
 
 /*
@@ -251,8 +289,8 @@ SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane)
 */
 Vertex3D Geometry::intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane)
 {
-	float dist1 = Math::distanceToPlane(plane, vert1.position);
-	float dist2 = Math::distanceToPlane(plane, vert2.position);
+	float dist1 = Math::distanceToPlane(plane, vert1.pos);
+	float dist2 = Math::distanceToPlane(plane, vert2.pos);
 
 	float t = dist1 / (dist1 - dist2);
 
@@ -286,8 +324,8 @@ SplittedPoly3D Geometry::split(const Poly3D& in, const Plane& plane)
 	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
 		Edge3D edge = in.getEdge(edgeIdx);
 
-		Side vert1Side = test(edge.vert1.position, plane);
-		Side vert2Side = test(edge.vert2.position, plane);
+		Side vert1Side = test(edge.vert1.pos, plane);
+		Side vert2Side = test(edge.vert2.pos, plane);
 
 		if (vert1Side == Side::Front) {
 			splittedPoly.front.verts.push_back(edge.vert1);
@@ -337,8 +375,8 @@ Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
 	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
 		Edge3D edge = in.getEdge(edgeIdx);
 
-		bool vert1Inside = (test(edge.vert1.position, plane) == Side::Front);
-		bool vert2Inside = (test(edge.vert2.position, plane) == Side::Front);
+		bool vert1Inside = (test(edge.vert1.pos, plane) == Side::Front);
+		bool vert2Inside = (test(edge.vert2.pos, plane) == Side::Front);
 
 		if (vert1Inside && vert2Inside) {
 			out.addVert(edge.vert2);

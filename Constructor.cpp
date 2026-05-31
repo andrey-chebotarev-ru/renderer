@@ -67,7 +67,7 @@ Poly3DList Constructor::polyCube(const Vec2& uv, const Vec3& size, const Transfo
 
     for (int j = 0; j < polys.size(); j++) {
         for (int i = 0; i < polys[j].getCount(); i++) {
-            polys[j].verts[i].position = Math::transform(polys[j].verts[i].position, tr);
+            polys[j].verts[i].pos = Math::transform(polys[j].verts[i].pos, tr);
         }
     }
 

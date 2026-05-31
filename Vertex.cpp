@@ -18,7 +18,7 @@ Vertex3D Vertex3D::lerp(const Vertex3D& v1, const Vertex3D& v2, float t)
 {
 	Vertex3D v;
 
-	v.position = Vec3::lerp(v1.position, v2.position, t);
+	v.pos = Vec3::lerp(v1.pos, v2.pos, t);
 	v.uv = Vec2::lerp(v1.uv, v2.uv, t);
 
 	return v;

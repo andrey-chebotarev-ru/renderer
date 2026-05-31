@@ -43,6 +43,10 @@ static bool fullscreen = true;
 
 static std::vector<SDL_Surface*> sdlTexture(100);
 
+static int randomAngle()
+{
+    return SDL_rand(360);
+}
 
 
 bool loadTexture(const char* filename, int index)
@@ -173,6 +177,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
     //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
+
+    /*
     Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)));
     Constructor::insert(list, cube, 5);
 
@@ -184,6 +190,22 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(90.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(240, 0, 150)));
     Constructor::insert(list, cube3, 5);
+    */
+
+
+    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(200, 0, 190)));
+    Constructor::insert(list, cube, 5);
+
+    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(40, 0, 50)));
+    Constructor::insert(list, cube1, 5);
+
+    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(40, 0, 150)));
+    Constructor::insert(list, cube2, 5);
+
+    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(240, 0, 150)));
+    Constructor::insert(list, cube3, 5);
+
+
 
     //Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100);
     //Constructor::insert(list, wall, 2);

@@ -18,14 +18,14 @@ void Renderer::setTexture(const Texture& texture, size_t index)
 void Renderer::transformToWorld(Triangle3& tri, const Transform& tr)
 {
     for (int i = 0; i < 3; i++) {
-        tri.v[i].position = Math::transform(tri.v[i].position, tr);
+        tri.v[i].pos = Math::transform(tri.v[i].pos, tr);
     }
 }
 
 void Renderer::transformToWorld(Poly3D& poly, const Transform& tr)
 {
     for (auto& vert : poly.verts) {
-        vert.position = Math::transform(vert.position, tr);
+        vert.pos = Math::transform(vert.pos, tr);
     }
 }
 
@@ -39,14 +39,14 @@ Vec3 Renderer::transformToView(const Vec3& vec, const Camera& cam)
 void Renderer::transformToView(Triangle3& tri, const Camera& cam)
 {
     for (int i = 0; i < 3; i++) {
-        tri.v[i].position = transformToView(tri.v[i].position, cam);
+        tri.v[i].pos = transformToView(tri.v[i].pos, cam);
     }
 }
 
 void Renderer::transformToView(Poly3D& poly, const Camera& cam)
 {
     for (auto& vert : poly.verts) {
-        vert.position = transformToView(vert.position, cam);
+        vert.pos = transformToView(vert.pos, cam);
     }
 }
 
@@ -69,9 +69,9 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
     int texHeight = tex.getHeight();
 
     for (int i = 0; i < 3; i++) {
-        float invZ = 1.0f / tri.v[i].position.z;
+        float invZ = 1.0f / tri.v[i].pos.z;
 
-        proj.v[i].pos = project(tri.v[i].position);
+        proj.v[i].pos = project(tri.v[i].pos);
         proj.v[i].uz = (tri.v[i].uv.x * texWidth) * invZ;
         proj.v[i].vz = (tri.v[i].uv.y * texHeight) * invZ;
         proj.v[i].iz = invZ;
@@ -90,11 +90,11 @@ Poly2D Renderer::project(const Poly3D& poly, const Texture& tex)
     int texHeight = tex.getHeight();
 
     for (const auto& vert : poly.verts) {
-        float invZ = 1.0f / vert.position.z;
+        float invZ = 1.0f / vert.pos.z;
 
         Vertex2D projVert;
 
-        projVert.pos = project(vert.position);
+        projVert.pos = project(vert.pos);
         projVert.uz = (vert.uv.x * texWidth) * invZ;
         projVert.vz = (vert.uv.y * texHeight) * invZ;
         projVert.iz = invZ;

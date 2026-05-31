@@ -2,16 +2,16 @@
 
 Plane Triangle3::getPlane() const
 {
-	Vec3 normal = Vec3::normalize(Vec3::cross(v1.position - v0.position, v2.position - v0.position));
-	float distance = Vec3::dot(normal, v0.position);
+	Vec3 normal = Vec3::normalize(Vec3::cross(v1.pos - v0.pos, v2.pos - v0.pos));
+	float distance = Vec3::dot(normal, v0.pos);
 
 	return Plane(normal, distance);
 }
 
 Plane Poly3D::getPlane() const
 {
-	Vec3 normal = Vec3::normalize(Vec3::cross(verts[1].position - verts[0].position, verts[2].position - verts[0].position));
-	float distance = Vec3::dot(normal, verts[0].position);
+	Vec3 normal = Vec3::normalize(Vec3::cross(verts[1].pos - verts[0].pos, verts[2].pos - verts[0].pos));
+	float distance = Vec3::dot(normal, verts[0].pos);
 
 	return Plane(normal, distance);
 }
@@ -95,7 +95,7 @@ float Poly3D::getSignedArea() const
 	for (int edgeIdx = 0; edgeIdx < getCount(); edgeIdx++) {
 		Edge3D edge = getEdge(edgeIdx);
 
-		sum += Vec3::cross(edge.vert1.position, edge.vert2.position);
+		sum += Vec3::cross(edge.vert1.pos, edge.vert2.pos);
 	}
 
 	return Vec3::dot(sum, getPlane().normal) * 0.5f;
@@ -125,9 +125,9 @@ Vec3 Poly3D::getCenter() const
 
 	for (int i = 1; i < getCount() - 1; i++)
 	{
-		Vec3 a = verts[0].position;
-		Vec3 b = verts[i].position;
-		Vec3 c = verts[i + 1].position;
+		Vec3 a = verts[0].pos;
+		Vec3 b = verts[i].pos;
+		Vec3 c = verts[i + 1].pos;
 
 		Vec3 triCenter = (a + b + c) / 3.0f;
 
@@ -167,7 +167,7 @@ Poly3D Poly3D::offset(const Poly3D& poly, float distance)
 	Poly3D out = poly;
 
 	for (int i = 0; i < poly.getCount(); i++) {
-		out.verts[i].position += normal * distance;
+		out.verts[i].pos += normal * distance;
 	}
 
 	return out;

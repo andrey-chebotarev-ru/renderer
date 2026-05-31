@@ -47,7 +47,10 @@ public:
 	PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v);
 
 	Vec2 project(const Vec3& vec);
+	Poly2D project(const Poly3D& poly);
+
 	Vec3 unproject(const Vec2& vec);
+	Poly3D unproject(const Poly2D& poly);
 
 private:
 
@@ -64,6 +67,7 @@ public:
 	static Vertex2D intersect(const Vertex2D& vert1, const Vertex2D& vert2, const Line& line);
 	static SplittedPoly2D splitAgainstLine(const Poly2D& in, const Line& line);
 	static Poly2DList subtract(const Poly2D& poly, const Poly2D& cutter, float minArea);
+	static Poly3DList subtract(const Poly3D& poly, const Poly3D& cutter, const Plane& plane, float minArea);
 	static bool satOverlap(const Poly2D& poly1, const Poly2D& poly2);
 
 	static Side test(const Vec3& vec, const Plane& plane);

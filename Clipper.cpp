@@ -10,18 +10,18 @@ bool Clipper::inside(const Vertex3D& v, ClipPlane plane, float distance)
 {
 	switch (plane) {
 	case Near:
-		return (v.position.z >= distance);
+		return (v.pos.z >= distance);
 	case Far:
-		return (v.position.z <= distance);
+		return (v.pos.z <= distance);
 	}
 }
 
 Vertex3D Clipper::intersect(const Vertex3D& v1, const Vertex3D& v2, float distance)
 {
-	float t = (distance - v1.position.z) / (v2.position.z - v1.position.z);;
+	float t = (distance - v1.pos.z) / (v2.pos.z - v1.pos.z);;
 
 	Vertex3D v = Vertex3D::lerp(v1, v2, t);
-	v.position.z = distance;
+	v.pos.z = distance;
 
 	return v;
 }

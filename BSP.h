@@ -16,8 +16,8 @@ using IndicesList = std::vector<int>;
 struct Node
 {
 	Plane plane;
-	
-	IndicesList portals;
+	PlaneList bounds;
+	FaceList coplanarFaces;
 
 	int leafIdx;
 	int frontIdx;
@@ -38,6 +38,7 @@ using LeafList = std::vector<Leaf>;
 struct Portal
 {
 	Poly3D poly;
+	int nodeIdx;
 	bool valid;
 	int frontNodeIdx;
 	int backNodeIdx;
@@ -83,6 +84,12 @@ struct BSPFace
 };
 
 using BSPFaceList = std::vector<BSPFace>;
+
+enum class PortalSide
+{
+	A,
+	B
+};
 
 class BSP
 {
@@ -132,8 +139,8 @@ private:
 	void floodFill(int leafId);
 
 	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
-	Poly3DList createPortalPolys(const Plane& plane, const PlaneList& bounds, const FaceList& coplanarFaces);
-
+	Poly3D createPortalPoly(const Plane& plane, const PlaneList& bounds);
+	void savePortal(const Portal& portal);
 
 	int addBSPFace(BSPFaceType type, const Face& face, int leafIdx);
 	int createLeaf();
@@ -151,5 +158,13 @@ private:
 	BoundingBox makeBoundingBox(const FaceList& polys);
 	PlaneList getPlanes(const BoundingBox& bbox);
 	FaceList makeWorldBounds(const BoundingBox& bbox, float padding);
+
+	void traceFace(const BSPFace& face, int nodeIdx);
+
+	void buildPortalsFromNode(int nodeIdx);
+	void pushPortal(Portal portal, int nodeAIdx, int nodeBIdx);
+	void refinePortalSide(const Portal& portal, int splitNodeIdx, int otherNodeIdx, PortalSide side);
+	void clipPortals();
+	void restoreBorderFaces();
 };
 
