@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "Geometry.h"
+
 const float Renderer::nearPlaneDistance = 1.0f;
 const float Renderer::farPlaneDistance = 500.0f;
 
@@ -161,8 +163,12 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 
         Face face = world.getFace(i);
 
+        if (face.type == FaceType::Bounds) {
+            continue;
+        }
+
         // Backface culling
-        if (backfaceCulling && Math::distanceToPlane(face.poly.getPlane(), cam.position) < 0.0f) {
+        if (backfaceCulling && Geometry::test(cam.position, face.poly.getPlane()) == Side::Back && face.type != FaceType::Debug) {
             continue;
         }
 
@@ -176,23 +182,41 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
             continue;
         }
 
-        Texture tex = rasterizer.getTexture(face.texIdx);
-        Color fillColor = face.debugColor;
+        if (face.type == FaceType::Debug)
+        {
+            Texture tex = rasterizer.getTexture(1);
+            Color fillColor = face.debugColor;
 
-        // Projection
-        Poly2D projected = project(clippedPoly, tex);
+            // Projection
+            Poly2D projected = project(clippedPoly, tex);
 
-        // Viewport clipping
-        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
+            // Viewport clipping
+            Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
 
-        // Drawing
-        if (fill) { 
-            count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, false);
+            count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, true);
             drawWireframe(vpClippedPoly, Color(0, 0, 0));
         }
-        else {
-            count += rasterizer.drawPolygon(vpClippedPoly, tex, zTest);
+        else
+        {
+            Texture tex = rasterizer.getTexture(face.texIdx);
+            Color fillColor = face.debugColor;
+
+            // Projection
+            Poly2D projected = project(clippedPoly, tex);
+
+            // Viewport clipping
+            Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
+
+            // Drawing
+            if (fill) {
+                count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, false);
+                drawWireframe(vpClippedPoly, Color(0, 0, 0));
+            }
+            else {
+                count += rasterizer.drawPolygon(vpClippedPoly, tex, zTest);
+            }
         }
+        
     }
 
     return count;

@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <stdio.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -49,6 +50,54 @@ static int randomAngle()
 }
 
 
+struct Angles
+{
+    static const int count = 12;
+
+    int values[count];
+    bool loaded = false, saved = false;
+
+    Angles()
+    {
+        for (int i = 0; i < count; i++) {
+            values[i] = randomAngle();
+        }
+    }
+
+    void save()
+    {
+        FILE* f;
+        fopen_s(&f, "angles.dat", "w");
+
+        if (!f) {
+            return;
+        }
+
+        fwrite(values, sizeof(int), count, f);
+        fclose(f);
+
+        saved = true;
+    }
+
+    void load()
+    {
+        FILE* f;
+        fopen_s(&f, "angles.dat", "r");
+
+        if (!f) {
+            return;
+        }
+
+        fread(values, sizeof(int), count, f);
+        fclose(f);
+
+        loaded = true;
+    }
+};
+
+static Angles angles;
+static bool leaked = false;
+
 bool loadTexture(const char* filename, int index)
 {
     SDL_Surface* loadedTexture = NULL;
@@ -85,6 +134,9 @@ void freeTexture()
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
+    
+    angles.load();
+
     // v1
     Vec2List points = {
         {0, 0},
@@ -178,6 +230,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
 
+  
     /*
     Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)));
     Constructor::insert(list, cube, 5);
@@ -191,21 +244,17 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(90.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(240, 0, 150)));
     Constructor::insert(list, cube3, 5);
     */
-
-
-    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(200, 0, 190)));
+    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[0]), Math::degToRad(angles.values[1]), Math::degToRad(angles.values[2])), Vec3(200, 0, 190)));
     Constructor::insert(list, cube, 5);
 
-    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(40, 0, 50)));
+    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[3]), Math::degToRad(angles.values[4]), Math::degToRad(angles.values[5])), Vec3(40, 0, 50)));
     Constructor::insert(list, cube1, 5);
 
-    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(40, 0, 150)));
+    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[6]), Math::degToRad(angles.values[7]), Math::degToRad(angles.values[8])), Vec3(40, 0, 150)));
     Constructor::insert(list, cube2, 5);
 
-    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(randomAngle()), Math::degToRad(randomAngle()), Math::degToRad(randomAngle())), Vec3(240, 0, 150)));
+    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[9]), Math::degToRad(angles.values[10]), Math::degToRad(angles.values[11])), Vec3(240, 0, 150)));
     Constructor::insert(list, cube3, 5);
-
-
 
     //Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100);
     //Constructor::insert(list, wall, 2);
@@ -228,7 +277,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     Vec3 pos = { 20, 0, 60 };
 
-    bsp.compile(list, pos);
+    leaked = bsp.compile(list, pos);
 
     camera.position = pos;
     //camera.yaw = 0;
@@ -295,6 +344,7 @@ static bool renderOnlyCurrentLeaf = false;
 
 static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
+static bool ctrlPressed = false;
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -302,6 +352,12 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
     case SDL_EVENT_KEY_DOWN:
+        if (event->key.key == SDLK_LCTRL) {
+            ctrlPressed = true;
+        }
+        if (event->key.key == SDLK_P && ctrlPressed) {
+            angles.save();
+        }
         if (event->key.key == SDLK_E) {
             boxMode = !boxMode;
         }
@@ -343,6 +399,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         break;
     case SDL_EVENT_KEY_UP:
+        if (event->key.key == SDLK_LCTRL) {
+            ctrlPressed = false;
+        }
         if (event->key.key == SDLK_W) {
             moveForward = false;
         }
@@ -463,7 +522,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
         world.clear();
-        bsp.render(camera.position, world);
+        bsp.render(camera.position, world, drawPortals);
 
 
 
@@ -473,7 +532,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         gameRenderer.drawScene(world, models, camera, data);
    
         if (drawPortals) {
-            gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
+            //gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
         }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
@@ -502,6 +561,18 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", data.count);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i (%s)", leafIdx, leaf.valid ? "Inside" : "Void");
 
+    if (angles.loaded) {
+        SDL_RenderDebugText(sdlRenderer, 10, 50, "Angles loaded");
+    }
+
+    if (angles.saved) {
+        SDL_RenderDebugText(sdlRenderer, 10, 60, "Angles saved");
+    }
+
+    if (leaked) {
+        SDL_RenderDebugText(sdlRenderer, 10, 70, "Leak detected!");
+    }
+    
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 

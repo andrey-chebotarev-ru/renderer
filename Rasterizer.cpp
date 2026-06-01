@@ -259,8 +259,13 @@ void Rasterizer::drawSolidSpan(const Span& span, const Color& fill, bool zTest, 
             }
         }
         else {
-            *(Color*)(framebuffer + pos) = fill;
-            zBuffer[zindex] = iz;
+            if (transparent && (((x ^ span.y) & 1) == 0)) {
+                //*(Color*)(framebuffer + pos) = span.fill;
+            }
+            else {
+                *(Color*)(framebuffer + pos) = fill;
+                zBuffer[zindex] = iz;
+            }
         }
 
         

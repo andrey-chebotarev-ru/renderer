@@ -1,6 +1,6 @@
 #include "Geometry.h"
 
-const float Geometry::epsilon = 0.0001f;
+const float Geometry::epsilon = 0.001f;
 
 PlaneBasis::PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v)
 	: origin(origin), u(u), v(v) {

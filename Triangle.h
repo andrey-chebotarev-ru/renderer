@@ -171,8 +171,7 @@ struct Poly2D
 struct Poly3D
 {
     Vertex3DList verts;
-    //size_t texId;
-    //Color fill;
+    
 
     void copyPropertiesFrom(const Poly3D& poly)
     {
@@ -192,9 +191,6 @@ struct Poly3D
         addVert(tri.v0);
         addVert(tri.v1);
         addVert(tri.v2);
-
-       // texId = tri.texId;
-       // fill = tri.fill;
     }
 
     bool isValid() const {
@@ -246,18 +242,25 @@ struct Label
 
 using LabelList = std::vector<Label>;
 
-
+enum class FaceType
+{
+    Solid,
+    Bounds,
+    Debug,
+};
 
 struct Face
 {
+    FaceType type = FaceType::Solid;
+
     Poly3D poly;
 
-    int texIdx;
+    int texIdx = 0;
     Color debugColor;
 
     Face() {};
-    Face(const Poly3D& poly, int texIdx, Color debugColor = Color(255, 255, 255))
-        : poly(poly), texIdx(texIdx), debugColor(debugColor) {
+    Face(const Poly3D& poly, int texIdx, FaceType type = FaceType::Solid, Color debugColor = Color(255, 255, 255))
+        : type(type), poly(poly), texIdx(texIdx), debugColor(debugColor) {
     }
 
     Face(const Face& face, Poly3D& poly)
@@ -270,6 +273,7 @@ struct Face
     {
         texIdx = face.texIdx;
         debugColor = face.debugColor;
+        type = face.type;
     }
 };
 

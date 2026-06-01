@@ -29,7 +29,11 @@ using NodeList = std::vector<Node>;
 struct Leaf
 {
 	bool valid = false;
-	IndicesList indices;
+	bool outside = false;
+
+	IndicesList faceIdxs;
+	IndicesList portalIdxs;
+
 	PlaneList bounds;
 };
 
@@ -38,10 +42,15 @@ using LeafList = std::vector<Leaf>;
 struct Portal
 {
 	Poly3D poly;
-	int nodeIdx;
-	bool valid;
-	int frontNodeIdx;
-	int backNodeIdx;
+	
+	int nodeIdx = -1;
+	
+	int frontNodeIdx = -1;
+	int backNodeIdx = -1;
+
+	int frontLeafIdx = -1;
+	int backLeafIdx = -1;
+	
 	bool visited = false;
 };
 
@@ -65,21 +74,13 @@ struct Splitter
 	int idx;
 };
 
-enum class BSPFaceType
-{
-	Geometry,
-	Bounds,
-	Portal
-};
-
 struct BSPFace
 {
-	BSPFaceType type;
 	Face face;
 	int leafIdx;
 
-	BSPFace(BSPFaceType type, const Face& face, int leafIdx)
-		: type(type), face(face), leafIdx(leafIdx) {
+	BSPFace(const Face& face, int leafIdx)
+		: face(face), leafIdx(leafIdx) {
 	}
 };
 
@@ -94,9 +95,9 @@ enum class PortalSide
 class BSP
 {
 public:
-	
-	void compile(const FaceList& polys, const Vec3& start);
-	void render(const Vec3& pos, World& world);
+
+	bool compile(const FaceList& polys, const Vec3& start);
+	void render(const Vec3& pos, World& world, bool includePortals = false);
 	FaceList renderPortals(const Vec3& pos);
 	LabelList renderPortalLabels(const Vec3& pos);
 
@@ -106,7 +107,7 @@ public:
 	const Leaf& getLeaf(int index) const {
 		return leaves[index];
 	}
-	
+
 	Leaf& getLeaf(int index) {
 		return leaves[index];
 	}
@@ -123,7 +124,7 @@ private:
 	Node& getNode(int index) {
 		return nodes[index];
 	}
-	
+
 	const Node& getNode(int index) const {
 		return nodes[index];
 	}
@@ -136,13 +137,13 @@ private:
 		return portals[index];
 	}
 
-	void floodFill(int leafId);
+	bool floodFill(int leafId);
 
-	int createPortal(const Poly3D& poly, int frontIndex, int backIndex);
-	Poly3D createPortalPoly(const Plane& plane, const PlaneList& bounds);
-	void savePortal(const Portal& portal);
+	int addPortal(const Portal& portal);
+	Portal createPortal(int nodeIdx);
+	PortalList carvePortal(const Portal& portal);
 
-	int addBSPFace(BSPFaceType type, const Face& face, int leafIdx);
+	int addBSPFace(const Face& face, int leafIdx);
 	int createLeaf();
 
 	Poly3D getFromList(int index);
@@ -164,7 +165,6 @@ private:
 	void buildPortalsFromNode(int nodeIdx);
 	void pushPortal(Portal portal, int nodeAIdx, int nodeBIdx);
 	void refinePortalSide(const Portal& portal, int splitNodeIdx, int otherNodeIdx, PortalSide side);
-	void clipPortals();
+	bool clipPortal(Portal& portal);
 	void restoreBorderFaces();
 };
-
