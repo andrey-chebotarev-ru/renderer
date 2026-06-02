@@ -6,7 +6,7 @@ enum Clipper::ClipPlane
 	Far
 };
 
-bool Clipper::inside(const Vertex3D& v, ClipPlane plane, float distance)
+bool Clipper::inside(const Vertex3D& v, ClipPlane plane, float distance) const
 {
 	switch (plane) {
 	case Near:
@@ -16,7 +16,7 @@ bool Clipper::inside(const Vertex3D& v, ClipPlane plane, float distance)
 	}
 }
 
-Vertex3D Clipper::intersect(const Vertex3D& v1, const Vertex3D& v2, float distance)
+Vertex3D Clipper::intersect(const Vertex3D& v1, const Vertex3D& v2, float distance) const
 {
 	float t = (distance - v1.pos.z) / (v2.pos.z - v1.pos.z);;
 
@@ -26,7 +26,7 @@ Vertex3D Clipper::intersect(const Vertex3D& v1, const Vertex3D& v2, float distan
 	return v;
 }
 
-Poly3D Clipper::clipAgainstPlane(const Poly3D& in, ClipPlane plane, float distance)
+Poly3D Clipper::clipAgainstPlane(const Poly3D& in, ClipPlane plane, float distance) const
 {
 	Poly3D out;
 
@@ -58,7 +58,7 @@ Poly3D Clipper::clipAgainstPlane(const Poly3D& in, ClipPlane plane, float distan
 	return out;
 }
 
-Poly3D Clipper::clip(const Poly3D& in, float nearDistance, float farDistance)
+Poly3D Clipper::clip(const Poly3D& in, float nearDistance, float farDistance) const
 {
 	Poly3D out;
 
@@ -68,7 +68,7 @@ Poly3D Clipper::clip(const Poly3D& in, float nearDistance, float farDistance)
 	return out;
 }
 
-Triangle3DList Clipper::clip(const Triangle3& in, float nearDistance, float farDistance)
+Triangle3DList Clipper::clip(const Triangle3& in, float nearDistance, float farDistance) const
 {
 	Poly3D out(in);
 

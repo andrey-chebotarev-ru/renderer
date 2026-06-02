@@ -30,11 +30,14 @@ struct Leaf
 {
 	bool valid = false;
 	bool outside = false;
+	bool visible = false;
 
 	IndicesList faceIdxs;
 	IndicesList portalIdxs;
 
 	PlaneList bounds;
+
+	std::vector<AABB2D> vistedAABBs;
 };
 
 using LeafList = std::vector<Leaf>;
@@ -52,14 +55,10 @@ struct Portal
 	int backLeafIdx = -1;
 	
 	bool visited = false;
+	bool marked = false;
 };
 
 using PortalList = std::vector<Portal>;
-
-struct BoundingBox
-{
-	Vec3 min, max;
-};
 
 struct Context
 {
@@ -101,7 +100,9 @@ public:
 	FaceList renderPortals(const Vec3& pos);
 	LabelList renderPortalLabels(const Vec3& pos);
 
-	int getLeafIdx(const Vec3& pos);
+	PortalList getPortalsInLeaf(int leafIdx) const;
+
+	int getLeafIdx(const Vec3& pos) const;
 
 
 	const Leaf& getLeaf(int index) const {
@@ -110,6 +111,22 @@ public:
 
 	Leaf& getLeaf(int index) {
 		return leaves[index];
+	}
+
+	Portal& getPortal(int index) {
+		return portals[index];
+	}
+
+	const Portal& getPortal(int index) const {
+		return portals[index];
+	}
+
+	int getLeafCount() const {
+		return leaves.size();
+	}
+
+	int getPortalCount() const {
+		return portals.size();
 	}
 
 private:
@@ -129,13 +146,7 @@ private:
 		return nodes[index];
 	}
 
-	Portal& getPortal(int index) {
-		return portals[index];
-	}
-
-	const Portal& getPortal(int index) const {
-		return portals[index];
-	}
+	
 
 	bool floodFill(int leafId);
 
@@ -156,9 +167,9 @@ private:
 
 	Poly3D makePolygonOnPlane(const Plane& plane);
 
-	BoundingBox makeBoundingBox(const FaceList& polys);
-	PlaneList getPlanes(const BoundingBox& bbox);
-	FaceList makeWorldBounds(const BoundingBox& bbox, float padding);
+	AABB3D makeAABB(const FaceList& polys);
+	PlaneList getPlanes(const AABB3D& aabb);
+	FaceList makeWorldBounds(const AABB3D& aabb, float padding);
 
 	void traceFace(const BSPFace& face, int nodeIdx);
 

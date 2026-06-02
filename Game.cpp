@@ -21,6 +21,7 @@
 #include "BSP.h"
 #include "Debug.h"
 #include "Math.h"
+#include "PortalRenderer.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -37,6 +38,7 @@ static Camera camera;
 static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1, 1), Vec3(20, 20, 20), 0)) };
 static World world;
 static BSP bsp;
+static PortalRenderer portalRenderer(gameRenderer, bsp);
 static bool fill = false;
 static bool drawPortals = false;
 
@@ -275,7 +277,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     //list.insert(list.end(), wall.begin(), wall.end());
     //list.insert(list.end(), wall.begin(), wall.end());
 
-    Vec3 pos = { 20, 0, 60 };
+    Vec3 pos = { 20, 0, 70 };
 
     leaked = bsp.compile(list, pos);
 
@@ -522,6 +524,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
         world.clear();
+        portalRenderer.render(camera);
         bsp.render(camera.position, world, drawPortals);
 
 
@@ -533,6 +536,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
    
         if (drawPortals) {
             //gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
+        }
+
+        
+        if (drawPortals) {
+            
         }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */

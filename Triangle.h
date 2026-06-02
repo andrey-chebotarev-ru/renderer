@@ -278,3 +278,13 @@ struct Face
 };
 
 using FaceList = std::vector<Face>;
+
+struct AABB2D
+{
+    Vec2 min, max;
+};
+
+struct AABB3D
+{
+    Vec3 min, max;
+};

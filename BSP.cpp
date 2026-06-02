@@ -94,8 +94,8 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 	nodes.clear();
 	worldFaces.clear();
 
-	BoundingBox worldBBox = makeBoundingBox(faces);
-	FaceList worldBounds = makeWorldBounds(worldBBox, 10.0f);
+	AABB3D worldAABB = makeAABB(faces);
+	FaceList worldBounds = makeWorldBounds(worldAABB, 10.0f);
 
 	FaceList p2 = faces;
 
@@ -104,7 +104,7 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 	}
 
 	Context ctx;
-	ctx.bounds = getPlanes(worldBBox);
+	ctx.bounds = getPlanes(worldAABB);
 
 	rootNodeIndex = createNode();
 	ctx.nodeIdx = rootNodeIndex;
@@ -170,7 +170,6 @@ void BSP::buildPortalsFromNode(int nodeIdx)
 	buildPortalsFromNode(getNode(nodeIdx).backIdx);
 }
 
-
 void BSP::pushPortal(Portal portal, int nodeAIdx, int nodeBIdx)
 {
 	bool aIsLeaf = (getNode(nodeAIdx).leafIdx != -1);
@@ -181,7 +180,6 @@ void BSP::pushPortal(Portal portal, int nodeAIdx, int nodeBIdx)
 		int leafB = getNode(nodeBIdx).leafIdx;
 
 		if (leafA != leafB) {
-			portal.visited = false;
 			portal.frontNodeIdx = nodeAIdx;
 			portal.backNodeIdx = nodeBIdx;
 			portal.frontLeafIdx = leafA;
@@ -492,7 +490,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 	{
 		const Leaf& leaf = getLeaf(node.leafIdx);
 
-		if (leaf.valid) {
+		if (leaf.valid && leaf.visible) {
 			for (int index : leaf.faceIdxs) {
 				BSPFace bspFace = worldFaces[index];
 				bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
@@ -519,7 +517,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 	}
 }
 
-int BSP::getLeafIdx(const Vec3& vec)
+int BSP::getLeafIdx(const Vec3& vec) const
 {
 	int nodeId = rootNodeIndex;
 	while (true) {
@@ -562,45 +560,45 @@ Poly3D BSP::makePolygonOnPlane(const Plane& plane)
 	return poly;
 }
 
-BoundingBox BSP::makeBoundingBox(const FaceList& faces)
+AABB3D BSP::makeAABB(const FaceList& faces)
 {
-	BoundingBox bbox;
+	AABB3D aabb;
 
 	if (faces.size() == 0) {
-		return bbox;
+		return aabb;
 	}
 
 	// FIX
-	bbox.min = bbox.max = faces[0].poly.verts[0].pos;
+	aabb.min = aabb.max = faces[0].poly.verts[0].pos;
 
 	for (const auto& face : faces) {
 
 		for (const auto& vert : face.poly.verts) {
-			bbox.min.x = std::min(bbox.min.x, vert.pos.x);
-			bbox.min.y = std::min(bbox.min.y, vert.pos.y);
-			bbox.min.z = std::min(bbox.min.z, vert.pos.z);
+			aabb.min.x = std::min(aabb.min.x, vert.pos.x);
+			aabb.min.y = std::min(aabb.min.y, vert.pos.y);
+			aabb.min.z = std::min(aabb.min.z, vert.pos.z);
 
-			bbox.max.x = std::max(bbox.max.x, vert.pos.x);
-			bbox.max.y = std::max(bbox.max.y, vert.pos.y);
-			bbox.max.z = std::max(bbox.max.z, vert.pos.z);
+			aabb.max.x = std::max(aabb.max.x, vert.pos.x);
+			aabb.max.y = std::max(aabb.max.y, vert.pos.y);
+			aabb.max.z = std::max(aabb.max.z, vert.pos.z);
 		}
 	}
 
-	return bbox;
+	return aabb;
 }
 
-PlaneList BSP::getPlanes(const BoundingBox& bbox)
+PlaneList BSP::getPlanes(const AABB3D& aabb)
 {
 	PlaneList planes;
 
-	planes.push_back(Plane(Vec3(-1, 0, 0), -bbox.max.x));
-	planes.push_back(Plane(Vec3(1, 0, 0), bbox.min.x));
+	planes.push_back(Plane(Vec3(-1, 0, 0), -aabb.max.x));
+	planes.push_back(Plane(Vec3(1, 0, 0), aabb.min.x));
 
-	planes.push_back(Plane(Vec3(0, -1, 0), -bbox.max.y));
-	planes.push_back(Plane(Vec3(0, 1, 0), bbox.min.y));
+	planes.push_back(Plane(Vec3(0, -1, 0), -aabb.max.y));
+	planes.push_back(Plane(Vec3(0, 1, 0), aabb.min.y));
 
-	planes.push_back(Plane(Vec3(0, 0, -1), -bbox.max.z));
-	planes.push_back(Plane(Vec3(0, 0, 1), bbox.min.z));
+	planes.push_back(Plane(Vec3(0, 0, -1), -aabb.max.z));
+	planes.push_back(Plane(Vec3(0, 0, 1), aabb.min.z));
 
 	return planes;
 }
@@ -679,23 +677,23 @@ bool BSP::floodFill(int leafIdx)
 	return leakDetected;
 }
 
-FaceList BSP::makeWorldBounds(const BoundingBox& src, float padding)
+FaceList BSP::makeWorldBounds(const AABB3D& src, float padding)
 {
 	FaceList polys;
-	BoundingBox bbox = src;
+	AABB3D aabb = src;
 
-	bbox.min -= padding;
-	bbox.max += padding;
+	aabb.min -= padding;
+	aabb.max += padding;
 
-	Vec3 v000 = Vec3(bbox.min.x, bbox.min.y, bbox.min.z);
-	Vec3 v001 = Vec3(bbox.min.x, bbox.min.y, bbox.max.z);
-	Vec3 v010 = Vec3(bbox.min.x, bbox.max.y, bbox.min.z);
-	Vec3 v011 = Vec3(bbox.min.x, bbox.max.y, bbox.max.z);
+	Vec3 v000 = Vec3(aabb.min.x, aabb.min.y, aabb.min.z);
+	Vec3 v001 = Vec3(aabb.min.x, aabb.min.y, aabb.max.z);
+	Vec3 v010 = Vec3(aabb.min.x, aabb.max.y, aabb.min.z);
+	Vec3 v011 = Vec3(aabb.min.x, aabb.max.y, aabb.max.z);
 
-	Vec3 v100 = Vec3(bbox.max.x, bbox.min.y, bbox.min.z);
-	Vec3 v101 = Vec3(bbox.max.x, bbox.min.y, bbox.max.z);
-	Vec3 v110 = Vec3(bbox.max.x, bbox.max.y, bbox.min.z);
-	Vec3 v111 = Vec3(bbox.max.x, bbox.max.y, bbox.max.z);
+	Vec3 v100 = Vec3(aabb.max.x, aabb.min.y, aabb.min.z);
+	Vec3 v101 = Vec3(aabb.max.x, aabb.min.y, aabb.max.z);
+	Vec3 v110 = Vec3(aabb.max.x, aabb.max.y, aabb.min.z);
+	Vec3 v111 = Vec3(aabb.max.x, aabb.max.y, aabb.max.z);
 
 	auto addPoly = [&](const Vec3& vec1, const Vec3& vec2, const Vec3& vec3, const Vec3& vec4) {
 		polys.push_back(Face(Poly3D({ {vec4, {0, 0}}, {vec3, {0, 1}}, {vec2, {1, 1}}, {vec1, {1, 0}} }), 1, FaceType::Bounds));
@@ -709,4 +707,17 @@ FaceList BSP::makeWorldBounds(const BoundingBox& src, float padding)
 	addPoly(v001, v101, v111, v011);
 
 	return polys;
+}
+
+PortalList BSP::getPortalsInLeaf(int leafIdx) const
+{
+	PortalList portals;
+
+	const Leaf& leaf = getLeaf(leafIdx);
+
+	for (int portalIdx : leaf.portalIdxs) {
+		portals.push_back(getPortal(portalIdx));
+	}
+
+	return portals;
 }

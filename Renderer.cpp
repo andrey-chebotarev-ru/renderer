@@ -17,42 +17,42 @@ void Renderer::setTexture(const Texture& texture, size_t index)
     rasterizer.setTexture(texture, index);
 }
 
-void Renderer::transformToWorld(Triangle3& tri, const Transform& tr)
+void Renderer::transformToWorld(Triangle3& tri, const Transform& tr) const
 {
     for (int i = 0; i < 3; i++) {
         tri.v[i].pos = Math::transform(tri.v[i].pos, tr);
     }
 }
 
-void Renderer::transformToWorld(Poly3D& poly, const Transform& tr)
+void Renderer::transformToWorld(Poly3D& poly, const Transform& tr) const
 {
     for (auto& vert : poly.verts) {
         vert.pos = Math::transform(vert.pos, tr);
     }
 }
 
-Vec3 Renderer::transformToView(const Vec3& vec, const Camera& cam)
+Vec3 Renderer::transformToView(const Vec3& vec, const Camera& cam) const
 {
     Vec3 out = vec - cam.position;
 
     return Math::rotate(out, -cam.rotation);
 }
 
-void Renderer::transformToView(Triangle3& tri, const Camera& cam)
+void Renderer::transformToView(Triangle3& tri, const Camera& cam) const
 {
     for (int i = 0; i < 3; i++) {
         tri.v[i].pos = transformToView(tri.v[i].pos, cam);
     }
 }
 
-void Renderer::transformToView(Poly3D& poly, const Camera& cam)
+void Renderer::transformToView(Poly3D& poly, const Camera& cam) const
 {
     for (auto& vert : poly.verts) {
         vert.pos = transformToView(vert.pos, cam);
     }
 }
 
-Vec2 Renderer::project(const Vec3& vec)
+Vec2 Renderer::project(const Vec3& vec) const
 {
     Vec2 proj;
     float invZ = 1.0f / vec.z;
@@ -63,12 +63,9 @@ Vec2 Renderer::project(const Vec3& vec)
     return proj;
 }
 
-Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
+Triangle2 Renderer::project(const Triangle3& tri, int texWidth, int texHeight) const
 {
     Triangle2 proj;
-
-    int texWidth = tex.getWidth();
-    int texHeight = tex.getHeight();
 
     for (int i = 0; i < 3; i++) {
         float invZ = 1.0f / tri.v[i].pos.z;
@@ -84,12 +81,9 @@ Triangle2 Renderer::project(const Triangle3& tri, const Texture& tex)
     return proj;
 }
 
-Poly2D Renderer::project(const Poly3D& poly, const Texture& tex)
+Poly2D Renderer::project(const Poly3D& poly, int texWidth, int texHeight) const
 {
     Poly2D proj;
-
-    int texWidth = tex.getWidth();
-    int texHeight = tex.getHeight();
 
     for (const auto& vert : poly.verts) {
         float invZ = 1.0f / vert.pos.z;
@@ -107,6 +101,54 @@ Poly2D Renderer::project(const Poly3D& poly, const Texture& tex)
     return proj;
 }
 
+Triangle3DList Renderer::clip(const Triangle3& in) const
+{
+    return clipper.clip(in, nearPlaneDistance, farPlaneDistance);
+}
+
+Triangle2DList Renderer::clip(const Triangle2& in) const
+{
+    return viewportClipper.clip(in, viewport);
+}
+
+Poly3D Renderer::clip(const Poly3D& in) const
+{
+    return clipper.clip(in, nearPlaneDistance, farPlaneDistance);
+}
+
+Poly2D Renderer::clip(const Poly2D& in) const
+{
+    return viewportClipper.clip(in, viewport);
+}
+
+bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth, int texHeight) const
+{
+    // Backface culling
+    if (backfaceCulling && Geometry::test(cam.position, in.getPlane()) != Side::Front) {
+        return false;
+    }
+
+    Poly3D poly = in;
+
+    // Transform
+    transformToView(poly, cam);
+
+    // 3D clipping
+    poly = clip(poly);
+
+    if (!poly.isValid()) {
+        return false;
+    }
+
+    // Projection
+    Poly2D projected = project(poly, texWidth, texHeight);
+
+    // Viewport clipping
+    out = clip(projected);
+
+    return out.isValid();
+}
+
 int Renderer::drawModel(const Model& model, const Camera& cam)
 {
     int count = 0;
@@ -120,7 +162,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         transformToWorld(tri, tr);
 
         // Backface culling
-        if (backfaceCulling && Math::distanceToPlane(tri.getPlane(), cam.position) < 0.0f) {
+        if (backfaceCulling && Geometry::test(cam.position, tri.getPlane()) != Side::Front) {
             continue;
         }
 
@@ -128,7 +170,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         transformToView(tri, cam);
 
         // 3D clipping
-        Triangle3DList clippedTris = clipper.clip(tri, nearPlaneDistance, farPlaneDistance);
+        Triangle3DList clippedTris = clip(tri);
 
         if (clippedTris.empty()) {
             continue;
@@ -139,14 +181,14 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         for (const Triangle3& clipped : clippedTris) {
 
             // Projection
-            Triangle2 projected = project(clipped, tex);
+            Triangle2 projected = project(clipped, tex.getWidth(), tex.getHeight());
 
             // Viewport clipping
-            Triangle2DList vpClippedTriangles = viewportClipper.clip(projected, viewport);
+            Triangle2DList vpClippedTriangles = clip(projected);
 
             // Drawing
             for (const auto& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle(vpClipped, tex, zTest);
+                rasterizer.drawTriangle<true>(vpClipped, tex);
                 count++;
             }
         }
@@ -167,53 +209,37 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
             continue;
         }
 
-        // Backface culling
-        if (backfaceCulling && Geometry::test(cam.position, face.poly.getPlane()) == Side::Back && face.type != FaceType::Debug) {
-            continue;
-        }
-
-        // Transform
-        transformToView(face.poly, cam);
-
-        // 3D clipping
-        Poly3D clippedPoly = clipper.clip(face.poly, nearPlaneDistance, farPlaneDistance);
-
-        if (clippedPoly.verts.empty()) {
-            continue;
-        }
-
         if (face.type == FaceType::Debug)
         {
-            Texture tex = rasterizer.getTexture(1);
             Color fillColor = face.debugColor;
 
-            // Projection
-            Poly2D projected = project(clippedPoly, tex);
-
-            // Viewport clipping
-            Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
-
-            count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, true);
-            drawWireframe(vpClippedPoly, Color(0, 0, 0));
+            Poly2D renderPoly;
+            
+            if (!prepareForRendering(renderPoly, face.poly, cam, false)) {
+                continue;
+            }
+            
+            // Drawing
+            count += rasterizer.drawSolidPolygon<false, true>(renderPoly, fillColor);
+            drawWireframe(renderPoly, Color(0, 0, 0));
         }
         else
         {
             Texture tex = rasterizer.getTexture(face.texIdx);
             Color fillColor = face.debugColor;
 
-            // Projection
-            Poly2D projected = project(clippedPoly, tex);
-
-            // Viewport clipping
-            Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
+            Poly2D renderPoly;
+            if (!prepareForRendering(renderPoly, face.poly, cam, true, tex.getWidth(), tex.getHeight())) {
+                continue;
+            }
 
             // Drawing
             if (fill) {
-                count += rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, false);
-                drawWireframe(vpClippedPoly, Color(0, 0, 0));
+                count += rasterizer.drawSolidPolygon<false, false>(renderPoly, fillColor);
+                drawWireframe(renderPoly, Color(0, 0, 0));
             }
             else {
-                count += rasterizer.drawPolygon(vpClippedPoly, tex, zTest);
+                count += rasterizer.drawPolygon<false>(renderPoly, tex);
             }
         }
         
@@ -246,22 +272,21 @@ void Renderer::drawExtras(const FaceList& faces, const Camera& cam)
         transformToView(face.poly, cam);
 
         // 3D clipping
-        Poly3D clippedPoly = clipper.clip(face.poly, nearPlaneDistance, farPlaneDistance);
+        Poly3D clippedPoly = clip(face.poly);
 
         if (clippedPoly.verts.empty()) {
             continue;
         }
 
-        Texture tex = rasterizer.getTexture(1);
         Color fillColor = face.debugColor;
 
         // Projection
-        Poly2D projected = project(clippedPoly, tex);
+        Poly2D projected = project(clippedPoly, 0, 0);
 
         // Viewport clipping
-        Poly2D vpClippedPoly = viewportClipper.clip(projected, viewport);
+        Poly2D vpClippedPoly = clip(projected);
 
-        rasterizer.drawSolidPolygon(vpClippedPoly, fillColor, zTest, true);
+        rasterizer.drawSolidPolygon<true, true>(vpClippedPoly, fillColor);
     }
 }
 
@@ -292,4 +317,17 @@ void Renderer::drawWireframe(const Poly2D& poly, const Color& color)
 
         rasterizer.drawLine(edge.vert1.pos, edge.vert2.pos, color);
     }
+}
+
+void Renderer::drawAABB(const AABB2D& aabb, const Color& color)
+{
+    Vec2 v00 = Vec2(aabb.min.x, aabb.min.y);
+    Vec2 v01 = Vec2(aabb.min.x, aabb.max.y);
+    Vec2 v10 = Vec2(aabb.max.x, aabb.min.y);
+    Vec2 v11 = Vec2(aabb.max.x, aabb.max.y);
+
+    rasterizer.drawLine(v00, v10, color);
+    rasterizer.drawLine(v10, v11, color);
+    rasterizer.drawLine(v11, v01, color);
+    rasterizer.drawLine(v01, v00, color);
 }

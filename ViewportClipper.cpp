@@ -11,7 +11,7 @@ enum ViewportClipper::ClipSide
 	Bottom
 };
 
-bool ViewportClipper::inside(const Vertex2D& v, ClipSide side, const Viewport& viewport)
+bool ViewportClipper::inside(const Vertex2D& v, ClipSide side, const Viewport& viewport) const
 {
 	switch (side) {
 	case Left:
@@ -25,7 +25,7 @@ bool ViewportClipper::inside(const Vertex2D& v, ClipSide side, const Viewport& v
 	}
 }
 
-Vertex2D ViewportClipper::intersect(const Vertex2D& v1, const Vertex2D& v2, ClipSide side, const Viewport& viewport)
+Vertex2D ViewportClipper::intersect(const Vertex2D& v1, const Vertex2D& v2, ClipSide side, const Viewport& viewport) const
 {
 	float t = 0.0f;
 
@@ -51,7 +51,7 @@ Vertex2D ViewportClipper::intersect(const Vertex2D& v1, const Vertex2D& v2, Clip
 	return v;
 }
 
-void ViewportClipper::snapToClipSide(Vertex2D& v, ClipSide side, const Viewport& viewport)
+void ViewportClipper::snapToClipSide(Vertex2D& v, ClipSide side, const Viewport& viewport) const
 {
 	switch (side) {
 	case Left:
@@ -69,7 +69,7 @@ void ViewportClipper::snapToClipSide(Vertex2D& v, ClipSide side, const Viewport&
 	}
 }
 
-Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const Viewport& viewport)
+Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const Viewport& viewport) const
 {
 	Poly2D out;
 
@@ -103,7 +103,7 @@ Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const 
 	return out;
 }
 
-Poly2D ViewportClipper::clip(const Poly2D& in, const Viewport& viewport)
+Poly2D ViewportClipper::clip(const Poly2D& in, const Viewport& viewport) const
 {
 	Poly2D out;
 
@@ -115,7 +115,7 @@ Poly2D ViewportClipper::clip(const Poly2D& in, const Viewport& viewport)
 	return out;
 }
 
-Triangle2DList ViewportClipper::clip(const Triangle2& in, const Viewport& viewport)
+Triangle2DList ViewportClipper::clip(const Triangle2& in, const Viewport& viewport) const
 {
 	Poly2D out(in);
 	

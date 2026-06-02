@@ -63,16 +63,20 @@ public:
 
     void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
 
-    bool drawTriangle(Triangle2 tri, const Texture& tex, bool zTest);
-    bool drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest, bool transparent);
+    template<bool depthTest>
+    bool drawTriangle(Triangle2 tri, const Texture& tex);
 
-    int drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest);
-    int drawSolidPolygon(const Poly2D& poly, const Color& fill, bool zTest, bool transparent);
+    template<bool depthTest, bool screenDoor>
+    bool drawSolidTriangle(Triangle2 tri, const Color& fillColor);
+
+    template<bool depthTest>
+    int drawPolygon(const Poly2D& poly, const Texture& tex);
+    
+    template<bool depthTest, bool screenDoor>
+    int drawSolidPolygon(const Poly2D& poly, const Color& fillColor);
 
     Color blend(const Color& dstColor, const Color& srcColor, float alpha);
     Color darken(const Color& color);
-   
-    int crossProduct(Vec2 v1, Vec2 v2);
     
 private:
     // TODO: framebuffer struct
@@ -92,8 +96,13 @@ private:
     EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
     Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
-    void drawSpan(const Span& span, const Texture& tex, bool zTest);
-    void drawSolidSpan(const Span& span, const Color& fill, bool zTest, bool transparent);
+    
+    template<bool depthTest>
+    void drawSpan(const Span& span, const Texture& tex);
+    
+    template<bool depthTest, bool screenDoor>
+    void drawSolidSpan(const Span& span, const Color& fillColor);
+    
     void setPixel(int x, int y, const Color& color);
 };
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <assert.h>
 
@@ -40,12 +42,50 @@ public:
         fill = false;
     }
 
+    int getScreenWidth() const {
+        return screenWidth;
+    }
+
+    int getScreenHeight() const {
+        return screenHeight;
+    }
+
+    AABB2D getView() const {
+        AABB2D view;
+        view.min.x = 0;
+        view.min.y = 0;
+        view.max.x = screenWidth - 1;
+        view.max.y = screenHeight - 1;
+        return view;
+    }
+
+    void transformToWorld(Triangle3& tri, const Transform& tr) const;
+    void transformToWorld(Poly3D& poly, const Transform& tr) const;
+
+    Vec3 transformToView(const Vec3& vec, const Camera& cam) const;
+    void transformToView(Triangle3& tri, const Camera& cam) const;
+    void transformToView(Poly3D& poly, const Camera& cam) const;
+
+    Vec2 project(const Vec3& vec) const;
+    Triangle2 project(const Triangle3& tri, int texWidth, int texHeight) const;
+    Poly2D project(const Poly3D& poly, int texWidth, int texHeight) const;
+
+    Triangle3DList clip(const Triangle3& in) const;
+    Triangle2DList clip(const Triangle2& in) const;
+
+    Poly3D clip(const Poly3D& in) const;
+    Poly2D clip(const Poly2D& in) const;
+    
+    bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
+
     void setFramebuffer(int pitch, uint8_t* pixels);
     void setTexture(const Texture& texture, size_t index);
     
     void drawScene(const World& world, const ModelList& models, const Camera& cam, Data& data);
     void drawExtras(const FaceList& polys, const Camera& cam);
     void drawLabels(const LabelList& labels, const Camera& cam);
+    void drawWireframe(const Poly2D& poly, const Color& color);
+    void drawAABB(const AABB2D& aabb, const Color& color);
 
 private:
     static const float nearPlaneDistance, farPlaneDistance;
@@ -66,21 +106,13 @@ private:
 
     Debug debug;
 
-    void transformToWorld(Triangle3& tri, const Transform& tr);
-    void transformToWorld(Poly3D& poly, const Transform& tr);
-
-    Vec3 transformToView(const Vec3& vec, const Camera& cam);
-    void transformToView(Triangle3& tri, const Camera& cam);
-    void transformToView(Poly3D& poly, const Camera& cam);
-
-    Vec2 project(const Vec3& vec);
     
-    Triangle2 project(const Triangle3& tri, const Texture& tex);
-    Poly2D project(const Poly3D& poly, const Texture& tex);
+
+    
     
     int drawModel(const Model& model, const Camera& cam);
     int drawWorld(const World& world, const Camera& cam, bool fill);
 
-    void drawWireframe(const Poly2D& poly, const Color& color);
+    
 };
 

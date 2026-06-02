@@ -41,11 +41,6 @@ void Rasterizer::sortTriangle(Triangle2& triangle)
     }
 }
 
-int Rasterizer::crossProduct(Vec2 v1, Vec2 v2)
-{
-    return v1.x * v2.y - v1.y * v2.x;
-}
-
 EdgeStep2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
 {
     EdgeStep2D edge;
@@ -113,7 +108,8 @@ void Rasterizer::setPixel(int x, int y, const Color& color)
     *(Color*)(framebuffer + pos) = color;
 }
 
-void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest)
+template<bool depthTest>
+void Rasterizer::drawSpan(const Span& span, const Texture& tex)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -179,16 +175,18 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest)
 
         for (int i = 0; i < blockLength; i++) {
 
-            if (zTest) {
+            if constexpr (depthTest) {
                 if (zBuffer[zindex] < iz) {
                     *(Color*)(framebuffer + pos) = tex.getSample(u, v);
-                    zBuffer[zindex] = iz;
                 }
             }
             else {
                 *(Color*)(framebuffer + pos) = tex.getSample(u, v);
-                zBuffer[zindex] = iz;
             }
+
+            
+
+            zBuffer[zindex] = iz;
 
             u += duDx;
             v += dvDx;
@@ -208,7 +206,8 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex, bool zTest)
     }
 }
 
-void Rasterizer::drawSolidSpan(const Span& span, const Color& fill, bool zTest, bool transparent)
+template<bool depthTest, bool screenDoor>
+void Rasterizer::drawSolidSpan(const Span& span, const Color& fill)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -245,30 +244,33 @@ void Rasterizer::drawSolidSpan(const Span& span, const Color& fill, bool zTest, 
 
     while (x < x2)
     {
-        if (zTest) {
-            if (zBuffer[zindex] < iz) {
-                if (transparent && (((x ^ span.y) & 1) == 0)) {
-                    //*(Color*)(framebuffer + pos) = span.fill;
+        if constexpr (depthTest) {
+            if (zBuffer[zindex] >= iz) {
+                if constexpr (screenDoor) {
+                    if (((x ^ span.y) & 1)) {
+                        *(Color*)(framebuffer + pos) = fill;
+                        zBuffer[zindex] = iz;
+                    }
                 }
                 else {
                     *(Color*)(framebuffer + pos) = fill;
                     zBuffer[zindex] = iz;
                 }
-                
-                
             }
         }
         else {
-            if (transparent && (((x ^ span.y) & 1) == 0)) {
-                //*(Color*)(framebuffer + pos) = span.fill;
+            if constexpr (screenDoor) {
+                if (((x ^ span.y) & 1)) {
+                    *(Color*)(framebuffer + pos) = fill;
+                    zBuffer[zindex] = iz;
+                }
             }
             else {
                 *(Color*)(framebuffer + pos) = fill;
                 zBuffer[zindex] = iz;
             }
         }
-
-        
+       
         zindex++;
         x++;
         pos += 4;
@@ -313,7 +315,8 @@ void Rasterizer::drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color
     }
 }
 
-bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
+template<bool depthTest>
+bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
 {
     sortTriangle(tri);
 
@@ -332,7 +335,8 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSpan(span, tex, zTest);
+            drawSpan<depthTest>(span, tex);
+
             longEdge.step();
             topEdge.step();
         }
@@ -343,16 +347,24 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex, bool zTest)
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSpan(span, tex, zTest);
+            drawSpan<depthTest>(span, tex);
+            
             longEdge.step();
             bottomEdge.step();
         }
     }
 
+ 
     return true;
 }
 
-bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest, bool transparent)
+template bool Rasterizer::drawSolidTriangle<false, false>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawSolidTriangle<true, false>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawSolidTriangle<false, true>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawSolidTriangle<true, true>(Triangle2 tri, const Color& fillColor);
+
+template<bool depthTest, bool screenDoor>
+bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fillColor)
 {
     sortTriangle(tri);
 
@@ -371,7 +383,8 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest,
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSolidSpan(span, fill, zTest, transparent);
+            drawSolidSpan<depthTest, screenDoor>(span, fillColor);
+            
             longEdge.step();
             topEdge.step();
         }
@@ -382,7 +395,8 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest,
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSolidSpan(span, fill, zTest, transparent);
+            drawSolidSpan<depthTest, screenDoor>(span, fillColor);
+            
             longEdge.step();
             bottomEdge.step();
         }
@@ -391,13 +405,17 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fill, bool zTest,
     return true;
 }
 
-int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest)
+template int Rasterizer::drawPolygon<true>(const Poly2D& poly, const Texture& tex);
+template int Rasterizer::drawPolygon<false>(const Poly2D& poly, const Texture& tex);
+
+template<bool depthTest>
+int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex)
 {
     Triangle2DList tris = poly.triangulate();
     int count = 0;
 
     for (int i = 0; i < tris.size(); i++) {
-        if (drawTriangle(tris[i], tex, zTest)) {
+        if (drawTriangle<depthTest>(tris[i], tex)) {
             count++;
         }
     }
@@ -405,13 +423,19 @@ int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex, bool zTest)
     return count;
 }
 
-int Rasterizer::drawSolidPolygon(const Poly2D& poly, const Color& fill, bool zTest, bool transparent)
+template int Rasterizer::drawSolidPolygon<false, false>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawSolidPolygon<true, false>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawSolidPolygon<false, true>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawSolidPolygon<true, true>(const Poly2D& poly, const Color& fillColor);
+
+template<bool depthTest, bool screenDoor>
+int Rasterizer::drawSolidPolygon(const Poly2D& poly, const Color& fillColor)
 {
     Triangle2DList tris = poly.triangulate();
     int count = 0;
-
+    
     for (int i = 0; i < tris.size(); i++) {
-        if (drawSolidTriangle(tris[i], fill, zTest, transparent)) {
+        if (drawSolidTriangle<depthTest, screenDoor>(tris[i], fillColor)) {
             count++;
         }
     }
