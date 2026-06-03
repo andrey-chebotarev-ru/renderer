@@ -5,6 +5,11 @@
 
 #include <SDL3/SDL.h>
 
+Leaf BSP::getLeaf(const Vec3& pos) const
+{
+	return getLeaf(getLeafIdx(pos));
+}
+
 Splitter BSP::findSplitter(const FaceList& faces)
 {
 	Splitter splitter = {
@@ -357,6 +362,7 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 
 				coplanarFaces.push_back(coplanarFace);
 				frontFaces.push_back(coplanarFace);
+				backFaces.push_back(coplanarFace);
 			}
 			else if (splittedPoly.result == SplitResult3D::Front) {
 				frontFaces.push_back(Face(face, splittedPoly.front));

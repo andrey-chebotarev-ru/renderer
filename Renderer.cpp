@@ -121,6 +121,45 @@ Poly2D Renderer::clip(const Poly2D& in) const
     return viewportClipper.clip(in, viewport);
 }
 
+Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling, int texWidth, int texHeight) const
+{
+    Triangle2DList out;
+
+    // Backface culling
+    if (backfaceCulling && Geometry::test(cam.position, in.getPlane()) != Side::Front) {
+        return out;
+    }
+
+    Triangle3 tri = in;
+
+    // Transform
+    transformToView(tri, cam);
+
+    // 3D clipping
+    Triangle3DList clippedTris = clip(tri);
+
+    if (clippedTris.empty()) {
+        return out;
+    }
+
+    for (const auto& clippedTri : clippedTris) {
+        Triangle2 projectedTri = project(clippedTri, texWidth, texHeight);
+
+        // Viewport clipping
+        Triangle2DList vpClippedTris = clip(projectedTri);
+
+        if (vpClippedTris.empty()) {
+            return out;
+        }
+
+        for (const auto& vpClippedTri : vpClippedTris) {
+            out.push_back(vpClippedTri);
+        }
+    }
+
+    return out;
+}
+
 bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth, int texHeight) const
 {
     // Backface culling
@@ -141,10 +180,10 @@ bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& 
     }
 
     // Projection
-    Poly2D projected = project(poly, texWidth, texHeight);
+    Poly2D projectedPoly = project(poly, texWidth, texHeight);
 
     // Viewport clipping
-    out = clip(projected);
+    out = clip(projectedPoly);
 
     return out.isValid();
 }
@@ -153,44 +192,23 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 {
     int count = 0;
 
-    for (int i = 0; i < model.getSize(); i++) {
-
-        Triangle3 tri = model.getTriangle(i);
+    for (int triIdx = 0; triIdx < model.getSize(); triIdx++) {
+        Triangle3 tri = model.getTriangle(triIdx);
         Transform tr = Transform(Vec3(1.0f, 1.0f, 1.0f), model.getRotation(), model.getPosition());
-        
-        // Transform
+
         transformToWorld(tri, tr);
-
-        // Backface culling
-        if (backfaceCulling && Geometry::test(cam.position, tri.getPlane()) != Side::Front) {
-            continue;
-        }
-
-        // Transform
-        transformToView(tri, cam);
-
-        // 3D clipping
-        Triangle3DList clippedTris = clip(tri);
-
-        if (clippedTris.empty()) {
-            continue;
-        }
 
         Texture tex = rasterizer.getTexture(model.getTextureIndex());
 
-        for (const Triangle3& clipped : clippedTris) {
+        Triangle2DList preparedTris = prepareForRendering(tri, cam, true, tex.getWidth(), tex.getHeight());
 
-            // Projection
-            Triangle2 projected = project(clipped, tex.getWidth(), tex.getHeight());
-
-            // Viewport clipping
-            Triangle2DList vpClippedTriangles = clip(projected);
-
-            // Drawing
-            for (const auto& vpClipped : vpClippedTriangles) {
-                rasterizer.drawTriangle<true>(vpClipped, tex);
-                count++;
-            }
+        if (preparedTris.empty()) {
+            continue;
+        }
+        
+        for (const auto& preparedTri : preparedTris) {
+            rasterizer.drawTriangle<true>(preparedTri, tex);
+            count++;
         }
     }
 
@@ -201,9 +219,9 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 {
     int count = 0;
 
-    for (int i = 0; i < world.getSize(); i++) {
+    for (int faceIdx = 0; faceIdx < world.getSize(); faceIdx++) {
 
-        Face face = world.getFace(i);
+        const Face& face = world.getFace(faceIdx);
 
         if (face.type == FaceType::Bounds) {
             continue;
@@ -248,45 +266,29 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
     return count;
 }
 
-void Renderer::drawScene(const World& world, const ModelList&models, const Camera& cam, Data& data)
+int Renderer::drawScene(const World& world, const ModelList&models, const Camera& cam, bool debug)
 {
     rasterizer.clearBuffers();
     
-    backfaceCulling = true;
+    int count = drawWorld(world, cam, debug);
 
-    zTest = false;
-    data.count = drawWorld(world, cam, fill);
-
-    zTest = true;
     for (const Model& model : models) {
-        data.count += drawModel(model, cam);
+        count += drawModel(model, cam);
     }
+
+    return count;
 }
 
 void Renderer::drawExtras(const FaceList& faces, const Camera& cam)
 {
-    zTest = true;
+    for (const auto& face : faces) {
+        Poly2D poly;
 
-    for (auto face : faces) {
-        // Transform
-        transformToView(face.poly, cam);
-
-        // 3D clipping
-        Poly3D clippedPoly = clip(face.poly);
-
-        if (clippedPoly.verts.empty()) {
+        if (!prepareForRendering(poly, face.poly, cam, false)) {
             continue;
         }
 
-        Color fillColor = face.debugColor;
-
-        // Projection
-        Poly2D projected = project(clippedPoly, 0, 0);
-
-        // Viewport clipping
-        Poly2D vpClippedPoly = clip(projected);
-
-        rasterizer.drawSolidPolygon<true, true>(vpClippedPoly, fillColor);
+        rasterizer.drawSolidPolygon<true, true>(poly, face.debugColor);
     }
 }
 
@@ -313,7 +315,7 @@ void Renderer::drawLabels(const LabelList& labels, const Camera& cam)
 void Renderer::drawWireframe(const Poly2D& poly, const Color& color)
 {
     for (int edgeIdx = 0; edgeIdx < poly.getEdgeCount(); edgeIdx++) {
-        Edge2D edge = poly.getEdge(edgeIdx);
+        const Edge2D& edge = poly.getEdge(edgeIdx);
 
         rasterizer.drawLine(edge.vert1.pos, edge.vert2.pos, color);
     }

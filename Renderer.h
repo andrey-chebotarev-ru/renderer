@@ -27,19 +27,13 @@ struct Data
 class Renderer
 {
 public:
-    bool fill;
-
-
+    
     Renderer(size_t screenWidth, size_t screenHeight, float fov, const Debug& debug)
-        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth, 0, screenHeight), debug(debug)
+        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth - 1, 0, screenHeight - 1), debug(debug)
     {
         screenCenter = Vec2(float(screenWidth) / 2, screenHeight / 2);
         focusDistance = screenCenter.x / tanf(Math::degToRad(fov) / 2);
         aspect = float(screenWidth) / screenHeight;
-
-        backfaceCulling = false;
-        zTest = false;
-        fill = false;
     }
 
     int getScreenWidth() const {
@@ -76,12 +70,13 @@ public:
     Poly3D clip(const Poly3D& in) const;
     Poly2D clip(const Poly2D& in) const;
     
+    Triangle2DList prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
     bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     void setTexture(const Texture& texture, size_t index);
     
-    void drawScene(const World& world, const ModelList& models, const Camera& cam, Data& data);
+    int drawScene(const World& world, const ModelList& models, const Camera& cam, bool debug);
     void drawExtras(const FaceList& polys, const Camera& cam);
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);
@@ -90,9 +85,6 @@ public:
 private:
     static const float nearPlaneDistance, farPlaneDistance;
     int screenWidth, screenHeight;
-
-    bool backfaceCulling;
-    bool zTest;
 
     Vec2 screenCenter;
     float focusDistance;
@@ -111,7 +103,7 @@ private:
     
     
     int drawModel(const Model& model, const Camera& cam);
-    int drawWorld(const World& world, const Camera& cam, bool fill);
+    int drawWorld(const World& world, const Camera& cam, bool debug);
 
     
 };

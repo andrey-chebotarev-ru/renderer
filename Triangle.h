@@ -92,10 +92,10 @@ struct Triangle3
     
     Plane getPlane() const;
 
-    size_t texId;
+    int texId;
     Color fill;
 
-    Triangle3(Vertex3D v0, Vertex3D v1, Vertex3D v2, size_t texId) : v0(v0), v1(v1), v2(v2), texId(texId) {}
+    Triangle3(Vertex3D v0, Vertex3D v1, Vertex3D v2, int texId) : v0(v0), v1(v1), v2(v2), texId(texId) {}
     Triangle3() {}
 };
 

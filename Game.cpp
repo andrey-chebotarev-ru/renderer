@@ -99,17 +99,34 @@ struct Angles
 
 static Angles angles;
 static bool leaked = false;
+static bool update = true;
 
-bool loadTexture(const char* filename, int index)
+
+enum TextureIdx
+{
+    Brick1,
+    Brick2,
+    Cells1,
+    Cells2,
+    Cells3,
+    Rock1,
+    Wood1,
+};
+
+bool loadTexture(const char* filename, TextureIdx idx)
 {
     SDL_Surface* loadedTexture = NULL;
 
-    if (!(loadedTexture = IMG_Load(filename))) {
+    char buf[256];
+
+    sprintf_s(buf, "textures/%s", filename);
+
+    if (!(loadedTexture = IMG_Load(buf))) {
         SDL_Log("Couldn't load image: %s", SDL_GetError());
         return false;
     }
 
-    if (!(sdlTexture[index] = SDL_ConvertSurface(loadedTexture, SDL_PIXELFORMAT_RGBA32))) {
+    if (!(sdlTexture[idx] = SDL_ConvertSurface(loadedTexture, SDL_PIXELFORMAT_RGBA32))) {
         SDL_DestroySurface(loadedTexture);
         SDL_Log("Couldn't convert texture: %s", SDL_GetError());
         return false;
@@ -118,9 +135,9 @@ bool loadTexture(const char* filename, int index)
     SDL_DestroySurface(loadedTexture);
 
 
-    SDL_LockSurface(sdlTexture[index]);
+    SDL_LockSurface(sdlTexture[idx]);
     
-    gameRenderer.setTexture(Texture(sdlTexture[index]->w, sdlTexture[index]->h, sdlTexture[index]->pitch, (uint8_t*)sdlTexture[index]->pixels), index);
+    gameRenderer.setTexture(Texture(sdlTexture[idx]->w, sdlTexture[idx]->h, sdlTexture[idx]->pitch, (uint8_t*)sdlTexture[idx]->pixels), idx);
 
     return true;
 }
@@ -142,128 +159,54 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     // v1
     Vec2List points = {
         {0, 0},
+        {50, 0},
+        {50, 50},
+        {100, 50},
         {100, 0},
-        {100, 150},
-        {120, 150},
-        {120, 100},
-        {200, 100},
-        {200, 0},
-        {300, 0},
-        {450, 60},
-        {500, 110},
-        {300, 200},
-        {0, 200}
-    };
-
-    /*
-    * //v4
-    Vec2List points = {
-        {0, 0},
-        {100, 0},
-        {100, 100},
-        {0, 100},
-    };
-    */
-
-
-    // v3
-    /*
-    Vec2List points = {
-        {0, 0},
-        {100, 0},
-        {100, 100},
-        {100, 0},
-        {200, 0},
-        {200, 100},
-        {200, 200},
-        {150, 200},
-        {200, 200},
-        {200, 400},
-        {0, 400},
-    };
-    */
-    
-     // v2
-    /*
-    Vec2List points = {
-        {0, 0},
-        {100, 0},
-        {100, 100},
         {200, 50},
-        {200, 200},
-        {120, 200},
-        {220, 250},
-        {110, 400},
-        {50, 400},
-        {0, 250}
-    };
-    */
-
-    /*
-    Vec2List points = {
-        {-100, -100},
-        {250, -100},
+        {250, 50},
         {250, 100},
-        {-100, 100},
+        {100, 100},
+        {100, 120},
+        {0, 120},
+       
     };
-    */
 
     Vec2List points2 = {
-        {-200, -200},
-        {350, -200},
+        {250, 50},
+        {350, 50},
         {350, 200},
-        {-200, 200},
+        {300, 200},
+        {300, 300},
+        {350, 200}, //p
+        {300, 350}, //p
+        {250, 350},
+        {250, 150},
+        {300, 150},
+        {300, 100},
+        {250, 100},
+
     };
 
-    Vec2List points3 = {
-        {-400, -400},
-        {550, -400},
-        {550, 400},
-        {-400, 400},
-    };
-
-
-
-
-    FaceList list = Constructor::map(points, 100, 1);
     
-    FaceList list2 = Constructor::map(points2, 300, 1);
 
 
-    //Poly3DList wall = Constructor::wall(Vec2(-50, 100), Vec2(-50, 0), 100, 2);
 
-  
-    /*
-    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(30.0f), Math::degToRad(30.0f), Math::degToRad(30.0f)), Vec3(200, 0, 190)));
-    Constructor::insert(list, cube, 5);
 
-    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(0.0f), Math::degToRad(0.0f), Math::degToRad(30.0f)), Vec3(40, 0, 50)));
-    Constructor::insert(list, cube1, 5);
+    FaceList list = Constructor::map(points, 100, Brick1, Cells1, Cells2);
+    list.erase(list.begin() + 7);
 
-    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(140.0f), Math::degToRad(0.0f), Math::degToRad(-23.0f)), Vec3(40, 0, 150)));
-    Constructor::insert(list, cube2, 5);
+    FaceList list2 = Constructor::map(points2, 100, Brick2, Rock1, Cells3);
+    list2.erase(list2.begin());
 
-    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 500, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(90.0f), Math::degToRad(0.0f), Math::degToRad(0.0f)), Vec3(240, 0, 150)));
-    Constructor::insert(list, cube3, 5);
-    */
-    Poly3DList cube = Constructor::polyCube(Vec2(1, 1), Vec3(30, 40, 20), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[0]), Math::degToRad(angles.values[1]), Math::degToRad(angles.values[2])), Vec3(200, 0, 190)));
-    Constructor::insert(list, cube, 5);
+    Poly3DList cube1 = Constructor::polyCube(Vec3(30, 40, 20));
+    Constructor::insert(list, cube1, Wood1, Vec3(60, 60, 60));
+    
+    list.insert(list.end(), list2.begin(), list2.end());
+    
 
-    Poly3DList cube1 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[3]), Math::degToRad(angles.values[4]), Math::degToRad(angles.values[5])), Vec3(40, 0, 50)));
-    Constructor::insert(list, cube1, 5);
+    Poly3DList cube2 = Constructor::polyCube(Vec3(10, 500, 10));
 
-    Poly3DList cube2 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[6]), Math::degToRad(angles.values[7]), Math::degToRad(angles.values[8])), Vec3(40, 0, 150)));
-    Constructor::insert(list, cube2, 5);
-
-    Poly3DList cube3 = Constructor::polyCube(Vec2(1, 10), Vec3(10, 300, 10), Transform(Vec3(1, 1, 1), Vec3(Math::degToRad(angles.values[9]), Math::degToRad(angles.values[10]), Math::degToRad(angles.values[11])), Vec3(240, 0, 150)));
-    Constructor::insert(list, cube3, 5);
-
-    //Poly3DList wall = Constructor::wall(Vec2(-300, 100), Vec2(-300, 0), 100);
-    //Constructor::insert(list, wall, 2);
-
-    //list.push_back(poly);
-
-    //list.insert(list.end(), list2.begin(), list2.end());
 
     
     
@@ -326,7 +269,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
 
     
-    if (!loadTexture("wall.jpg", 1) || !loadTexture("box.jpg", 2) || !loadTexture("floor.jpg", 3) || !loadTexture("ceil.jpg", 4) || !loadTexture("box2.jpg", 5)) {
+    if (!loadTexture("brick1.jpg", Brick1) ||
+        !loadTexture("brick2.jpg", Brick2) ||
+        !loadTexture("cells1.jpg", Cells1) ||
+        !loadTexture("cells2.jpg", Cells2) ||
+        !loadTexture("cells3.jpg", Cells3) ||
+        !loadTexture("rock1.jpg", Rock1)   ||
+        !loadTexture("wood1.jpg", Wood1))  {
         return SDL_APP_FAILURE;
     }
    
@@ -347,6 +296,7 @@ static bool renderOnlyCurrentLeaf = false;
 static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
 static bool ctrlPressed = false;
+static bool drawAABBs = false;
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -371,6 +321,12 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_F) {
             drawPortals = !drawPortals;
+        }
+        if (event->key.key == SDLK_C) {
+            drawAABBs = !drawAABBs;
+        }
+        if (event->key.key == SDLK_U) {
+            update = !update;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -520,27 +476,36 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
     Data data;
 
+    int count = 0;
 
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
+        gameRenderer.setFramebuffer(pitch, pixels);
+
         world.clear();
-        portalRenderer.render(camera);
+
+        if (update) {
+            portalRenderer.render(camera);
+        }
+        
         bsp.render(camera.position, world, drawPortals);
 
 
 
-        gameRenderer.fill = fill;
-        gameRenderer.setFramebuffer(pitch, pixels);
+       
 
-        gameRenderer.drawScene(world, models, camera, data);
+        count = gameRenderer.drawScene(world, models, camera, fill);
    
         if (drawPortals) {
             //gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
         }
 
         
-        if (drawPortals) {
-            
+        if (drawAABBs) {
+            portalRenderer.drawAABBs(camera);
+            for (const auto& intersection : portalRenderer.intersections) {
+                gameRenderer.drawAABB(intersection, Color(255, 255, 255));
+            }
         }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
@@ -562,23 +527,27 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     
     int leafIdx = bsp.getLeafIdx(camera.position);
-    auto leaf = bsp.getLeaf(leafIdx);
+    const Leaf& leaf = bsp.getLeaf(leafIdx);
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", data.count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i (%s)", leafIdx, leaf.valid ? "Inside" : "Void");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", count);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s)", leafIdx, leaf.valid ? "Inside" : "Void");
 
     if (angles.loaded) {
-        SDL_RenderDebugText(sdlRenderer, 10, 50, "Angles loaded");
+        SDL_RenderDebugText(sdlRenderer, 10, 40, "Angles loaded");
     }
 
     if (angles.saved) {
-        SDL_RenderDebugText(sdlRenderer, 10, 60, "Angles saved");
+        SDL_RenderDebugText(sdlRenderer, 10, 50, "Angles saved");
     }
 
     if (leaked) {
-        SDL_RenderDebugText(sdlRenderer, 10, 70, "Leak detected!");
+        SDL_RenderDebugText(sdlRenderer, 10, 60, "Leak detected!");
+    }
+
+    if (!update) {
+        SDL_RenderDebugText(sdlRenderer, 10, 70, "Hold");
     }
     
 

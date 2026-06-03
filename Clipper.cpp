@@ -30,29 +30,26 @@ Poly3D Clipper::clipAgainstPlane(const Poly3D& in, ClipPlane plane, float distan
 {
 	Poly3D out;
 
-	if (in.verts.empty()) {
+	if (!in.isValid()) {
 		return out;
 	}
 
-	const Vertex3D* previous = &in.verts.back();
-	bool previousInside = inside(*previous, plane, distance);
+	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
+		const Edge3D& edge = in.getEdge(edgeIdx);
+		
+		bool vert1Inside = inside(edge.vert1, plane, distance);
+		bool vert2Inside = inside(edge.vert2, plane, distance);
 
-	for (const auto& current : in.verts) {
-		bool currentInside = inside(current, plane, distance);
-
-		if (previousInside && currentInside) {
-			out.addVert(current);
+		if (vert1Inside && vert2Inside) {
+			out.addVert(edge.vert2);
 		}
-		else if (previousInside && !currentInside) {
-			out.addVert(intersect(*previous, current, distance));
+		else if (vert1Inside && !vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, distance));
 		}
-		else if (!previousInside && currentInside) {
-			out.addVert(intersect(*previous, current, distance));
-			out.addVert(current);
+		else if (!vert1Inside && vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, distance));
+			out.addVert(edge.vert2);
 		}
-
-		previous = &current;
-		previousInside = currentInside;
 	}
 
 	return out;

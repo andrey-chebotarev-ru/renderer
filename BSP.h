@@ -104,6 +104,7 @@ public:
 
 	int getLeafIdx(const Vec3& pos) const;
 
+	Leaf getLeaf(const Vec3& pos) const;
 
 	const Leaf& getLeaf(int index) const {
 		return leaves[index];

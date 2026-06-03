@@ -79,25 +79,22 @@ Poly2D ViewportClipper::clipAgainstPlane(const Poly2D& in, ClipSide side, const 
 		return out;
 	}
 
-	const Vertex2D* previous = &in.verts.back();
-	bool previousInside = inside(*previous, side, viewport);
+	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
+		const Edge2D& edge = in.getEdge(edgeIdx);
 
-	for (const auto& current : in.verts) {
-		bool currentInside = inside(current, side, viewport);
+		bool vert1Inside = inside(edge.vert1, side, viewport);
+		bool vert2Inside = inside(edge.vert2, side, viewport);
 
-		if (previousInside && currentInside) {
-			out.addVert(current);
+		if (vert1Inside && vert2Inside) {
+			out.addVert(edge.vert2);
 		}
-		else if (previousInside && !currentInside) {
-			out.addVert(intersect(*previous, current, side, viewport));
+		else if (vert1Inside && !vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, side, viewport));
 		}
-		else if (!previousInside && currentInside) {
-			out.addVert(intersect(*previous, current, side, viewport));
-			out.addVert(current);
+		else if (!vert1Inside && vert2Inside) {
+			out.addVert(intersect(edge.vert1, edge.vert2, side, viewport));
+			out.addVert(edge.vert2);
 		}
-
-		previous = &current;
-		previousInside = currentInside;
 	}
 
 	return out;

@@ -151,7 +151,7 @@ void Geometry::subtractPoly(const Poly2D& poly, const Poly2D& cutter, int edgeId
 		return;
 	}
 
-	Edge2D cutterEdge = cutter.getEdge(edgeIdx);
+	const Edge2D& cutterEdge = cutter.getEdge(edgeIdx);
 
 	SplittedPoly2D splittedPoly = splitAgainstLine(poly, cutterEdge.line);
 
@@ -322,7 +322,7 @@ SplittedPoly3D Geometry::split(const Poly3D& in, const Plane& plane)
 	}
 
 	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
-		Edge3D edge = in.getEdge(edgeIdx);
+		const Edge3D& edge = in.getEdge(edgeIdx);
 
 		Side vert1Side = test(edge.vert1.pos, plane);
 		Side vert2Side = test(edge.vert2.pos, plane);
@@ -373,7 +373,7 @@ Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
 	}
 
 	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
-		Edge3D edge = in.getEdge(edgeIdx);
+		const Edge3D& edge = in.getEdge(edgeIdx);
 
 		bool vert1Inside = (test(edge.vert1.pos, plane) == Side::Front);
 		bool vert2Inside = (test(edge.vert2.pos, plane) == Side::Front);

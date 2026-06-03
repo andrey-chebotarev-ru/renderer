@@ -29,20 +29,22 @@ bool PortalRenderer::projectPortal(ProjectedPortal& out, const Portal& in, const
 	return true;
 }
 
-void PortalRenderer::render(Camera& cam) const
+void PortalRenderer::render(Camera& cam)
 {
-	
+	intersections.clear();
 
-	for (int i = 0; i < bsp.getPortalCount(); i++) {
-		bsp.getPortal(i).marked = false;
+	int currentLeafIdx = bsp.getLeafIdx(cam.position);
+	Leaf& currentLeaf = bsp.getLeaf(currentLeafIdx);
+
+	if (currentLeaf.valid) {
+		for (int leafIdx = 0; leafIdx < bsp.getLeafCount(); leafIdx++) {
+			Leaf& leaf = bsp.getLeaf(leafIdx);
+			leaf.vistedAABBs.clear();
+			leaf.visible = false;
+		}
+
+		traverse(currentLeafIdx, cam, renderer.getView(), 0);
 	}
-
-	for (int i = 0; i < bsp.getLeafCount(); i++) {
-		bsp.getLeaf(i).vistedAABBs.clear();
-		bsp.getLeaf(i).visible = false;
-	}
-
-	traverse(bsp.getLeafIdx(cam.position), cam, renderer.getView(), 0);
 }
 
 static bool contains(const AABB2D& outer, const AABB2D& inner)
@@ -65,24 +67,7 @@ bool PortalRenderer::isContainedInPrevAABB(int leafIdx, const AABB2D& aabb) cons
 	return false;
 }
 
-bool crossesNearPlane(const Poly3D& poly, float distance)
-{
-	bool hasFront = false;
-	bool hasBack = false;
-
-	for (const auto& vert : poly.verts) {
-		if (vert.pos.z >= distance) {
-			hasFront = true;
-		}
-		else {
-			hasBack = true;
-		}
-	}
-
-	return hasFront && hasBack;
-}
-
-void PortalRenderer::traverse(int leafIdx, const Camera& cam, const AABB2D& view, int depth) const
+void PortalRenderer::traverse(int leafIdx, const Camera& cam, const AABB2D& view, int depth)
 {
 	if (depth > 64) {
 		return;
@@ -93,40 +78,30 @@ void PortalRenderer::traverse(int leafIdx, const Camera& cam, const AABB2D& view
 	}
 
 	bsp.getLeaf(leafIdx).visible = true;
+
+
 	
 	for (int portalIdx : bsp.getLeaf(leafIdx).portalIdxs) {
-		
+		const Portal& portal = bsp.getPortal(portalIdx);
+
 		AABB2D intersection;
-		if (std::abs(Math::distanceToPlane(bsp.getPortal(portalIdx).poly.getPlane(), cam.position)) < 2.0f)
+		if (std::abs(Math::distanceToPlane(portal.poly.getPlane(), cam.position)) < 2.0f)
 		{
 			intersection = view;
 		}
 		else {
 			ProjectedPortal projectedPortal;
-			if (!projectPortal(projectedPortal, bsp.getPortal(portalIdx), cam)) {
+			if (!projectPortal(projectedPortal, portal, cam)) {
 				continue;
 			}
-
 
 			if (!aabbIntersection(intersection, projectedPortal.aabb, view)) {
 				continue;
 			}
 		}
 		
-		
-
-		
-		
-		int otherIdx = (bsp.getPortal(portalIdx).frontLeafIdx == leafIdx ? bsp.getPortal(portalIdx).backLeafIdx : bsp.getPortal(portalIdx).frontLeafIdx);
-		
-		
-		//bsp.getPortal(portalIdx).marked = true;
-
+		int otherIdx = (portal.frontLeafIdx == leafIdx ? portal.backLeafIdx : portal.frontLeafIdx);
 		traverse(otherIdx, cam, intersection, depth + 1);
-
-		//bsp.getLeaf(otherIdx).visible = true;
-
-		//renderer.drawAABB(projectedPortal.aabb, Color::getDebugColor(projectedPortal.frontLeafIdx + projectedPortal.backLeafIdx));
 	}
 }
 
@@ -139,4 +114,20 @@ bool PortalRenderer::aabbIntersection(AABB2D& out, const AABB2D& in1, const AABB
 	out.max.y = std::min(in1.max.y, in2.max.y);
 
 	return (out.min.x < out.max.x && out.min.y < out.max.y);
+}
+
+void PortalRenderer::drawAABBs(const Camera& cam) const
+{
+	const Leaf& leaf = bsp.getLeaf(bsp.getLeafIdx(cam.position));
+
+	for (int portalIdx : leaf.portalIdxs) {
+
+		ProjectedPortal projectedPortal;
+
+		if (!projectPortal(projectedPortal, bsp.getPortal(portalIdx), cam)) {
+			continue;
+		}
+
+		renderer.drawAABB(projectedPortal.aabb, Color::getDebugColor(projectedPortal.frontLeafIdx + projectedPortal.backLeafIdx));
+	}
 }

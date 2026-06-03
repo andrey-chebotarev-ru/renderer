@@ -22,11 +22,14 @@ public:
 
 	}
 
+	std::vector<AABB2D> intersections;
+
 	bool projectPortal(ProjectedPortal& out, const Portal& portal, const Camera& cam) const;
-	void render(Camera& cam) const;
-	void traverse(int leafIdx, const Camera& cam, const AABB2D& view, int depth) const;
+	void render(Camera& cam);
+	void traverse(int leafIdx, const Camera& cam, const AABB2D& view, int depth);
 	bool aabbIntersection(AABB2D& out, const AABB2D& in1, const AABB2D& in2) const;
 	bool isContainedInPrevAABB(int leafIdx, const AABB2D& aabb) const;
+	void drawAABBs(const Camera& cam) const;
 
 private:
 	Renderer& renderer;
