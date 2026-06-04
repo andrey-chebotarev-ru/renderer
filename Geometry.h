@@ -63,13 +63,17 @@ class Geometry
 public:
 	static const float epsilon;
 
+	static void makeCW(Poly2D& poly);
+	static void makeCCW(Poly2D& poly);
 	static Side test(const Line& line, const Vec2& vec);
 	static Vertex2D intersect(const Vertex2D& vert1, const Vertex2D& vert2, const Line& line);
 	static SplittedPoly2D splitAgainstLine(const Poly2D& in, const Line& line);
-	static Poly2DList subtract(const Poly2D& poly, const Poly2D& cutter, float minArea);
-	static Poly3DList subtract(const Poly3D& poly, const Poly3D& cutter, const Plane& plane, float minArea);
+	static Poly2DList subtract(Poly2D in, Poly2D cutter, float minArea);
+	static Poly3DList subtract(const Poly3D& in, const Poly3D& cutter, const Plane& plane, float minArea);
 	static bool satOverlap(const Poly2D& poly1, const Poly2D& poly2);
 
+	static void makeCW(Poly3D& poly);
+	static void makeCCW(Poly3D& poly);
 	static Side test(const Vec3& vec, const Plane& plane);
 	static SplitResult3D classify(const Poly3D& poly, const Plane& plane);
 	static Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);

@@ -125,7 +125,7 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 	//restoreBorderFaces();
 }
 
-void BSP::traceFace(const BSPFace& face, int nodeIdx)
+void BSP::pushFace(const BSPFace& face, int nodeIdx)
 {
 	if (getNode(nodeIdx).leafIdx == -1) {
 		SplitResult3D classification = Geometry::classify(Poly3D::offset(face.face.poly, 0.01f), getNode(nodeIdx).plane);
@@ -135,22 +135,22 @@ void BSP::traceFace(const BSPFace& face, int nodeIdx)
 		if (classification == SplitResult3D::Coplanar) {
 
 			if (Vec3::dot(face.face.poly.getPlane().normal, getNode(nodeIdx).plane.normal) > 0) {
-				traceFace(face, getNode(nodeIdx).frontIdx);
+				pushFace(face, getNode(nodeIdx).frontIdx);
 			}
 			else {
-				traceFace(face, getNode(nodeIdx).backIdx);
+				pushFace(face, getNode(nodeIdx).backIdx);
 			}
 		}
 		else if (classification == SplitResult3D::Front) {
-			traceFace(face, getNode(nodeIdx).frontIdx);
+			pushFace(face, getNode(nodeIdx).frontIdx);
 		}
 		else if (classification == SplitResult3D::Back) {
-			traceFace(face, getNode(nodeIdx).backIdx);
+			pushFace(face, getNode(nodeIdx).backIdx);
 		}
 		else if (classification == SplitResult3D::Intersected) {
 			SplittedPoly3D splittedPoly = Geometry::split(face.face.poly, getNode(nodeIdx).plane);
-			traceFace(BSPFace(Face(face.face, splittedPoly.front), getNode(nodeIdx).frontIdx), getNode(nodeIdx).frontIdx);
-			traceFace(BSPFace(Face(face.face, splittedPoly.back), getNode(nodeIdx).backIdx), getNode(nodeIdx).backIdx);
+			pushFace(BSPFace(Face(face.face, splittedPoly.front), getNode(nodeIdx).frontIdx), getNode(nodeIdx).frontIdx);
+			pushFace(BSPFace(Face(face.face, splittedPoly.back), getNode(nodeIdx).backIdx), getNode(nodeIdx).backIdx);
 		}
 	}
 	else {
@@ -195,7 +195,7 @@ void BSP::pushPortal(Portal portal, int nodeAIdx, int nodeBIdx)
 				PortalList finalPortals = carvePortal(portal);
 
 				for (const auto& finalPortal : finalPortals) {
-					int portalIdx = addPortal(portal);
+					int portalIdx = addPortal(finalPortal);
 					getLeaf(leafA).portalIdxs.push_back(portalIdx);
 					getLeaf(leafB).portalIdxs.push_back(portalIdx);
 				}
@@ -265,9 +265,10 @@ void BSP::refinePortalSide(const Portal& portal, int splitNodeIdx, int otherNode
 		return;
 	}
 
+	// Невозможно
 	if (cls == SplitResult3D::Coplanar) {
-		//pushPortal(portal, getNode(splitNodeIdx).frontIdx, otherNodeIdx);
-		//pushPortal(portal, getNode(splitNodeIdx).backIdx, otherNodeIdx);
+		pushPortal(portal, getNode(splitNodeIdx).frontIdx, otherNodeIdx);
+		pushPortal(portal, getNode(splitNodeIdx).backIdx, otherNodeIdx);
 
 		return;
 	}
@@ -320,7 +321,7 @@ void BSP::restoreBorderFaces()
 			auto face = worldFaces[faceIdx];
 			face.face.poly = Poly3D::offset(face.face.poly, 0.01f);
 
-			traceFace(face, rootNodeIndex);
+			pushFace(face, rootNodeIndex);
 
 			std::cout << "Face returned from " << leafIdx << " to " << otherLeafIdx << "\n";
 		}
@@ -361,8 +362,14 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 				Face coplanarFace = Face(face, splittedPoly.coplanar);
 
 				coplanarFaces.push_back(coplanarFace);
-				frontFaces.push_back(coplanarFace);
-				backFaces.push_back(coplanarFace);
+				
+				if (Vec3::dot(coplanarFace.poly.getPlane().normal, splitter.plane.normal) < 0.0f) {
+					backFaces.push_back(coplanarFace);
+				}
+				else {
+					frontFaces.push_back(coplanarFace);
+				}
+
 			}
 			else if (splittedPoly.result == SplitResult3D::Front) {
 				frontFaces.push_back(Face(face, splittedPoly.front));
@@ -400,6 +407,7 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 		for (const auto& face : faces) {
 			if (face.type == FaceType::Bounds) {
 				getLeaf(leafIdx).outside = true;
+
 			}
 			getLeaf(leafIdx).bounds.push_back(face.poly.getPlane());
 			getLeaf(leafIdx).faceIdxs.push_back(addBSPFace(face, leafIdx));
@@ -497,8 +505,8 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 		const Leaf& leaf = getLeaf(node.leafIdx);
 
 		if (leaf.valid && leaf.visible) {
-			for (int index : leaf.faceIdxs) {
-				BSPFace bspFace = worldFaces[index];
+			for (int faceIdx : leaf.faceIdxs) {
+				BSPFace bspFace = worldFaces[faceIdx];
 				bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
 				world.addGeometry(bspFace.face);
 			}
@@ -667,8 +675,8 @@ PortalList BSP::carvePortal(const Portal& in)
 bool BSP::floodFill(int leafIdx)
 {
 	const Leaf& leaf = getLeaf(leafIdx);
-	bool leakDetected = false;
-
+	bool leakDetected = leaf.outside;
+	
 	for (int portalIdx : leaf.portalIdxs) {
 		const Portal& portal = getPortal(portalIdx);
 		if (!portal.visited) {
@@ -676,7 +684,9 @@ bool BSP::floodFill(int leafIdx)
 			getLeaf(leafIdx).valid = true;
 			getLeaf(otherLeafIdx).valid = true;
 			getPortal(portalIdx).visited = true;
-			leakDetected = floodFill(otherLeafIdx) || leaf.outside;
+			if (floodFill(otherLeafIdx)) {
+				leakDetected = true;
+			}
 		}
 	}
 

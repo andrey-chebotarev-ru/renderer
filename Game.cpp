@@ -111,6 +111,7 @@ enum TextureIdx
     Cells3,
     Rock1,
     Wood1,
+    Lava1,
 };
 
 bool loadTexture(const char* filename, TextureIdx idx)
@@ -178,7 +179,12 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         {350, 200},
         {300, 200},
         {300, 300},
-        {350, 200}, //p
+        {350, 300}, //p
+        {350, 550},
+        {200, 550},
+
+        {200, 450},
+        {300, 450},
         {300, 350}, //p
         {250, 350},
         {250, 150},
@@ -188,6 +194,15 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     };
 
+    Vec2List points3 = {
+        {100, 120},
+        {100, 150},
+        {200, 150},
+        {200, 450},
+        {200, 550},
+        {0, 550},
+        {0, 120}
+    };
     
 
 
@@ -195,23 +210,38 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     FaceList list = Constructor::map(points, 100, Brick1, Cells1, Cells2);
     list.erase(list.begin() + 7);
+    list.erase(list.begin() + 9);
+
+    
+   
 
     FaceList list2 = Constructor::map(points2, 100, Brick2, Rock1, Cells3);
     list2.erase(list2.begin());
+    list2.erase(list2.begin() + 7);
 
-    Poly3DList cube1 = Constructor::polyCube(Vec3(30, 40, 20));
-    Constructor::insert(list, cube1, Wood1, Vec3(60, 60, 60));
+    FaceList list3 = Constructor::map(points3, 100, Rock1, Lava1, Cells1);
+    list3.erase(list3.begin());
+    list3.erase(list3.begin() + 3);
     
     list.insert(list.end(), list2.begin(), list2.end());
-    
-
-    Poly3DList cube2 = Constructor::polyCube(Vec3(10, 500, 10));
-
+    list.insert(list.end(), list3.begin(), list3.end());
 
     
+    Poly3DList cube1 = Constructor::polyCube(Vec3(10, 300, 10));
+
+    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 200));
+    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 250));
+    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 300));
     
 
+    
 
+    Poly3DList cube2 = Constructor::polyCube(Vec3(50, 50, 50));
+
+    Constructor::insert(list, cube2, Cells2, Vec3(50, 0, 250), Vec3(Math::degToRad(0), Math::degToRad(0), Math::degToRad(0)));
+    
+
+   
     
 
     //list.insert(list.end(), list3.begin(), list3.end());
@@ -275,6 +305,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         !loadTexture("cells2.jpg", Cells2) ||
         !loadTexture("cells3.jpg", Cells3) ||
         !loadTexture("rock1.jpg", Rock1)   ||
+        !loadTexture("lava1.jpg", Lava1)   ||
         !loadTexture("wood1.jpg", Wood1))  {
         return SDL_APP_FAILURE;
     }
@@ -406,7 +437,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     uint8_t* pixels = nullptr;
     int pitch;
 
-    static float moveSpeed = 50.0f;
+    static float moveSpeed = 90.0f;
 
     float dx, dy;
     float sensitivity = 0.1;
@@ -532,7 +563,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s)", leafIdx, leaf.valid ? "Inside" : "Void");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s) %s", leafIdx, leaf.valid ? "Inside" : "Void", leaf.outside ? "(Outside leaf)" : "");
 
     if (angles.loaded) {
         SDL_RenderDebugText(sdlRenderer, 10, 40, "Angles loaded");

@@ -53,9 +53,9 @@ Triangle3DList Constructor::cube(const Vec2& uv, const Vec3& size, int texId)
 Poly3DList Constructor::polyCube(const Vec3& size)
 {
     Vec3 sideSize = size / 2;
-    const Vec2 uv1 = Vec2(512.0f / size.x, 512.0f / size.y);
-    const Vec2 uv2 = Vec2(512.0f / size.z, 512.0f / size.y);
-    const Vec2 uv3 = Vec2(512.0f / size.z, 512.0f / size.x);
+    const Vec2 uv1 = Vec2(size.x * 10 / 512, size.y * 10 / 512);
+    const Vec2 uv2 = Vec2(size.z * 10 / 512, size.y * 10 / 512);
+    const Vec2 uv3 = Vec2(size.z * 10 / 512, size.x * 10 / 512);
 
     Poly3DList polys;
 

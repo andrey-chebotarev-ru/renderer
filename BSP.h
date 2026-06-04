@@ -172,7 +172,7 @@ private:
 	PlaneList getPlanes(const AABB3D& aabb);
 	FaceList makeWorldBounds(const AABB3D& aabb, float padding);
 
-	void traceFace(const BSPFace& face, int nodeIdx);
+	void pushFace(const BSPFace& face, int nodeIdx);
 
 	void buildPortalsFromNode(int nodeIdx);
 	void pushPortal(Portal portal, int nodeAIdx, int nodeBIdx);

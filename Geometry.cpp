@@ -1,5 +1,7 @@
 #include "Geometry.h"
 
+#include <iostream>
+
 const float Geometry::epsilon = 0.001f;
 
 PlaneBasis::PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v)
@@ -40,6 +42,20 @@ Poly3D PlaneBasis::unproject(const Poly2D& poly)
 	}
 
 	return unproj;
+}
+
+void Geometry::makeCW(Poly2D& poly)
+{
+	if (poly.getSignedArea() >= 0.0f) {
+		std::reverse(poly.verts.begin(), poly.verts.end());
+	}
+}
+
+void Geometry::makeCCW(Poly2D& poly)
+{
+	if (poly.getSignedArea() < 0.0f) {
+		std::reverse(poly.verts.begin(), poly.verts.end());
+	}
 }
 
 Side Geometry::test(const Line& line, const Vec2& vec)
@@ -166,7 +182,7 @@ void Geometry::subtractPoly(const Poly2D& poly, const Poly2D& cutter, int edgeId
 	}
 }
 
-Poly2DList Geometry::subtract(const Poly2D& in, const Poly2D& cutter, float minArea)
+Poly2DList Geometry::subtract(Poly2D in, Poly2D cutter, float minArea)
 {
 	Poly2DList out;
 
@@ -178,6 +194,9 @@ Poly2DList Geometry::subtract(const Poly2D& in, const Poly2D& cutter, float minA
 		out.push_back(in);
 		return out;
 	}
+
+	makeCCW(cutter);
+	makeCCW(in);
 
 	subtractPoly(in, cutter, 0, out, minArea);
 
@@ -231,6 +250,20 @@ bool Geometry::satOverlap(const Poly2D& poly1, const Poly2D& poly2)
 	}
 
 	return true;
+}
+
+void Geometry::makeCW(Poly3D& poly)
+{
+	if (poly.getSignedArea() >= 0.0f) {
+		std::reverse(poly.verts.begin(), poly.verts.end());
+	}
+}
+
+void Geometry::makeCCW(Poly3D& poly)
+{
+	if (poly.getSignedArea() < 0.0f) {
+		std::reverse(poly.verts.begin(), poly.verts.end());
+	}
 }
 
 Side Geometry::test(const Vec3& vec, const Plane& plane)
