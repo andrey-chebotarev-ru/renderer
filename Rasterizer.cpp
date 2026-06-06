@@ -10,20 +10,10 @@ void Rasterizer::setFramebuffer(int pitch, uint8_t* framebuffer)
     this->framebuffer = framebuffer;
 }
 
-void Rasterizer::setTexture(const Texture& texture, size_t index)
-{
-    textures[index] = texture;
-}
-
-Texture Rasterizer::getTexture(size_t index) const
-{
-    return textures[index];
-}
-
 void Rasterizer::clearBuffers()
 {
     memset(framebuffer, 0, screenHeight * pitch);
-    std::fill(zBuffer.begin(), zBuffer.end(), 0.0f);
+    memset(zBuffer, 0, screenWidth * screenHeight * sizeof(float));
 }
 
 void Rasterizer::sortTriangle(Triangle2& triangle)
@@ -207,7 +197,7 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
 }
 
 template<bool depthTest, bool screenDoor>
-void Rasterizer::drawSolidSpan(const Span& span, const Color& fill)
+void Rasterizer::drawColoredSpan(const Span& span, const Color& fill)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -358,13 +348,13 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
     return true;
 }
 
-template bool Rasterizer::drawSolidTriangle<false, false>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawSolidTriangle<true, false>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawSolidTriangle<false, true>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawSolidTriangle<true, true>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<false, false>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<true, false>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<false, true>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<true, true>(Triangle2 tri, const Color& fillColor);
 
 template<bool depthTest, bool screenDoor>
-bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fillColor)
+bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
 {
     sortTriangle(tri);
 
@@ -383,7 +373,7 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fillColor)
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSolidSpan<depthTest, screenDoor>(span, fillColor);
+            drawColoredSpan<depthTest, screenDoor>(span, fillColor);
             
             longEdge.step();
             topEdge.step();
@@ -395,7 +385,7 @@ bool Rasterizer::drawSolidTriangle(Triangle2 tri, const Color& fillColor)
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSolidSpan<depthTest, screenDoor>(span, fillColor);
+            drawColoredSpan<depthTest, screenDoor>(span, fillColor);
             
             longEdge.step();
             bottomEdge.step();
@@ -423,19 +413,19 @@ int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex)
     return count;
 }
 
-template int Rasterizer::drawSolidPolygon<false, false>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawSolidPolygon<true, false>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawSolidPolygon<false, true>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawSolidPolygon<true, true>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<false, false>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<true, false>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<false, true>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<true, true>(const Poly2D& poly, const Color& fillColor);
 
 template<bool depthTest, bool screenDoor>
-int Rasterizer::drawSolidPolygon(const Poly2D& poly, const Color& fillColor)
+int Rasterizer::drawColoredPolygon(const Poly2D& poly, const Color& fillColor)
 {
     Triangle2DList tris = poly.triangulate();
     int count = 0;
     
     for (int i = 0; i < tris.size(); i++) {
-        if (drawSolidTriangle<depthTest, screenDoor>(tris[i], fillColor)) {
+        if (drawColoredTriangle<depthTest, screenDoor>(tris[i], fillColor)) {
             count++;
         }
     }

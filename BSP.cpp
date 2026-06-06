@@ -27,7 +27,7 @@ Splitter BSP::findSplitter(const FaceList& faces)
 		const Face& splitterFace = faces[j];
 		Plane splitterPlane = splitterFace.poly.getPlane();
 
-		int frontCount = 0, backCount = 0, splitCount = 0;
+		int coplanarCount = 0, frontCount = 0, backCount = 0, splitCount = 0;
 
 		for (int i = 0; i < faces.size(); i++) {
 			if (i == j) {
@@ -37,7 +37,10 @@ Splitter BSP::findSplitter(const FaceList& faces)
 
 			SplittedPoly3D splitted = Geometry::split(faces[i].poly, splitterPlane);
 
-			if (splitted.result == SplitResult3D::Front) {
+			if (splitted.result == SplitResult3D::Coplanar) {
+				coplanarCount++;
+			}
+			else if (splitted.result == SplitResult3D::Front) {
 				frontCount++;
 			}
 			else if (splitted.result == SplitResult3D::Back) {
@@ -51,7 +54,7 @@ Splitter BSP::findSplitter(const FaceList& faces)
 		}
 
 		if (frontCount > 0 && backCount > 0) {
-			int score = splitCount * 16 + abs(backCount - frontCount);
+			int score = splitCount * 16 + abs(backCount - frontCount) - coplanarCount * 2;
 			if (splitterFace.poly.getPlane().isAxial()) {
 				score -= 4;
 			}
@@ -479,12 +482,11 @@ LabelList BSP::renderPortalLabels(const Vec3& pos)
 	int currentLeafIdx = getLeafIdx(pos);
 	const Leaf& leaf = getLeaf(currentLeafIdx);
 
-	int i = 0;
 	for (int portalIdx : leaf.portalIdxs) {
 		const Portal& portal = getPortal(portalIdx);
 		if (portal.visited) {
 			int otherLeafIdx = portal.frontLeafIdx == currentLeafIdx ? portal.backLeafIdx : portal.frontLeafIdx;
-			sprintf_s(buf, "#%i %i <=> %i", i++, currentLeafIdx, otherLeafIdx);
+			sprintf_s(buf, "#%i %i <=> %i", portalIdx, currentLeafIdx, otherLeafIdx);
 			portalLabels.push_back(Label(portal.poly.getCenter(), Color(255, 0, 0), buf));
 		}
 	}

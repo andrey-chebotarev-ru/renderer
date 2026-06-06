@@ -1,58 +1,61 @@
 #include "Constructor.h"
 
-Triangle3DList Constructor::room(const Vec2& uv, const Vec3& size, int texId)
+Triangle3DList Constructor::room(const Vec2& uv, const Vec3& size, const std::string& texName) const
 {
 	Vec3 sideSize = size / 2;
+    size_t texIdx = textureManager.getIdx(texName);
 
     Triangle3DList tris;
 
     tris.reserve(12);
 
-    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {uv.x, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{ -sideSize.x, -sideSize.y, sideSize.z }, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, uv.y}}, texId }));
+    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {uv.x, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{ -sideSize.x, -sideSize.y, sideSize.z }, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, uv.y}}, texIdx }));
 
     return tris;
 }
 
-Triangle3DList Constructor::cube(const Vec2& uv, const Vec3& size, int texId)
+Triangle3DList Constructor::cube(const Vec2& uv, const Vec3& size, const std::string& texName) const
 {
     Vec3 sideSize = size / 2;
+    size_t texIdx = textureManager.getIdx(texName);
 
     Triangle3DList tris;
 
     tris.reserve(12);
 
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {uv.x, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{ -sideSize.x, -sideSize.y, sideSize.z }, {0, 0}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}} , {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texId }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {uv.x, uv.y}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{ -sideSize.x, -sideSize.y, sideSize.z }, {0, 0}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, sideSize.z}, {0, uv.y}} , {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}} , {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texIdx }));
 
-    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texId }));
-    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, texId }));
+    tris.push_back(Triangle3({ {{-sideSize.x, sideSize.y, -sideSize.z}, {0, 0}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, sideSize.y, sideSize.z}, {uv.x, uv.y}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{-sideSize.x, -sideSize.y, -sideSize.z}, {0, 0}}, texIdx }));
+    tris.push_back(Triangle3({ {{sideSize.x, -sideSize.y, sideSize.z}, {uv.x, uv.y}}, {{-sideSize.x, -sideSize.y, sideSize.z}, {uv.x, 0}}, {{sideSize.x, -sideSize.y, -sideSize.z}, {0, uv.y}}, texIdx }));
 
     return tris;
 }
 
 
-Poly3DList Constructor::polyCube(const Vec3& size)
+Poly3DList Constructor::polyCube(const Vec3& size) const
 {
     Vec3 sideSize = size / 2;
+
     const Vec2 uv1 = Vec2(size.x * 10 / 512, size.y * 10 / 512);
     const Vec2 uv2 = Vec2(size.z * 10 / 512, size.y * 10 / 512);
     const Vec2 uv3 = Vec2(size.z * 10 / 512, size.x * 10 / 512);
@@ -71,7 +74,7 @@ Poly3DList Constructor::polyCube(const Vec3& size)
     return polys;
 }
 
-Poly3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height)
+Poly3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height) const
 {
     float h = height / 2;
 
@@ -93,7 +96,7 @@ Poly3DList Constructor::wall(const Vec2& vec1, const Vec2& vec2, float height)
     return polys;
 }
 
-FaceList Constructor::map(const Vec2List list, float height, int wallTexId, int floorTexId, int ceilTexId)
+FaceList Constructor::map(const Vec2List list, float height, const std::string& wallTexName, const std::string& floorTexName, const std::string& ceilTexName) const
 {
     FaceList faces;
 
@@ -103,6 +106,10 @@ FaceList Constructor::map(const Vec2List list, float height, int wallTexId, int 
 
     Vec2 previous = list.back();
     Vec2 min = previous, max = previous;
+
+    size_t wallTexIdx = textureManager.getIdx(wallTexName);
+    size_t floorTexIdx = textureManager.getIdx(floorTexName);
+    size_t ceilTexIdx = textureManager.getIdx(ceilTexName);
 
     for (const Vec2& current : list) {
 
@@ -122,7 +129,7 @@ FaceList Constructor::map(const Vec2List list, float height, int wallTexId, int 
 
         Poly3DList wallPolys = wall(previous, current, height);
 
-        insert(faces, wallPolys, wallTexId);
+        insert(faces, wallPolys, wallTexIdx);
 
         previous = current;
     }
@@ -132,18 +139,20 @@ FaceList Constructor::map(const Vec2List list, float height, int wallTexId, int 
     Vec2 uv = Vec2((max.x - min.x) * 10 / 512, (max.y - min.y) * 10 / 512);
 
     // Floor
-    faces.push_back(Face(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {uv.x, uv.y}}, {{min.x, h, max.y}, {0, uv.y}} }), floorTexId));
-    faces.push_back(Face(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {uv.x, 0}}, {{max.x, h, max.y}, {uv.x, uv.y}} }), floorTexId));
+    faces.push_back(Face(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, max.y}, {uv.x, uv.y}}, {{min.x, h, max.y}, {0, uv.y}} }), floorTexIdx));
+    faces.push_back(Face(Poly3D({ {{min.x, h, min.y}, {0, 0}}, {{ max.x, h, min.y}, {uv.x, 0}}, {{max.x, h, max.y}, {uv.x, uv.y}} }), floorTexIdx));
 
     // Ceil
-    faces.push_back(Face(Poly3D({ {{min.x, -h, max.y}, {0, uv.y}}, {{ max.x, -h, max.y}, {uv.x, uv.y}}, {{min.x, -h, min.y}, {0, 0}} }), ceilTexId));
-    faces.push_back(Face(Poly3D({ {{max.x, -h, max.y}, {uv.x, uv.y}}, {{ max.x, -h, min.y}, {uv.x, 0}}, {{min.x, -h, min.y}, {0, 0}} }), ceilTexId));
+    faces.push_back(Face(Poly3D({ {{min.x, -h, max.y}, {0, uv.y}}, {{ max.x, -h, max.y}, {uv.x, uv.y}}, {{min.x, -h, min.y}, {0, 0}} }), ceilTexIdx));
+    faces.push_back(Face(Poly3D({ {{max.x, -h, max.y}, {uv.x, uv.y}}, {{ max.x, -h, min.y}, {uv.x, 0}}, {{min.x, -h, min.y}, {0, 0}} }), ceilTexIdx));
 
     return faces;
 
 }
 
-void Constructor::insert(FaceList& faces, const Poly3DList& polys, int texIdx, const Vec3& pos, const Vec3& rot)
+
+
+void Constructor::insert(FaceList& faces, const Poly3DList& polys, size_t texIdx, const Vec3& pos, const Vec3& rot) const
 {
     Transform tr = Transform(Vec3(1, 1, 1), rot, pos);
 
@@ -155,4 +164,11 @@ void Constructor::insert(FaceList& faces, const Poly3DList& polys, int texIdx, c
 
         faces.push_back(Face(poly, texIdx));
     }
+}
+
+void Constructor::insert(FaceList& faces, const Poly3DList& polys, const std::string& texName, const Vec3& pos, const Vec3& rot) const
+{
+    size_t texIdx = textureManager.getIdx(texName);
+
+    insert(faces, polys, texIdx, pos, rot);
 }

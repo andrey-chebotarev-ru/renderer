@@ -12,11 +12,6 @@ void Renderer::setFramebuffer(int pitch, uint8_t* pixels)
     rasterizer.setFramebuffer(pitch, pixels);
 }
 
-void Renderer::setTexture(const Texture& texture, size_t index)
-{
-    rasterizer.setTexture(texture, index);
-}
-
 void Renderer::transformToWorld(Triangle3& tri, const Transform& tr) const
 {
     for (int i = 0; i < 3; i++) {
@@ -198,7 +193,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
         transformToWorld(tri, tr);
 
-        Texture tex = rasterizer.getTexture(model.getTextureIndex());
+        Texture tex = textureManager.get(model.getTextureIndex());
 
         Triangle2DList preparedTris = prepareForRendering(tri, cam, true, tex.getWidth(), tex.getHeight());
 
@@ -238,12 +233,12 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
             }
             
             // Drawing
-            count += rasterizer.drawSolidPolygon<false, true>(renderPoly, fillColor);
+            count += rasterizer.drawColoredPolygon<false, true>(renderPoly, fillColor);
             drawWireframe(renderPoly, Color(0, 0, 0));
         }
         else
         {
-            Texture tex = rasterizer.getTexture(face.texIdx);
+            Texture tex = textureManager.get(face.texIdx);
             Color fillColor = face.debugColor;
 
             Poly2D renderPoly;
@@ -253,7 +248,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
 
             // Drawing
             if (fill) {
-                count += rasterizer.drawSolidPolygon<false, false>(renderPoly, fillColor);
+                count += rasterizer.drawColoredPolygon<false, false>(renderPoly, fillColor);
                 drawWireframe(renderPoly, Color(0, 0, 0));
             }
             else {
@@ -288,7 +283,7 @@ void Renderer::drawExtras(const FaceList& faces, const Camera& cam)
             continue;
         }
 
-        rasterizer.drawSolidPolygon<true, true>(poly, face.debugColor);
+        rasterizer.drawColoredPolygon<true, true>(poly, face.debugColor);
     }
 }
 

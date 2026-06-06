@@ -52,14 +52,16 @@ public:
     Rasterizer(size_t screenWidth, size_t screenHeight, const Debug& debug)
         : screenWidth(screenWidth), screenHeight(screenHeight), debug(debug)
     {
-        zBuffer.resize(screenWidth * screenHeight);
-        textures.resize(100);
+        zBuffer = static_cast<float*>(std::malloc(screenWidth * screenHeight * sizeof(float)));
+    }
+
+    ~Rasterizer()
+    {
+        std::free(zBuffer);
     }
 
     void clearBuffers();
     void setFramebuffer(int pitch, uint8_t* pixels);
-    void setTexture(const Texture& texture, size_t index);
-    Texture getTexture(size_t index) const;
 
     void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
 
@@ -67,13 +69,13 @@ public:
     bool drawTriangle(Triangle2 tri, const Texture& tex);
 
     template<bool depthTest, bool screenDoor>
-    bool drawSolidTriangle(Triangle2 tri, const Color& fillColor);
+    bool drawColoredTriangle(Triangle2 tri, const Color& fillColor);
 
     template<bool depthTest>
     int drawPolygon(const Poly2D& poly, const Texture& tex);
     
     template<bool depthTest, bool screenDoor>
-    int drawSolidPolygon(const Poly2D& poly, const Color& fillColor);
+    int drawColoredPolygon(const Poly2D& poly, const Color& fillColor);
 
     Color blend(const Color& dstColor, const Color& srcColor, float alpha);
     Color darken(const Color& color);
@@ -86,8 +88,7 @@ private:
     static const float invTable[16];
     
     
-    std::vector<float> zBuffer;
-    std::vector<Texture> textures;
+    float* zBuffer;
 
     uint8_t* framebuffer = nullptr;
 
@@ -101,7 +102,7 @@ private:
     void drawSpan(const Span& span, const Texture& tex);
     
     template<bool depthTest, bool screenDoor>
-    void drawSolidSpan(const Span& span, const Color& fillColor);
+    void drawColoredSpan(const Span& span, const Color& fillColor);
     
     void setPixel(int x, int y, const Color& color);
 };

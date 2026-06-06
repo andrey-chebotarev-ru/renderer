@@ -13,23 +13,14 @@
 #include "Clipper.h"
 #include "World.h"
 #include "Debug.h"
-
-
-struct Data
-{
-    int count;
-};
-
-
-
-
+#include "Texture.h"
 
 class Renderer
 {
 public:
     
-    Renderer(size_t screenWidth, size_t screenHeight, float fov, const Debug& debug)
-        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth - 1, 0, screenHeight - 1), debug(debug)
+    Renderer(size_t screenWidth, size_t screenHeight, float fov, const TextureManager& textureManager, const Debug& debug)
+        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth - 1, 0, screenHeight - 1), textureManager(textureManager), debug(debug)
     {
         screenCenter = Vec2(float(screenWidth) / 2, screenHeight / 2);
         focusDistance = screenCenter.x / tanf(Math::degToRad(fov) / 2);
@@ -74,7 +65,6 @@ public:
     bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
 
     void setFramebuffer(int pitch, uint8_t* pixels);
-    void setTexture(const Texture& texture, size_t index);
     
     int drawScene(const World& world, const ModelList& models, const Camera& cam, bool debug);
     void drawExtras(const FaceList& polys, const Camera& cam);
@@ -97,6 +87,7 @@ private:
     Rasterizer rasterizer;
 
     Debug debug;
+    const TextureManager& textureManager;
 
     
 

@@ -22,6 +22,7 @@
 #include "Debug.h"
 #include "Math.h"
 #include "PortalRenderer.h"
+#include "MapFile.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -32,10 +33,12 @@ static int windowWidth = 0, windowHeight = 0;
 static SDL_Window* window = NULL;
 static SDL_Renderer* sdlRenderer = NULL;
 static SDL_Texture* sdlFramebufferTexture = NULL;
+static TextureManager textureManager;
 static Debug debug(&sdlRenderer);
-static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, debug);
+static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, textureManager, debug);
+static Constructor constructor(textureManager);
 static Camera camera;
-static std::vector<Model> models = { Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, Constructor::cube(Vec2(1, 1), Vec3(20, 20, 20), 0)) };
+static std::vector<Model> models;
 static World world;
 static BSP bsp;
 static PortalRenderer portalRenderer(gameRenderer, bsp);
@@ -43,8 +46,6 @@ static bool fill = false;
 static bool drawPortals = false;
 
 static bool fullscreen = true;
-
-static std::vector<SDL_Surface*> sdlTexture(100);
 
 static int randomAngle()
 {
@@ -101,33 +102,22 @@ static Angles angles;
 static bool leaked = false;
 static bool update = true;
 
-
-enum TextureIdx
+bool loadTexture(const char* name)
 {
-    Brick1,
-    Brick2,
-    Cells1,
-    Cells2,
-    Cells3,
-    Rock1,
-    Wood1,
-    Lava1,
-};
+    SDL_Surface* loadedTexture;
+    SDL_Surface* convertedTexture;
 
-bool loadTexture(const char* filename, TextureIdx idx)
-{
-    SDL_Surface* loadedTexture = NULL;
 
     char buf[256];
 
-    sprintf_s(buf, "textures/%s", filename);
+    sprintf_s(buf, "textures/%s.jpg", name);
 
     if (!(loadedTexture = IMG_Load(buf))) {
         SDL_Log("Couldn't load image: %s", SDL_GetError());
         return false;
     }
 
-    if (!(sdlTexture[idx] = SDL_ConvertSurface(loadedTexture, SDL_PIXELFORMAT_RGBA32))) {
+    if (!(convertedTexture = SDL_ConvertSurface(loadedTexture, SDL_PIXELFORMAT_RGBA32))) {
         SDL_DestroySurface(loadedTexture);
         SDL_Log("Couldn't convert texture: %s", SDL_GetError());
         return false;
@@ -136,26 +126,49 @@ bool loadTexture(const char* filename, TextureIdx idx)
     SDL_DestroySurface(loadedTexture);
 
 
-    SDL_LockSurface(sdlTexture[idx]);
+    SDL_LockSurface(convertedTexture);
     
-    gameRenderer.setTexture(Texture(sdlTexture[idx]->w, sdlTexture[idx]->h, sdlTexture[idx]->pitch, (uint8_t*)sdlTexture[idx]->pixels), idx);
+    textureManager.add(name, convertedTexture->w, convertedTexture->h, convertedTexture->pitch, (uint8_t*)convertedTexture->pixels);
+    
+    SDL_UnlockSurface(convertedTexture);
+    SDL_DestroySurface(convertedTexture);
 
     return true;
 }
 
-void freeTexture()
+bool loadTextures()
 {
-    for (auto texture : sdlTexture) {
-        SDL_UnlockSurface(texture);
-        SDL_DestroySurface(texture);
-    }
+    bool loaded = loadTexture("brick1");
+
+    loaded = loaded && loadTexture("brick2");
+    loaded = loaded && loadTexture("cells1");
+    loaded = loaded && loadTexture("cells2");
+    loaded = loaded && loadTexture("cells3");
+    loaded = loaded && loadTexture("rock1");
+    loaded = loaded && loadTexture("lava1");
+    loaded = loaded && loadTexture("wood1");
+
+    return loaded;
 }
+
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
-    
+    if (!loadTextures()) {
+        return SDL_APP_FAILURE;
+    }
+
+
+    MapFile mapFile;
+    mapFile.load("1.map");
+    mapFile.parse();
+
+    return SDL_APP_FAILURE;
+
     angles.load();
+
+    // Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, constructor.cube(Vec2(1, 1), Vec3(20, 20, 20), 0))
 
     // v1
     Vec2List points = {
@@ -208,18 +221,18 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
 
-    FaceList list = Constructor::map(points, 100, Brick1, Cells1, Cells2);
+    FaceList list = constructor.map(points, 100, "brick1", "cells1", "cells2");
     list.erase(list.begin() + 7);
     list.erase(list.begin() + 9);
 
     
    
 
-    FaceList list2 = Constructor::map(points2, 100, Brick2, Rock1, Cells3);
+    FaceList list2 = constructor.map(points2, 100, "brick2", "rock1", "cells3");
     list2.erase(list2.begin());
     list2.erase(list2.begin() + 7);
 
-    FaceList list3 = Constructor::map(points3, 100, Rock1, Lava1, Cells1);
+    FaceList list3 = constructor.map(points3, 100, "rock1", "lava1", "cells1");
     list3.erase(list3.begin());
     list3.erase(list3.begin() + 3);
     
@@ -227,18 +240,15 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     list.insert(list.end(), list3.begin(), list3.end());
 
     
-    Poly3DList cube1 = Constructor::polyCube(Vec3(10, 300, 10));
+    Poly3DList cube1 = constructor.polyCube(Vec3(10, 300, 10));
 
-    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 200));
-    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 250));
-    Constructor::insert(list, cube1, Brick2, Vec3(100, 0, 300));
+    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 200));
+    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 250));
+    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 300));
     
+    Poly3DList cube2 = constructor.polyCube(Vec3(50, 50, 50));
 
-    
-
-    Poly3DList cube2 = Constructor::polyCube(Vec3(50, 50, 50));
-
-    Constructor::insert(list, cube2, Cells2, Vec3(50, 0, 250), Vec3(Math::degToRad(0), Math::degToRad(0), Math::degToRad(0)));
+    constructor.insert(list, cube2, "cells2", Vec3(50, 0, 250), Vec3(Math::degToRad(0), Math::degToRad(0), Math::degToRad(0)));
     
 
    
@@ -298,18 +308,6 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
-    
-    if (!loadTexture("brick1.jpg", Brick1) ||
-        !loadTexture("brick2.jpg", Brick2) ||
-        !loadTexture("cells1.jpg", Cells1) ||
-        !loadTexture("cells2.jpg", Cells2) ||
-        !loadTexture("cells3.jpg", Cells3) ||
-        !loadTexture("rock1.jpg", Rock1)   ||
-        !loadTexture("lava1.jpg", Lava1)   ||
-        !loadTexture("wood1.jpg", Wood1))  {
-        return SDL_APP_FAILURE;
-    }
-   
     SDL_SetWindowRelativeMouseMode(window, true);
 
     if (fullscreen) {
@@ -505,8 +503,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         models[0].pitch(boxPitchSpeed * deltaTime);
     }
 
-    Data data;
-
     int count = 0;
 
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
@@ -591,6 +587,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
     SDL_DestroyTexture(sdlFramebufferTexture);
-    freeTexture();
+
     /* SDL will clean up the window/renderer for us. */
 }

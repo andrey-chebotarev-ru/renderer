@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <string>
 
@@ -92,10 +93,10 @@ struct Triangle3
     
     Plane getPlane() const;
 
-    int texId;
+    size_t texIdx;
     Color fill;
 
-    Triangle3(Vertex3D v0, Vertex3D v1, Vertex3D v2, int texId) : v0(v0), v1(v1), v2(v2), texId(texId) {}
+    Triangle3(Vertex3D v0, Vertex3D v1, Vertex3D v2, size_t texIdx) : v0(v0), v1(v1), v2(v2), texIdx(texIdx) {}
     Triangle3() {}
 };
 
@@ -255,7 +256,7 @@ struct Face
 
     Poly3D poly;
 
-    int texIdx = 0;
+    size_t texIdx = 0;
     Color debugColor;
 
     Face() {};

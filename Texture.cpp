@@ -3,13 +3,28 @@
 #include "Math.h"
 #include "Color.h"
 
-Texture::Texture(size_t width, size_t height, int pitch, uint8_t* pixels)
-    : width(width), height(height), pitch(pitch), pixels(pixels)
+Texture::Texture()
 {
-    assert(Math::isPow2(width) && Math::isPow2(pitch));
+    //assert(Math::isPow2(width) && Math::isPow2(height));
+
+   // shiftWidth = Math::shift(width);
+
+    /*
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int offset = x + (y << shiftWidth);
+            pixels[offset] = Color(255, 0, 0);
+        }
+    }
+    */
+}
+
+Texture::Texture(size_t width, size_t height, size_t pitch, Color* pixels)
+    : width(width), height(height), pixels(pixels)
+{
+    assert(Math::isPow2(width) && Math::isPow2(height));
 
     shiftWidth = Math::shift(width);
-    shiftPitch = Math::shift(pitch);
 }
 
 size_t Texture::getWidth() const
@@ -27,11 +42,7 @@ Color Texture::getSample(float u, float v) const
     int x = int(u) & (width - 1);
     int y = int(v) & (height - 1);
 
-    if (x < 0 || x >= width || y < 0 || y >= height) {
-        return Color();
-    }
+    int offset = x + (y << shiftWidth);
 
-    int index = (x << 2) + (y << shiftPitch);
-
-    return *(Color*)(pixels + index);
+    return pixels[offset];
 }
