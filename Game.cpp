@@ -161,7 +161,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
     MapFile mapFile;
-    mapFile.load("1.map");
+    mapFile.load("c0a0b.map");
     mapFile.parse();
 
     return SDL_APP_FAILURE;
