@@ -31,6 +31,7 @@ struct Leaf
 	bool valid = false;
 	bool outside = false;
 	bool visible = false;
+	bool visited = false;
 
 	IndicesList faceIdxs;
 	IndicesList portalIdxs;
@@ -64,6 +65,7 @@ struct Context
 {
 	int nodeIdx;
 	PlaneList bounds;
+	size_t depth = 0;
 };
 
 struct Splitter
@@ -164,9 +166,6 @@ private:
 
 	void build(const FaceList& faces, const Context& ctx);
 	void traverse(int nodeIndex, const Vec3& pos, World& world);
-
-
-	Poly3D makePolygonOnPlane(const Plane& plane);
 
 	AABB3D makeAABB(const FaceList& polys);
 	PlaneList getPlanes(const AABB3D& aabb);

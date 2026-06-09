@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-const float Geometry::epsilon = 0.001f;
+const float Geometry::epsilon = 0.01f;
 
 PlaneBasis::PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v)
 	: origin(origin), u(u), v(v) {
@@ -469,4 +469,31 @@ PlaneBasis Geometry::makePlaneBasis(const Plane& plane)
 	Vec3 v = Vec3::cross(plane.normal, u);
 
 	return PlaneBasis(origin, u, v);
+}
+
+Poly3D Geometry::makePolygonOnPlane(const Plane& plane, float size)
+{
+	Vec3 center = plane.normal * plane.distance;
+
+	Vec3 temp = fabs(plane.normal.y) < 0.99f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
+
+	Vec3 axisU = Vec3::normalize(Vec3::cross(temp, plane.normal));
+	Vec3 axisV = Vec3::normalize(Vec3::cross(plane.normal, axisU));
+
+	Poly3D poly;
+
+	poly.addVert(Vertex3D(center - axisU * size - axisV * size, Vec2(0, 0)));
+	poly.addVert(Vertex3D(center + axisU * size - axisV * size, Vec2(1, 0)));
+	poly.addVert(Vertex3D(center + axisU * size + axisV * size, Vec2(1, 1)));
+	poly.addVert(Vertex3D(center - axisU * size + axisV * size, Vec2(0, 1)));
+
+	return poly;
+}
+
+Plane Geometry::makePlane(const Vec3& a, const Vec3& b, const Vec3& c)
+{
+	Vec3 normal = Vec3::normalize(Vec3::cross(b - a, c - a));
+	float distance = Vec3::dot(normal, a);
+
+	return Plane(normal, distance);
 }

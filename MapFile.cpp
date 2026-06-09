@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 
+
+
 const std::string MapFile::whitespaces = " \t\r\n";
 const std::string MapFile::special = "{}()[]";
 const std::string MapFile::digits = "0123456789";
@@ -30,9 +32,9 @@ char MapFile::peekChar()
 	return (pos < content.size() ? content[pos] : '\0');
 }
 
-char MapFile::peekNextChar()
+char MapFile::peekNextChar(int offset)
 {
-	return ((pos + 1) < content.size() ? content[pos + 1] : '\0');
+	return ((pos + 1) < content.size() ? content[pos + offset] : '\0');
 }
 
 char MapFile::consumeChar()
@@ -98,7 +100,7 @@ bool MapFile::isQuote(char c)
 
 bool MapFile::isSign(char c)
 {
-	return (c == '+' || c == '-');
+	return (c == '-');
 }
 
 bool MapFile::isDot(char c)
@@ -173,7 +175,7 @@ void MapFile::skipWhitespacesAndComments()
 	}
 }
 
-TokenType MapFile::parseSpecial()
+MapFile::TokenType MapFile::parseSpecial()
 {
 	TokenType type = TokenType::End;
 
@@ -266,7 +268,7 @@ std::string MapFile::parseIdentifier()
 
 	char c = peekChar();
 
-	if (!isLetter(c) && !isUnderline(c)) {
+	if (!isLetter(c) && !isUnderline(c) && !isExtra(c) && !isDigit(c)) {
 		throw ParseException("Expected identifier", line, column);
 	}
 
@@ -285,12 +287,12 @@ std::string MapFile::parseIdentifier()
 	return value;
 }
 
-Token MapFile::peekToken()
+MapFile::Token MapFile::peekToken()
 {
 	return currentToken;
 }
 
-Token MapFile::consumeToken()
+MapFile::Token MapFile::consumeToken()
 {
 	Token cur = currentToken;
 	
@@ -304,7 +306,31 @@ bool MapFile::checkToken(TokenType type)
 	return (currentToken.type == type);
 }
 
-Token MapFile::nextToken()
+// number or identifier?
+bool MapFile::analize()
+{
+	int pos = 0;
+
+	while (true) {
+		char c = peekNextChar(pos++);
+
+		if (isQuote(c)) {
+			return false;
+		}
+
+		if (isLetter(c)) {
+			return true;
+		}
+
+		if (isTerminator(c) || isWhitespace(c)) {
+			break;
+		}
+	}
+
+	return false;
+}
+
+MapFile::Token MapFile::nextToken()
 {
 	Token token;
 
@@ -315,6 +341,10 @@ Token MapFile::nextToken()
 
 	char c = peekChar();
 
+	if (analize()) {
+		token.type = TokenType::Identifier;
+		token.value = parseIdentifier();
+	} else
 
 	if (isTerminator(c)) {
 		token.type = TokenType::End;
@@ -331,7 +361,7 @@ Token MapFile::nextToken()
 		token.type = TokenType::Number;
 		token.value = parseNumber();
 	}
-	else if (isLetter(c) || isUnderline(c)) {
+	else if (isLetter(c) || isUnderline(c) || isExtra(c)) {
 		token.type = TokenType::Identifier;
 		token.value = parseIdentifier();
 	}
@@ -342,7 +372,7 @@ Token MapFile::nextToken()
 	return token;
 }
 
-Token MapFile::expectToken(TokenType type)
+MapFile::Token MapFile::expectToken(TokenType type)
 {
 	Token t = consumeToken();
 
@@ -392,26 +422,52 @@ void MapFile::printParseException(const ParseException& e)
 	std::cerr << filename << ":" << e.getLine() << ":" << e.getColumn() << "\n" << str << "\n" << str2 << "\n" << "\n" << e.what() << "\n";
 }
 
-void MapFile::parseBrushPlane()
+void MapFile::printMap(const Map& map)
 {
+	for (const auto& entity : map.entities) {
+
+		std::cout << "Entity:\n";
+
+		for (const auto& [key, value] : entity.properties) {
+			std::cout << std::format("\t'{}' : '{}'\n", key, value);
+		}
+		for (const auto& brush : entity.brushes) {
+			std::cout << "\tBrush:\n";
+
+			for (const auto side : brush.sides) {
+				std::cout << std::format("\t\t( {}, {}, {} ) ( {}, {}, {} ) ( {}, {}, {} ) {} [ {} {} {} {} ] [ {} {} {} {} ] {} {} {}\n",
+					side.p1.x, side.p1.y, side.p1.z,
+					side.p2.x, side.p2.y, side.p2.z,
+					side.p3.x, side.p3.y, side.p3.z,
+					side.texName,
+					side.uAxis.x, side.uAxis.y, side.uAxis.z, side.uShift,
+					side.vAxis.x, side.vAxis.y, side.vAxis.z, side.vShift,
+					side.rotation,
+					side.xScale, side.yScale
+				);
+			}
+		}
+	}
+}
+
+void MapFile::parseBrushSide(MapBrushSideList& sides)
+{
+	MapBrushSide side;
+
 	// (
 	expectToken(TokenType::OpenParenthesis);
 
-	Vec3 p1;
-
-	p1.x = expectNumber();
-	p1.y = expectNumber();
-	p1.z = expectNumber();
+	side.p1.x = expectNumber();
+	side.p1.y = expectNumber();
+	side.p1.z = expectNumber();
 
 	// )(
 	expectToken(TokenType::CloseParenthesis);
 	expectToken(TokenType::OpenParenthesis);
 
-	Vec3 p2;
-
-	p2.x = expectNumber();
-	p2.y = expectNumber();
-	p2.z = expectNumber();
+	side.p2.x = expectNumber();
+	side.p2.y = expectNumber();
+	side.p2.z = expectNumber();
 
 	// )(
 	expectToken(TokenType::CloseParenthesis);
@@ -419,73 +475,52 @@ void MapFile::parseBrushPlane()
 
 	Vec3 p3;
 
-	p3.x = expectNumber();
-	p3.y = expectNumber();
-	p3.z = expectNumber();
+	side.p3.x = expectNumber();
+	side.p3.y = expectNumber();
+	side.p3.z = expectNumber();
 
 	// )
 	expectToken(TokenType::CloseParenthesis);
 
-	std::string texName = expectIdentifier();
+	side.texName = expectIdentifier();
 
 	// [
 	expectToken(TokenType::OpenBracket);
 
-	Vec2 uAxis;
-	
-	uAxis.x = expectNumber();
-	uAxis.y	= expectNumber();
-
-	Vec2 uShift;
-	
-	uShift.x = expectNumber();
-	uShift.y = expectNumber();
+	side.uAxis.x = expectNumber();
+	side.uAxis.y = expectNumber();
+	side.uAxis.z = expectNumber();
+	side.uShift = expectNumber();
 
 	// ][
 	expectToken(TokenType::CloseBracket);
 	expectToken(TokenType::OpenBracket);
 
-	Vec2 vAxis;
-
-	vAxis.x = expectNumber();
-	vAxis.y = expectNumber();
-
-	Vec2 vShift;
-
-	vShift.x = expectNumber();
-	vShift.y = expectNumber();
-
+	side.vAxis.x = expectNumber();
+	side.vAxis.y = expectNumber();
+	side.vAxis.z = expectNumber();
+	side.vShift = expectNumber();
+	
 	// ]
 	expectToken(TokenType::CloseBracket);
 
-	float rot = expectNumber();
+	side.rotation = expectNumber();
 
-	Vec2 scale;
+	side.xScale = expectNumber();
+	side.yScale	= expectNumber();
 
-	scale.x = expectNumber();
-	scale.y	= expectNumber();
-
-	std::cout << std::format("Plane ( {} {} {} ) ( {} {} {} ) ( {} {} {} ) {} [ {} {} {} {} ] [ {} {} {} {} ] {} {} {}\n",
-		p1.x, p1.y, p1.z,
-		p2.x, p2.y, p2.z,
-		p3.x, p3.y, p3.z,
-		texName,
-		uAxis.x, uAxis.y, uShift.x, uShift.y,
-		vAxis.x, vAxis.y, vShift.x, vShift.y,
-		rot,
-		scale.x, scale.y
-	);
+	sides.push_back(side);
 }
 
-void MapFile::parseProperty()
+void MapFile::parseProperty(MapEntityProperties& properties)
 {
 	std::string key = expectString();
 	std::string value = expectString();
 
-	std::cout << std::format("Property: '{}' : '{}'\n", key, value);
+	properties[key] = value;
 }
 
-bool MapFile::parse()
+bool MapFile::parse(Map& map)
 {
 	pos = 0;
 	line = column = 1;
@@ -497,6 +532,9 @@ bool MapFile::parse()
 
 	try {
 		while (true) {
+
+			MapEntity entity;
+
 			if (checkToken(TokenType::End)) {
 				break;
 			}
@@ -516,6 +554,8 @@ bool MapFile::parse()
 				if (checkToken(TokenType::OpenBrace)) {
 					consumeToken();
 
+					MapBrush brush;
+
 					while (true) {
 
 						// }
@@ -524,12 +564,21 @@ bool MapFile::parse()
 							break;
 						}
 
-						parseBrushPlane();
+						parseBrushSide(brush.sides);
 					}
+
+					if (!brush.sides.empty()) {
+						entity.brushes.push_back(brush);
+					}
+
 				}
 				else {
-					parseProperty();
+					parseProperty(entity.properties);
 				}
+			}
+
+			if (!entity.properties.empty() || !entity.brushes.empty()) {
+				map.entities.push_back(entity);
 			}
 		}
 	}

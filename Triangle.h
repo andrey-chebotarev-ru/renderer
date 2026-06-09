@@ -258,6 +258,7 @@ struct Face
 
     size_t texIdx = 0;
     Color debugColor;
+    bool canSplit = true;
 
     Face() {};
     Face(const Poly3D& poly, int texIdx, FaceType type = FaceType::Solid, Color debugColor = Color(255, 255, 255))
@@ -272,6 +273,7 @@ struct Face
 
     void copyPropsFrom(const Face& face)
     {
+        canSplit = face.canSplit;
         texIdx = face.texIdx;
         debugColor = face.debugColor;
         type = face.type;

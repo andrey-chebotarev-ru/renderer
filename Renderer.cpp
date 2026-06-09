@@ -5,7 +5,7 @@
 #include "Geometry.h"
 
 const float Renderer::nearPlaneDistance = 1.0f;
-const float Renderer::farPlaneDistance = 1000.0f;
+const float Renderer::farPlaneDistance = 100.0f;
 
 void Renderer::setFramebuffer(int pitch, uint8_t* pixels)
 {

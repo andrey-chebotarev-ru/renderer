@@ -1,92 +1,71 @@
 #pragma once
 
-
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <unordered_map>
 
-#include "Vector.h"
-
-struct MapBrushPlane
-{
-	Vec3 p1, p2, p3;
-
-	std::string texName;
-
-	Vec2 shift;
-	Vec2 scale;
-	float rot;
-};
-
-struct MapBrush
-{
-	std::vector<MapBrushPlane> planes;
-};
-
-struct MapEntity
-{
-	std::unordered_map<std::string, std::string> properties;
-	std::vector<MapBrush> brushes;
-};
-
-enum class TokenType
-{
-	OpenBrace,			// {
-	CloseBrace,			// }
-	OpenParenthesis,	// (
-	CloseParenthesis,	// )
-	OpenBracket,		// [
-	CloseBracket,		// ]
-	
-	Identifier,			// some_value1
-	String,				// "example string"
-	Number,				// -128.12
-
-	End,
-	Invalid,
-};
-
-struct Token
-{
-	TokenType type = TokenType::End;
-	std::string value = "";
-	size_t line = 1;
-	size_t column = 1;
-};
-
-class ParseException : public std::runtime_error
-{
-public:
-
-	ParseException(const std::string& message, size_t line, size_t column)
-		: runtime_error(message), line(line), column(column) {
-	}
-
-	size_t getLine() const {
-		return line;
-	}
-
-	size_t getColumn() const {
-		return column;
-	}
-
-private:
-
-	size_t line;
-	size_t column;
-};
+#include "Map.h"
 
 class MapFile
 {
 public:
 
 	bool load(const std::string& filename);
-	bool parse();
+	bool parse(Map& map);
+	void printMap(const Map& map);
 	
 private:
+
+	enum class TokenType
+	{
+		OpenBrace,			// {
+		CloseBrace,			// }
+		OpenParenthesis,	// (
+		CloseParenthesis,	// )
+		OpenBracket,		// [
+		CloseBracket,		// ]
+
+		Identifier,			// some_value1
+		String,				// "example string"
+		Number,				// -128.12
+
+		End,
+		Invalid,
+	};
+
+	struct Token
+	{
+		TokenType type = TokenType::End;
+		std::string value = "";
+		size_t line = 1;
+		size_t column = 1;
+	};
+
+	class ParseException : public std::runtime_error
+	{
+	public:
+
+		ParseException(const std::string& message, size_t line, size_t column)
+			: runtime_error(message), line(line), column(column) {
+		}
+
+		size_t getLine() const {
+			return line;
+		}
+
+		size_t getColumn() const {
+			return column;
+		}
+
+	private:
+
+		size_t line;
+		size_t column;
+	};
+
 	char peekChar();
-	char peekNextChar();
+	char peekNextChar(int offset = 1);
 	char consumeChar();
 	bool checkChar(char c);
 	void expectChar(char c);
@@ -118,6 +97,7 @@ private:
 	Token peekToken();
 	Token consumeToken();
 	bool checkToken(TokenType type);
+	bool analize();
 	Token nextToken();
 	Token expectToken(TokenType type);
 
@@ -126,10 +106,10 @@ private:
 	std::string expectIdentifier();
 
 	void printParseException(const ParseException& e);
+	
+	void parseBrushSide(MapBrushSideList& sides);
 
-	void parseBrushPlane();
-
-	void parseProperty();
+	void parseProperty(MapEntityProperties& properties);
 
 	std::string filename;
 	std::string content;

@@ -27,6 +27,10 @@ Splitter BSP::findSplitter(const FaceList& faces)
 		const Face& splitterFace = faces[j];
 		Plane splitterPlane = splitterFace.poly.getPlane();
 
+		if (!splitterFace.canSplit) {
+			continue;
+		}
+
 		int coplanarCount = 0, frontCount = 0, backCount = 0, splitCount = 0;
 
 		for (int i = 0; i < faces.size(); i++) {
@@ -53,7 +57,7 @@ Splitter BSP::findSplitter(const FaceList& faces)
 			}
 		}
 
-		if (frontCount > 0 && backCount > 0) {
+		if (backCount > 0) {
 			int score = splitCount * 16 + abs(backCount - frontCount) - coplanarCount * 2;
 			if (splitterFace.poly.getPlane().isAxial()) {
 				score -= 4;
@@ -119,13 +123,14 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 
 	portals.clear();
 
-	build(p2, ctx);
+	build(faces, ctx);
 
 	buildPortalsFromNode(rootNodeIndex);
 
-	return floodFill(getLeafIdx(start));
+	bool res = floodFill(getLeafIdx(start));
 
 	//restoreBorderFaces();
+	return res;
 }
 
 void BSP::pushFace(const BSPFace& face, int nodeIdx)
@@ -270,8 +275,8 @@ void BSP::refinePortalSide(const Portal& portal, int splitNodeIdx, int otherNode
 
 	// Невозможно
 	if (cls == SplitResult3D::Coplanar) {
-		pushPortal(portal, getNode(splitNodeIdx).frontIdx, otherNodeIdx);
-		pushPortal(portal, getNode(splitNodeIdx).backIdx, otherNodeIdx);
+		//pushPortal(portal, getNode(splitNodeIdx).frontIdx, otherNodeIdx);
+		//pushPortal(portal, getNode(splitNodeIdx).backIdx, otherNodeIdx);
 
 		return;
 	}
@@ -337,6 +342,10 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 		return;
 	}
 
+	if (ctx.depth > 100) {
+		return;
+	}
+
 	int nodeIdx = ctx.nodeIdx;
 
 	Splitter splitter = findSplitter(faces);
@@ -355,14 +364,19 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 		getNode(nodeIdx).leafIdx = -1;
 		getNode(nodeIdx).plane = splitter.plane;
 
+
+		int idx = 0;
 		// Разбиваем полигоны сплиттером
 		for (const Face& face : faces) {
-
 
 			SplittedPoly3D splittedPoly = Geometry::split(face.poly, splitter.plane);
 
 			if (splittedPoly.result == SplitResult3D::Coplanar) {
 				Face coplanarFace = Face(face, splittedPoly.coplanar);
+
+				if (1) {
+					coplanarFace.canSplit = false;
+				}
 
 				coplanarFaces.push_back(coplanarFace);
 				
@@ -384,22 +398,28 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 				frontFaces.push_back(Face(face, splittedPoly.front));
 				backFaces.push_back(Face(face, splittedPoly.back));
 			}
+
+			idx++;
 		}
 
 		getNode(nodeIdx).bounds = ctx.bounds;
 		getNode(nodeIdx).coplanarFaces = coplanarFaces;
 
 		// Формируем bounds для дочерних элементов
+		frontCtx.depth = ctx.depth + 1;
 		frontCtx.nodeIdx = frontNodeIdx;
 		frontCtx.bounds = ctx.bounds;
 		frontCtx.bounds.push_back(nodes[nodeIdx].plane);
 
+		backCtx.depth = ctx.depth + 1;
 		backCtx.nodeIdx = backNodeIdx;
 		backCtx.bounds = ctx.bounds;
 		backCtx.bounds.push_back(splitter.plane.flip());
 
 		build(frontFaces, frontCtx);
 		build(backFaces, backCtx);
+
+
 	}
 	else {
 		int leafIdx = createLeaf();
@@ -554,28 +574,6 @@ int BSP::getLeafIdx(const Vec3& vec) const
 	return 0;
 }
 
-// AI
-Poly3D BSP::makePolygonOnPlane(const Plane& plane)
-{
-	Vec3 center = plane.normal * plane.distance;
-
-	Vec3 temp = fabs(plane.normal.y) < 0.99f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
-
-	Vec3 axisU = Vec3::normalize(Vec3::cross(temp, plane.normal));
-	Vec3 axisV = Vec3::normalize(Vec3::cross(plane.normal, axisU));
-
-	constexpr float size = 1000.0f;
-
-	Poly3D poly;
-
-	poly.addVert(Vertex3D(center - axisU * size - axisV * size, Vec2(0, 0)));
-	poly.addVert(Vertex3D(center + axisU * size - axisV * size, Vec2(1, 0)));
-	poly.addVert(Vertex3D(center + axisU * size + axisV * size, Vec2(1, 1)));
-	poly.addVert(Vertex3D(center - axisU * size + axisV * size, Vec2(0, 1)));
-
-	return poly;
-}
-
 AABB3D BSP::makeAABB(const FaceList& faces)
 {
 	AABB3D aabb;
@@ -630,7 +628,7 @@ Portal BSP::createPortal(int nodeIdx)
 	const Node& node = getNode(nodeIdx);
 
 	portal.nodeIdx = nodeIdx;
-	portal.poly = makePolygonOnPlane(node.plane);
+	portal.poly = Geometry::makePolygonOnPlane(node.plane, 100000.0f);
 	portal.poly = Geometry::clip(portal.poly, node.bounds);
 
 	return portal;
@@ -674,22 +672,69 @@ PortalList BSP::carvePortal(const Portal& in)
 	return out;
 }
 
+/*
 bool BSP::floodFill(int leafIdx)
 {
 	const Leaf& leaf = getLeaf(leafIdx);
 	bool leakDetected = leaf.outside;
 	
+	getLeaf(leafIdx).valid = true;
+
 	for (int portalIdx : leaf.portalIdxs) {
 		const Portal& portal = getPortal(portalIdx);
 		if (!portal.visited) {
 			int otherLeafIdx = (portal.frontLeafIdx == leafIdx ? portal.backLeafIdx : portal.frontLeafIdx);
-			getLeaf(leafIdx).valid = true;
 			getLeaf(otherLeafIdx).valid = true;
+			getPortal(portalIdx).visited = true;
 			getPortal(portalIdx).visited = true;
 			if (floodFill(otherLeafIdx)) {
 				leakDetected = true;
 			}
 		}
+	}
+
+	return leakDetected;
+}
+*/
+
+
+bool BSP::floodFill(int startLeafIdx)
+{
+	bool leakDetected = false;
+	IndicesList stack;
+	
+	getLeaf(startLeafIdx).visited = true;
+	getLeaf(startLeafIdx).valid = true;
+	stack.push_back(startLeafIdx);
+
+	while (!stack.empty()) {
+		int leafIdx = stack.back();
+		stack.pop_back();
+
+		for (int portalIdx : getLeaf(leafIdx).portalIdxs) {
+			const Portal& p = getPortal(portalIdx);
+
+			getPortal(portalIdx).visited = true;
+
+			int nextLeafIdx = p.frontLeafIdx == leafIdx ? p.backLeafIdx : (p.backLeafIdx == leafIdx ? p.frontLeafIdx : -1);
+
+			if (nextLeafIdx == -1) {
+				continue;
+			}
+
+			if (getLeaf(nextLeafIdx).visited) {
+				continue;
+			}
+
+			if (getLeaf(nextLeafIdx).outside) {
+				leakDetected = true;
+			}
+
+			getLeaf(nextLeafIdx).visited = true;
+			getLeaf(nextLeafIdx).valid = true;
+			stack.push_back(nextLeafIdx);
+		}
+
 	}
 
 	return leakDetected;

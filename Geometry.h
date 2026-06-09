@@ -83,6 +83,9 @@ public:
 	static Vec3 makePerpendicular(const Vec3& vec);
 	static PlaneBasis makePlaneBasis(const Plane& plane);
 
+	static Poly3D makePolygonOnPlane(const Plane& plane, float size);
+	static Plane makePlane(const Vec3& a, const Vec3& b, const Vec3& c);
+
 private:
 	static void subtractPoly(const Poly2D& poly, const Poly2D& cutter, int edgeIdx, Poly2DList& out, float minArea);
 	static void satProjectPoly(const Poly2D& poly, const Vec2& axis, float& outMin, float& outMax);

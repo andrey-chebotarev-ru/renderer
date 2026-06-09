@@ -23,6 +23,7 @@
 #include "Math.h"
 #include "PortalRenderer.h"
 #include "MapFile.h"
+#include "BrushFaceBuilder.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -159,112 +160,34 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
+    std::string filename;
 
+    std::cin >> filename;
+
+    Map map;
     MapFile mapFile;
-    mapFile.load("c0a0b.map");
-    mapFile.parse();
+    mapFile.load(filename);
+    mapFile.parse(map);
+    //mapFile.printMap(map);
 
-    return SDL_APP_FAILURE;
+    FaceList faces;
+    Vec3 pos = { 0, 0, 0 };
+
+    BrushFaceBuilder::build(faces, pos, map);
+
+
+
+    std::cout << faces.size();
+
+    //return SDL_APP_FAILURE;
 
     angles.load();
 
-    // Model(Vec3(60, 0, 60), Vec3(0, 0, 0), 2, constructor.cube(Vec2(1, 1), Vec3(20, 20, 20), 0))
-
-    // v1
-    Vec2List points = {
-        {0, 0},
-        {50, 0},
-        {50, 50},
-        {100, 50},
-        {100, 0},
-        {200, 50},
-        {250, 50},
-        {250, 100},
-        {100, 100},
-        {100, 120},
-        {0, 120},
-       
-    };
-
-    Vec2List points2 = {
-        {250, 50},
-        {350, 50},
-        {350, 200},
-        {300, 200},
-        {300, 300},
-        {350, 300}, //p
-        {350, 550},
-        {200, 550},
-
-        {200, 450},
-        {300, 450},
-        {300, 350}, //p
-        {250, 350},
-        {250, 150},
-        {300, 150},
-        {300, 100},
-        {250, 100},
-
-    };
-
-    Vec2List points3 = {
-        {100, 120},
-        {100, 150},
-        {200, 150},
-        {200, 450},
-        {200, 550},
-        {0, 550},
-        {0, 120}
-    };
     
-
-
-
-
-    FaceList list = constructor.map(points, 100, "brick1", "cells1", "cells2");
-    list.erase(list.begin() + 7);
-    list.erase(list.begin() + 9);
-
-    
-   
-
-    FaceList list2 = constructor.map(points2, 100, "brick2", "rock1", "cells3");
-    list2.erase(list2.begin());
-    list2.erase(list2.begin() + 7);
-
-    FaceList list3 = constructor.map(points3, 100, "rock1", "lava1", "cells1");
-    list3.erase(list3.begin());
-    list3.erase(list3.begin() + 3);
-    
-    list.insert(list.end(), list2.begin(), list2.end());
-    list.insert(list.end(), list3.begin(), list3.end());
-
-    
-    Poly3DList cube1 = constructor.polyCube(Vec3(10, 300, 10));
-
-    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 200));
-    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 250));
-    constructor.insert(list, cube1, "brick2", Vec3(100, 0, 300));
-    
-    Poly3DList cube2 = constructor.polyCube(Vec3(50, 50, 50));
-
-    constructor.insert(list, cube2, "cells2", Vec3(50, 0, 250), Vec3(Math::degToRad(0), Math::degToRad(0), Math::degToRad(0)));
-    
-
-   
-    
-
-    //list.insert(list.end(), list3.begin(), list3.end());
-
-   
-    //list.insert(list.end(), wall.begin(), wall.end());
-    //list.insert(list.end(), wall.begin(), wall.end());
-
-    Vec3 pos = { 20, 0, 70 };
-
-    leaked = bsp.compile(list, pos);
+    leaked = bsp.compile(faces, pos);
 
     camera.position = pos;
+    camera.yaw(90.0f);
     //camera.yaw = 0;
     
     if (!SDL_Init(SDL_INIT_VIDEO)) {
