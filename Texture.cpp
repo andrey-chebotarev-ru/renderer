@@ -22,7 +22,7 @@ Texture::Texture()
 Texture::Texture(size_t width, size_t height, size_t pitch, Color* pixels)
     : width(width), height(height), pixels(pixels)
 {
-    assert(Math::isPow2(width) && Math::isPow2(height));
+    assert(Math::isPow2(width));
 
     shiftWidth = Math::shift(width);
 }
@@ -40,7 +40,7 @@ size_t Texture::getHeight() const
 Color Texture::getSample(float u, float v) const
 {
     int x = int(u) & (width - 1);
-    int y = int(v) & (height - 1);
+    int y = int(v) % height;
 
     int offset = x + (y << shiftWidth);
 

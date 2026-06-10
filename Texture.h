@@ -5,6 +5,8 @@
 #include <string>
 #include <cstdint>
 #include <assert.h>
+#include <iostream>
+#include <algorithm>
 
 #include "Math.h"
 #include "Color.h"
@@ -46,12 +48,18 @@ public:
         }
     }
 
-    bool add(const std::string& name, size_t width, size_t height, size_t pitch, uint8_t* data)
+    bool add(std::string name, size_t width, size_t height, size_t pitch, uint8_t* data)
     {
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+
+
+        std::cout << name << "\n";
+
         if (names.contains(name)) {
             return false;
         }
-        
+      
+
         size_t texIdx = textures.size();
 
         names[name] = texIdx;
@@ -93,7 +101,7 @@ public:
         auto iter = names.find(name);
 
         if (iter == names.end()) {
-            return invalidTexIdx;
+            return 0;
         }
 
         return iter->second;

@@ -76,35 +76,35 @@ Splitter BSP::findSplitter(const FaceList& faces)
 
 int BSP::createNode()
 {
-	nodes.push_back(Node());
-	return nodes.size() - 1;
+	tree.nodes.push_back(Node());
+	return tree.nodes.size() - 1;
 }
 
 int BSP::addBSPFace(const Face& face, int leafIdx)
 {
 	BSPFace bspFace = BSPFace(face, leafIdx);
-	worldFaces.push_back(bspFace);
+	tree.faces.push_back(bspFace);
 
-	return worldFaces.size() - 1;
+	return tree.faces.size() - 1;
 }
 
 int BSP::createLeaf()
 {
-	leaves.push_back(Leaf());
-	return leaves.size() - 1;
+	tree.leaves.push_back(Leaf());
+	return tree.leaves.size() - 1;
 }
 
 int BSP::addPortal(const Portal& portal)
 {
-	portals.push_back(portal);
+	tree.portals.push_back(portal);
 
-	return portals.size() - 1;
+	return tree.portals.size() - 1;
 }
 
 bool BSP::compile(const FaceList& faces, const Vec3& start)
 {
-	nodes.clear();
-	worldFaces.clear();
+	tree.nodes.clear();
+	tree.faces.clear();
 
 	AABB3D worldAABB = makeAABB(faces);
 	FaceList worldBounds = makeWorldBounds(worldAABB, 10.0f);
@@ -118,14 +118,14 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 	Context ctx;
 	ctx.bounds = getPlanes(worldAABB);
 
-	rootNodeIndex = createNode();
-	ctx.nodeIdx = rootNodeIndex;
+	tree.rootNodeIdx = createNode();
+	ctx.nodeIdx = tree.rootNodeIdx;
 
-	portals.clear();
+	tree.portals.clear();
 
 	build(faces, ctx);
 
-	buildPortalsFromNode(rootNodeIndex);
+	buildPortalsFromNode(tree.rootNodeIdx);
 
 	bool res = floodFill(getLeafIdx(start));
 
@@ -302,7 +302,7 @@ bool BSP::clipPortal(Portal& portal)
 
 void BSP::restoreBorderFaces()
 {
-	for (int leafIdx = 0; leafIdx < leaves.size(); leafIdx++) {
+	for (int leafIdx = 0; leafIdx < tree.leaves.size(); leafIdx++) {
 		const Leaf& leaf = getLeaf(leafIdx);
 
 		if (leaf.valid) {
@@ -310,8 +310,8 @@ void BSP::restoreBorderFaces()
 		}
 
 		for (int faceIdx : leaf.faceIdxs) {
-			Vec3 n = worldFaces[faceIdx].face.poly.getPlane().normal;
-			Vec3 p = worldFaces[faceIdx].face.poly.getCenter();
+			Vec3 n = tree.faces[faceIdx].face.poly.getPlane().normal;
+			Vec3 p = tree.faces[faceIdx].face.poly.getCenter();
 
 			p += n * 0.1f;
 			int otherLeafIdx = getLeafIdx(p);
@@ -326,10 +326,10 @@ void BSP::restoreBorderFaces()
 				continue;
 			}
 
-			auto face = worldFaces[faceIdx];
+			auto face = tree.faces[faceIdx];
 			face.face.poly = Poly3D::offset(face.face.poly, 0.01f);
 
-			pushFace(face, rootNodeIndex);
+			pushFace(face, tree.rootNodeIdx);
 
 			std::cout << "Face returned from " << leafIdx << " to " << otherLeafIdx << "\n";
 		}
@@ -409,7 +409,7 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 		frontCtx.depth = ctx.depth + 1;
 		frontCtx.nodeIdx = frontNodeIdx;
 		frontCtx.bounds = ctx.bounds;
-		frontCtx.bounds.push_back(nodes[nodeIdx].plane);
+		frontCtx.bounds.push_back(splitter.plane);
 
 		backCtx.depth = ctx.depth + 1;
 		backCtx.nodeIdx = backNodeIdx;
@@ -436,7 +436,7 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 			getLeaf(leafIdx).faceIdxs.push_back(addBSPFace(face, leafIdx));
 		}
 
-		nodes[nodeIdx].leafIdx = leafIdx;
+		tree.nodes[nodeIdx].leafIdx = leafIdx;
 	}
 }
 
@@ -459,7 +459,7 @@ void BSP::render(const Vec3& pos, World& world, bool includePortals)
 	*/
 
 
-	traverse(rootNodeIndex, pos, world);
+	traverse(tree.rootNodeIdx, pos, world);
 
 	if (includePortals) {
 		int currentLeafIdx = getLeafIdx(pos);
@@ -528,7 +528,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 
 		if (leaf.valid && leaf.visible) {
 			for (int faceIdx : leaf.faceIdxs) {
-				BSPFace bspFace = worldFaces[faceIdx];
+				BSPFace bspFace = tree.faces[faceIdx];
 				bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
 				world.addGeometry(bspFace.face);
 			}
@@ -555,19 +555,20 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 
 int BSP::getLeafIdx(const Vec3& vec) const
 {
-	int nodeId = rootNodeIndex;
+	int nodeIdx = tree.rootNodeIdx;
+
 	while (true) {
-		const Node& node = nodes[nodeId];
+		const Node& node = getNode(nodeIdx);
 
 		if (node.leafIdx != -1) {
 			return node.leafIdx;
 		}
 
 		if (Geometry::test(vec, node.plane) == Side::Back) {
-			nodeId = node.backIdx;
+			nodeIdx = node.backIdx;
 		}
 		else {
-			nodeId = node.frontIdx;
+			nodeIdx = node.frontIdx;
 		}
 	}
 

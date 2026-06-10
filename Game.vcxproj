@@ -162,7 +162,9 @@
     <ClCompile Include="MapFile.cpp" />
     <ClCompile Include="PortalRenderer.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
+    <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="ViewportClipper.cpp" />
     <ClCompile Include="Constructor.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -186,7 +188,9 @@
     <ClInclude Include="MapFile.h" />
     <ClInclude Include="PortalRenderer.h" />
     <ClInclude Include="Rasterizer.h" />
+    <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureConverter.h" />
     <ClInclude Include="ViewportClipper.h" />
     <ClInclude Include="Constructor.h" />
     <ClInclude Include="Math.h" />

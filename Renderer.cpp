@@ -58,7 +58,7 @@ Vec2 Renderer::project(const Vec3& vec) const
     return proj;
 }
 
-Triangle2 Renderer::project(const Triangle3& tri, int texWidth, int texHeight) const
+Triangle2 Renderer::project(const Triangle3& tri) const
 {
     Triangle2 proj;
 
@@ -66,8 +66,8 @@ Triangle2 Renderer::project(const Triangle3& tri, int texWidth, int texHeight) c
         float invZ = 1.0f / tri.v[i].pos.z;
 
         proj.v[i].pos = project(tri.v[i].pos);
-        proj.v[i].uz = (tri.v[i].uv.x * texWidth) * invZ;
-        proj.v[i].vz = (tri.v[i].uv.y * texHeight) * invZ;
+        proj.v[i].uz = tri.v[i].uv.x * invZ;
+        proj.v[i].vz = tri.v[i].uv.y * invZ;
         proj.v[i].iz = invZ;
     }
 
@@ -76,7 +76,7 @@ Triangle2 Renderer::project(const Triangle3& tri, int texWidth, int texHeight) c
     return proj;
 }
 
-Poly2D Renderer::project(const Poly3D& poly, int texWidth, int texHeight) const
+Poly2D Renderer::project(const Poly3D& poly) const
 {
     Poly2D proj;
 
@@ -86,8 +86,8 @@ Poly2D Renderer::project(const Poly3D& poly, int texWidth, int texHeight) const
         Vertex2D projVert;
 
         projVert.pos = project(vert.pos);
-        projVert.uz = (vert.uv.x * texWidth) * invZ;
-        projVert.vz = (vert.uv.y * texHeight) * invZ;
+        projVert.uz = vert.uv.x * invZ;
+        projVert.vz = vert.uv.y * invZ;
         projVert.iz = invZ;
 
         proj.addVert(projVert);
@@ -116,7 +116,7 @@ Poly2D Renderer::clip(const Poly2D& in) const
     return viewportClipper.clip(in, viewport);
 }
 
-Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling, int texWidth, int texHeight) const
+Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling) const
 {
     Triangle2DList out;
 
@@ -138,7 +138,7 @@ Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& 
     }
 
     for (const auto& clippedTri : clippedTris) {
-        Triangle2 projectedTri = project(clippedTri, texWidth, texHeight);
+        Triangle2 projectedTri = project(clippedTri);
 
         // Viewport clipping
         Triangle2DList vpClippedTris = clip(projectedTri);
@@ -155,7 +155,7 @@ Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& 
     return out;
 }
 
-bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth, int texHeight) const
+bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling) const
 {
     // Backface culling
     if (backfaceCulling && Geometry::test(cam.position, in.getPlane()) != Side::Front) {
@@ -175,7 +175,7 @@ bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& 
     }
 
     // Projection
-    Poly2D projectedPoly = project(poly, texWidth, texHeight);
+    Poly2D projectedPoly = project(poly);
 
     // Viewport clipping
     out = clip(projectedPoly);
@@ -195,7 +195,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
         Texture tex = textureManager.get(model.getTextureIndex());
 
-        Triangle2DList preparedTris = prepareForRendering(tri, cam, true, tex.getWidth(), tex.getHeight());
+        Triangle2DList preparedTris = prepareForRendering(tri, cam, true);
 
         if (preparedTris.empty()) {
             continue;
@@ -242,7 +242,7 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
             Color fillColor = face.debugColor;
 
             Poly2D renderPoly;
-            if (!prepareForRendering(renderPoly, face.poly, cam, true, tex.getWidth(), tex.getHeight())) {
+            if (!prepareForRendering(renderPoly, face.poly, cam, true)) {
                 continue;
             }
 

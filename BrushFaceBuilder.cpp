@@ -7,8 +7,6 @@
 
 #include "Geometry.h"
 
-std::unordered_map<std::string, size_t> BrushFaceBuilder::textures;
-
 static Vec3 convert(const Vec3& vec)
 {
 	return Vec3(vec.x, -vec.z, vec.y) / 5;
@@ -55,13 +53,13 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush)
 
 			vert.pos = convert(vert.pos);
 
-			vert.uv.x = u / 100;
-			vert.uv.y = v / 100;
+			vert.uv.x = u;
+			vert.uv.y = v;
 		}
 
 		std::reverse(poly.verts.begin(), poly.verts.end());
 
-		out.push_back(Face(poly, getTextureId(side.texName)));
+		out.push_back(Face(poly, manager.getIdx(side.texName)));
 	}
 }
 
@@ -111,31 +109,30 @@ static Vec3 parseOrigin(const std::string& str)
 	return convert(result);
 }
 
+static std::string getProperty(const MapEntity& entity, const std::string& key)
+{
+	auto iter = entity.properties.find(key);
+
+	if (iter == entity.properties.end()) {
+		return "";
+	}
+
+	return iter->second;
+}
+
 void BrushFaceBuilder::build(FaceList& out, Vec3& start, const Map& map)
 {
 	for (const auto& entity : map.entities) {
 
-		for (const auto& brushes : entity.brushes) {
-			build(out, brushes);
-		}
+		std::string classname = getProperty(entity, "classname");
 
-		auto iter = entity.properties.find("classname");
-
-		if (iter != entity.properties.end()) {
-
-			if (iter->second == "info_player_start") {
-
-				auto iter2 = entity.properties.find("origin");
-
-				if (iter2 != entity.properties.end()) {
-
-
-					start = parseOrigin(iter2->second);
-
-
-
-				}
+		if (classname == "worldspawn") {
+			for (const auto& brushes : entity.brushes) {
+				build(out, brushes);
 			}
+		}
+		else if (classname == "info_player_start") {
+			start = parseOrigin(getProperty(entity, "origin"));
 		}
 
 	}

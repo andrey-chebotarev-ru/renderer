@@ -24,6 +24,8 @@
 #include "PortalRenderer.h"
 #include "MapFile.h"
 #include "BrushFaceBuilder.h"
+#include "TextureConverter.h"
+#include "ResourceLoader.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -41,10 +43,16 @@ static Constructor constructor(textureManager);
 static Camera camera;
 static std::vector<Model> models;
 static World world;
-static BSP bsp;
+static Tree tree;
+static BSP bsp(tree);
+static ResourceLoader loader(tree);
 static PortalRenderer portalRenderer(gameRenderer, bsp);
 static bool fill = false;
 static bool drawPortals = false;
+
+static BrushFaceBuilder faceBuilder(textureManager);
+static TextureConverter converter(textureManager);
+
 
 static bool fullscreen = true;
 
@@ -156,35 +164,64 @@ bool loadTextures()
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
+    std::string name, path;
+
+
+    std::cin >> name;
+
+    Vec3 pos = { 0, 0, 0 };
+
+    converter.load(std::format("{}.bsp", name));
+
+    if (!loader.load(std::format("{}.dat", name))) {
+    
+        Map map;
+        MapFile mapFile;
+        mapFile.load(std::format("{}.map", name));
+        mapFile.parse(map);
+        //mapFile.printMap(map);
+
+        FaceList faces;
+        faceBuilder.build(faces, pos, map);
+
+        std::cout << faces.size();
+
+        leaked = bsp.compile(faces, pos);
+
+        loader.startPos = pos;
+        loader.save(std::format("{}.dat", name));
+    }
+    else {
+        pos = loader.startPos;
+    }
+
+    /*
     if (!loadTextures()) {
         return SDL_APP_FAILURE;
     }
+    */
 
-    std::string filename;
+    
 
-    std::cin >> filename;
+    
 
-    Map map;
-    MapFile mapFile;
-    mapFile.load(filename);
-    mapFile.parse(map);
-    //mapFile.printMap(map);
+   
 
-    FaceList faces;
-    Vec3 pos = { 0, 0, 0 };
+    
+    
 
-    BrushFaceBuilder::build(faces, pos, map);
+    
 
 
 
-    std::cout << faces.size();
+    
 
     //return SDL_APP_FAILURE;
 
     angles.load();
 
     
-    leaked = bsp.compile(faces, pos);
+    
 
     camera.position = pos;
     camera.yaw(90.0f);

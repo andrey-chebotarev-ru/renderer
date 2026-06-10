@@ -5,15 +5,23 @@
 
 #include "Triangle.h"
 #include "Map.h"
+#include "Texture.h"
 
 class BrushFaceBuilder
 {
 public:
-	static std::unordered_map<std::string, size_t> textures;
 
-	static void build(FaceList& out, const MapBrush& brush);
-	static void build(FaceList& out, const MapBrushList& brushes);
-	static void build(FaceList& out, Vec3& start, const Map& map);
-	static size_t getTextureId(std::string texName);
+	TextureManager& manager;
+
+	BrushFaceBuilder(TextureManager& manager)
+		: manager(manager) {
+	}
+
+	std::unordered_map<std::string, size_t> textures;
+
+	void build(FaceList& out, const MapBrush& brush);
+	void build(FaceList& out, const MapBrushList& brushes);
+	void build(FaceList& out, Vec3& start, const Map& map);
+	size_t getTextureId(std::string texName);
 };
 

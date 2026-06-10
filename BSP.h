@@ -56,7 +56,6 @@ struct Portal
 	int backLeafIdx = -1;
 	
 	bool visited = false;
-	bool marked = false;
 };
 
 using PortalList = std::vector<Portal>;
@@ -80,6 +79,8 @@ struct BSPFace
 	Face face;
 	int leafIdx;
 
+	BSPFace() {}
+
 	BSPFace(const Face& face, int leafIdx)
 		: face(face), leafIdx(leafIdx) {
 	}
@@ -93,9 +94,22 @@ enum class PortalSide
 	B
 };
 
+struct Tree
+{
+	NodeList nodes;
+	LeafList leaves;
+	BSPFaceList faces;
+	PortalList portals;
+	size_t rootNodeIdx;
+};
+
 class BSP
 {
 public:
+
+	BSP(Tree& tree) :
+		tree(tree) {
+	}
 
 	bool compile(const FaceList& polys, const Vec3& start);
 	void render(const Vec3& pos, World& world, bool includePortals = false);
@@ -109,47 +123,41 @@ public:
 	Leaf getLeaf(const Vec3& pos) const;
 
 	const Leaf& getLeaf(int index) const {
-		return leaves[index];
+		return tree.leaves[index];
 	}
 
 	Leaf& getLeaf(int index) {
-		return leaves[index];
+		return tree.leaves[index];
 	}
 
 	Portal& getPortal(int index) {
-		return portals[index];
+		return tree.portals[index];
 	}
 
 	const Portal& getPortal(int index) const {
-		return portals[index];
+		return tree.portals[index];
 	}
 
 	int getLeafCount() const {
-		return leaves.size();
+		return tree.leaves.size();
 	}
 
 	int getPortalCount() const {
-		return portals.size();
+		return tree.portals.size();
 	}
 
 private:
-	int rootNodeIndex = 0;
-	NodeList nodes;
-	LeafList leaves;
-	BSPFaceList worldFaces;
-	PortalList portals;
+	Tree& tree;
 
 	int createNode();
 
 	Node& getNode(int index) {
-		return nodes[index];
+		return tree.nodes[index];
 	}
 
 	const Node& getNode(int index) const {
-		return nodes[index];
+		return tree.nodes[index];
 	}
-
-	
 
 	bool floodFill(int leafId);
 

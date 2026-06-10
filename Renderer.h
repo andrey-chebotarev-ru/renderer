@@ -52,8 +52,8 @@ public:
     void transformToView(Poly3D& poly, const Camera& cam) const;
 
     Vec2 project(const Vec3& vec) const;
-    Triangle2 project(const Triangle3& tri, int texWidth, int texHeight) const;
-    Poly2D project(const Poly3D& poly, int texWidth, int texHeight) const;
+    Triangle2 project(const Triangle3& tri) const;
+    Poly2D project(const Poly3D& poly) const;
 
     Triangle3DList clip(const Triangle3& in) const;
     Triangle2DList clip(const Triangle2& in) const;
@@ -61,8 +61,8 @@ public:
     Poly3D clip(const Poly3D& in) const;
     Poly2D clip(const Poly2D& in) const;
     
-    Triangle2DList prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
-    bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling, int texWidth = 0, int texHeight = 0) const;
+    Triangle2DList prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling) const;
+    bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling) const;
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     
