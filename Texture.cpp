@@ -19,7 +19,7 @@ Texture::Texture()
     */
 }
 
-Texture::Texture(size_t width, size_t height, size_t pitch, Color* pixels)
+Texture::Texture(size_t width, size_t height, Color* pixels)
     : width(width), height(height), pixels(pixels)
 {
     assert(Math::isPow2(width));

@@ -210,13 +210,13 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
     return count;
 }
 
-int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
+int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool fill)
 {
     int count = 0;
 
-    for (int faceIdx = 0; faceIdx < world.getSize(); faceIdx++) {
+    for (int faceIdx = 0; faceIdx < renderFaces.getSize(); faceIdx++) {
 
-        const Face& face = world.getFace(faceIdx);
+        const Face& face = renderFaces.getFace(faceIdx);
 
         if (face.type == FaceType::Bounds) {
             continue;
@@ -261,11 +261,11 @@ int Renderer::drawWorld(const World& world, const Camera& cam, bool fill)
     return count;
 }
 
-int Renderer::drawScene(const World& world, const ModelList&models, const Camera& cam, bool debug)
+int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList&models, const Camera& cam, bool debug)
 {
     rasterizer.clearBuffers();
     
-    int count = drawWorld(world, cam, debug);
+    int count = drawWorld(renderFaces, cam, debug);
 
     for (const Model& model : models) {
         count += drawModel(model, cam);

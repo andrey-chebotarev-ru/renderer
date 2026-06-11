@@ -5,12 +5,12 @@
 #include "Triangle.h"
 #include "Model.h"
 
-class World
+class RenderFaces
 {
 public:
     FaceList faces;
 
-    World();
+    RenderFaces();
     void addGeometry(const FaceList& faces);
     void addGeometry(const Face& face);
     size_t getSize() const;

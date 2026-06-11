@@ -11,7 +11,7 @@
 #include "Model.h"
 #include "Camera.h"
 #include "Clipper.h"
-#include "World.h"
+#include "RenderFaces.h"
 #include "Debug.h"
 #include "Texture.h"
 
@@ -66,7 +66,7 @@ public:
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     
-    int drawScene(const World& world, const ModelList& models, const Camera& cam, bool debug);
+    int drawScene(const RenderFaces& renderFaces, const ModelList& models, const Camera& cam, bool debug);
     void drawExtras(const FaceList& polys, const Camera& cam);
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);
@@ -94,7 +94,7 @@ private:
     
     
     int drawModel(const Model& model, const Camera& cam);
-    int drawWorld(const World& world, const Camera& cam, bool debug);
+    int drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool debug);
 
     
 };

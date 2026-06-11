@@ -217,3 +217,4 @@ struct Vec3
 };
 
 using Vec2List = std::vector<Vec2>;
+using Vec3List = std::vector<Vec3>;

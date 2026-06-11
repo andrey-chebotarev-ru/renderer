@@ -2,9 +2,9 @@
 
 #include <fstream>
 
+#include "Debug.h"
 
-
-bool ResourceLoader::save(const std::string& path)
+bool ResourceLoader::save(const std::string& path, const TextureList& textures, const Vec3List& playerStart)
 {
     file.open(path, std::ios::out | std::ios::binary);
 
@@ -12,12 +12,19 @@ bool ResourceLoader::save(const std::string& path)
         return false;
     }
 
+    Debug::print("Writing tree...");
     writeTree();
+
+    Debug::print("Writing player start positions...");
+    writePlayerStart(playerStart);
+    
+    Debug::print("Writing textures...");
+    writeTextures(textures);
 
     return true;
 }
 
-bool ResourceLoader::load(const std::string& path)
+bool ResourceLoader::load(const std::string& path, TextureManager& textureManager, Vec3List& playerStart)
 {
     file.open(path, std::ios::in | std::ios::binary);
 
@@ -25,7 +32,14 @@ bool ResourceLoader::load(const std::string& path)
         return false;
     }
 
+    Debug::print("Reading tree...");
     readTree();
+    
+    Debug::print("Reading player start positions...");
+    playerStart = readPlayerStart();
+    
+    Debug::print("Reading textures...");
+    readTextures(textureManager);
 
     return true;
 }
@@ -93,6 +107,8 @@ Node ResourceLoader::readNode()
 
 void ResourceLoader::writeNodes(const NodeList& nodes)
 {
+    Debug::printf("\tNodes: {}", nodes.size());
+
     write(nodes.size());
 
     for (const auto& node : nodes) {
@@ -106,6 +122,8 @@ NodeList ResourceLoader::readNodes()
 
     size_t count = read<size_t>();
     nodes.reserve(count);
+
+    Debug::printf("\tNodes: {}", count);
 
     for (int i = 0; i < count; i++) {
         nodes.push_back(readNode());
@@ -142,6 +160,8 @@ Leaf ResourceLoader::readLeaf()
 
 void ResourceLoader::writeLeaves(const LeafList& leaves)
 {
+    Debug::printf("\tLeaves: {}", leaves.size());
+
     write(leaves.size());
 
     for (const auto& leaf : leaves) {
@@ -155,6 +175,8 @@ LeafList ResourceLoader::readLeaves()
 
     size_t count = read<size_t>();
     leaves.reserve(count);
+
+    Debug::printf("Leaves: {}", count);
 
     for (int i = 0; i < count; i++) {
         leaves.push_back(readLeaf());
@@ -223,6 +245,8 @@ BSPFace ResourceLoader::readBSPFace()
 
 void ResourceLoader::writeBSPFaces(const BSPFaceList& bspFaces)
 {
+    Debug::printf("\tFaces: {}", bspFaces.size());
+
     write(bspFaces.size());
 
     for (const auto& bspFace : bspFaces) {
@@ -236,6 +260,8 @@ BSPFaceList ResourceLoader::readBSPFaces()
 
     size_t count = read<size_t>();
     bspFaces.reserve(count);
+
+    Debug::printf("Faces: {}", count);
 
     for (int i = 0; i < count; i++) {
         bspFaces.push_back(readBSPFace());
@@ -280,6 +306,8 @@ Portal ResourceLoader::readPortal()
 
 void ResourceLoader::writePortals(const PortalList& portals)
 {
+    Debug::printf("\tPortals: {}", portals.size());
+
     write(portals.size());
 
     for (const auto& portal : portals) {
@@ -294,11 +322,88 @@ PortalList ResourceLoader::readPortals()
     size_t count = read<size_t>();
     portals.reserve(count);
 
+    Debug::printf("Portals: {}", count);
+
     for (int i = 0; i < count; i++) {
         portals.push_back(readPortal());
     }
 
     return portals;
+}
+
+void ResourceLoader::writePlayerStart(const Vec3List& playerStart)
+{
+    Debug::printf("\tStart positions: {}", playerStart.size());
+
+    write(playerStart.size());
+
+    for (const auto& playerStartPos: playerStart) {
+        write(playerStartPos);
+    }
+}
+
+Vec3List ResourceLoader::readPlayerStart()
+{
+    Vec3List playerStart;
+
+    size_t count = read<size_t>();
+    playerStart.reserve(count);
+
+    Debug::printf("Start positions: {}", count);
+
+    for (int i = 0; i < count; i++) {
+        playerStart.push_back(read<Vec3>());
+    }
+
+    return playerStart;
+}
+
+void ResourceLoader::writeTexture(const Texture& tex)
+{
+    write(tex.width);
+    write(tex.height);
+
+    for (int i = 0; i < tex.width * tex.height; i++) {
+        write(tex.pixels[i]);
+    }
+}
+
+void ResourceLoader::readTexture(TextureManager& textureManager)
+{
+    size_t width = read<size_t>();
+    size_t height = read<size_t>();
+
+    Color* pixels = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
+
+    for (int i = 0; i < width * height; i++) {
+        pixels[i] = read<Color>();
+    }
+
+    textureManager.add(width, height, pixels);
+
+    std::free(pixels);
+}
+
+void ResourceLoader::writeTextures(const TextureList& textures)
+{
+    Debug::printf("\tTextures: {}", textures.size());
+
+    write(textures.size());
+
+    for (const auto& tex : textures) {
+        writeTexture(tex);
+    }
+}
+
+void ResourceLoader::readTextures(TextureManager& textureManager)
+{
+    size_t count = read<size_t>();
+    
+    Debug::printf("Textures: {}", count);
+
+    for (int i = 0; i < count; i++) {
+        readTexture(textureManager);
+    }
 }
 
 void ResourceLoader::writeTree()
@@ -307,8 +412,6 @@ void ResourceLoader::writeTree()
     writeLeaves(tree.leaves);
     writeBSPFaces(tree.faces);
     writePortals(tree.portals);
-
-    write(startPos);
 }
 
 void ResourceLoader::readTree()
@@ -317,6 +420,4 @@ void ResourceLoader::readTree()
     tree.leaves = readLeaves();
     tree.faces = readBSPFaces();
     tree.portals = readPortals();
-
-    startPos = read<Vec3>();
 }

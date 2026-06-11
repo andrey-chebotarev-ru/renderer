@@ -39,9 +39,6 @@
     <ClCompile Include="Vertex.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Constructor.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="ViewportClipper.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -57,7 +54,7 @@
     <ClCompile Include="Clipper.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="World.cpp">
+    <ClCompile Include="RenderFaces.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="BSP.cpp">
@@ -104,9 +101,6 @@
     <ClInclude Include="Vertex.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Constructor.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="ViewportClipper.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -125,7 +119,7 @@
     <ClInclude Include="Clipper.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="World.h">
+    <ClInclude Include="RenderFaces.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="BSP.h">

@@ -7,7 +7,7 @@
 #include "Vector.h"
 #include "Triangle.h"
 #include "Math.h"
-#include "World.h"
+#include "RenderFaces.h"
 #include "Camera.h"
 #include "Geometry.h"
 
@@ -111,8 +111,8 @@ public:
 		tree(tree) {
 	}
 
-	bool compile(const FaceList& polys, const Vec3& start);
-	void render(const Vec3& pos, World& world, bool includePortals = false);
+	bool compile(FaceList& polys, const Vec3List& playerStart);
+	void render(const Vec3& pos, RenderFaces& renderFaces, bool includePortals = false);
 	FaceList renderPortals(const Vec3& pos);
 	LabelList renderPortalLabels(const Vec3& pos);
 
@@ -173,7 +173,7 @@ private:
 	Splitter findSplitter(const FaceList& polys);
 
 	void build(const FaceList& faces, const Context& ctx);
-	void traverse(int nodeIndex, const Vec3& pos, World& world);
+	void traverse(int nodeIndex, const Vec3& pos, RenderFaces& renderFaces);
 
 	AABB3D makeAABB(const FaceList& polys);
 	PlaneList getPlanes(const AABB3D& aabb);

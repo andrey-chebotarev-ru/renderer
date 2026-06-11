@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "BSP.h"
+#include "Texture.h"
 
 class ResourceLoader
 {
@@ -13,11 +14,9 @@ public:
 		: tree(tree) {
 	}
 
-	bool save(const std::string& path);
+	bool save(const std::string& path, const TextureList& textures, const Vec3List& playerStart);
 
-	bool load(const std::string& path);
-
-	Vec3 startPos;
+	bool load(const std::string& path, TextureManager& textureManager, Vec3List& playerStart);
 	
 private:
 
@@ -60,10 +59,20 @@ private:
 	void writePortals(const PortalList& portals);
 	PortalList readPortals();
 
+	void writePlayerStart(const Vec3List& playerStart);
+	Vec3List readPlayerStart();
+
+	void writeTexture(const Texture& tex);
+	void readTexture(TextureManager& textureManager);
+
+	void writeTextures(const TextureList& textures);
+	void readTextures(TextureManager& textureManager);
+
 	void writeTree();
 	void readTree();
 
 	Tree& tree;
+
 	std::fstream file;
 };
 

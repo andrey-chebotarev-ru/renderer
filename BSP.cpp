@@ -1,9 +1,9 @@
 #include "BSP.h"
 
-#include <iostream>
 #include <cstdlib>
-
 #include <SDL3/SDL.h>
+
+#include "Debug.h"
 
 Leaf BSP::getLeaf(const Vec3& pos) const
 {
@@ -101,7 +101,7 @@ int BSP::addPortal(const Portal& portal)
 	return tree.portals.size() - 1;
 }
 
-bool BSP::compile(const FaceList& faces, const Vec3& start)
+bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 {
 	tree.nodes.clear();
 	tree.faces.clear();
@@ -109,11 +109,7 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 	AABB3D worldAABB = makeAABB(faces);
 	FaceList worldBounds = makeWorldBounds(worldAABB, 10.0f);
 
-	FaceList p2 = faces;
-
-	for (const auto& p : worldBounds) {
-		p2.push_back(p);
-	}
+	faces.insert(faces.end(), worldBounds.begin(), worldBounds.end());
 
 	Context ctx;
 	ctx.bounds = getPlanes(worldAABB);
@@ -123,14 +119,24 @@ bool BSP::compile(const FaceList& faces, const Vec3& start)
 
 	tree.portals.clear();
 
+	Debug::print("Building BSP tree...");
 	build(faces, ctx);
 
+	Debug::print("Building portals...");
 	buildPortalsFromNode(tree.rootNodeIdx);
 
-	bool res = floodFill(getLeafIdx(start));
+	bool leakFound = false;
+
+	for (const auto& pos : playerStart) {
+		leakFound = floodFill(getLeafIdx(pos)) || leakFound;
+	}
+	
+	if (leakFound) {
+		Debug::print("Leak detected!");
+	}
 
 	//restoreBorderFaces();
-	return res;
+	return leakFound;
 }
 
 void BSP::pushFace(const BSPFace& face, int nodeIdx)
@@ -331,7 +337,7 @@ void BSP::restoreBorderFaces()
 
 			pushFace(face, tree.rootNodeIdx);
 
-			std::cout << "Face returned from " << leafIdx << " to " << otherLeafIdx << "\n";
+			Debug::printf("Face returned from {} to {}", leafIdx, otherLeafIdx);
 		}
 	}
 }
@@ -440,26 +446,9 @@ void BSP::build(const FaceList& faces, const Context& ctx)
 	}
 }
 
-void BSP::render(const Vec3& pos, World& world, bool includePortals)
+void BSP::render(const Vec3& pos, RenderFaces& renderFaces, bool includePortals)
 {
-	/*
-	if (renderOnlyCurrentLeaf) {
-		int currentLeafIdx = getLeafIdx(pos);
-		Leaf leaf2 = getLeaf(currentLeafIdx);
-
-		if (leaf2.valid) {
-			for (int index : leaf2.indices) {
-				world.addGeometry(worldFaces[index].face);
-			}
-		}
-	}
-	else {
-
-	}
-	*/
-
-
-	traverse(tree.rootNodeIdx, pos, world);
+	traverse(tree.rootNodeIdx, pos, renderFaces);
 
 	if (includePortals) {
 		int currentLeafIdx = getLeafIdx(pos);
@@ -468,7 +457,7 @@ void BSP::render(const Vec3& pos, World& world, bool includePortals)
 			const Portal& portal = getPortal(portalIdx);
 			if (portal.visited) {
 				int otherLeafIdx = portal.frontLeafIdx == currentLeafIdx ? portal.backLeafIdx : portal.frontLeafIdx;
-				world.addGeometry(Face(portal.poly, -1, FaceType::Debug, Color::getDebugColor(currentLeafIdx + otherLeafIdx)));
+				renderFaces.addGeometry(Face(portal.poly, -1, FaceType::Debug, Color::getDebugColor(currentLeafIdx + otherLeafIdx)));
 			}
 		}
 	}
@@ -514,7 +503,7 @@ LabelList BSP::renderPortalLabels(const Vec3& pos)
 	return portalLabels;
 }
 
-void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
+void BSP::traverse(int nodeIndex, const Vec3& pos, RenderFaces& renderFaces)
 {
 	if (nodeIndex == -1) {
 		return;
@@ -530,7 +519,7 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 			for (int faceIdx : leaf.faceIdxs) {
 				BSPFace bspFace = tree.faces[faceIdx];
 				bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
-				world.addGeometry(bspFace.face);
+				renderFaces.addGeometry(bspFace.face);
 			}
 		}
 	}
@@ -539,16 +528,16 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, World& world)
 		Side side = Geometry::test(pos, node.plane);
 
 		if (side == Side::Front) {
-			traverse(node.backIdx, pos, world);
-			traverse(node.frontIdx, pos, world);
+			traverse(node.backIdx, pos, renderFaces);
+			traverse(node.frontIdx, pos, renderFaces);
 		}
 		else if (side == Side::Back) {
-			traverse(node.frontIdx, pos, world);
-			traverse(node.backIdx, pos, world);
+			traverse(node.frontIdx, pos, renderFaces);
+			traverse(node.backIdx, pos, renderFaces);
 		}
 		else {
-			traverse(node.frontIdx, pos, world);
-			traverse(node.backIdx, pos, world);
+			traverse(node.frontIdx, pos, renderFaces);
+			traverse(node.backIdx, pos, renderFaces);
 		}
 	}
 }

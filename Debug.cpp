@@ -1,5 +1,7 @@
 #include "Debug.h"
 
+#include <iostream>
+
 void Debug::drawText(int x, int y, const Color& color, std::string text) const
 {
 	if (*renderer != nullptr) {

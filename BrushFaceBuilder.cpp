@@ -1,18 +1,17 @@
 #include "BrushFaceBuilder.h"
 
-#include <iostream>
-#include <format>
-
 #include <SDL3/SDL.h>
 
 #include "Geometry.h"
+#include "Debug.h"
+#include "Texture.h"
 
 static Vec3 convert(const Vec3& vec)
 {
 	return Vec3(vec.x, -vec.z, vec.y) / 5;
 }
 
-void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush)
+void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const TextureTable& table)
 {
 	for (int j = 0; j < brush.sides.size(); j++) {
 
@@ -34,8 +33,6 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush)
 		}
 
 		Poly3D poly = Geometry::makePolygonOnPlane(sidePlane, 100000.0f);
-
-		
 
 		poly = Geometry::clip(poly, clipPlanes);
 
@@ -59,26 +56,9 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush)
 
 		std::reverse(poly.verts.begin(), poly.verts.end());
 
-		out.push_back(Face(poly, manager.getIdx(side.texName)));
+		out.push_back(Face(poly, table.find(side.texName)));
 	}
 }
-
-void BrushFaceBuilder::build(FaceList& out, const MapBrushList& brushes)
-{
-	for (const auto& brush : brushes) {
-		build(out, brush);
-	}
-
-	for (const auto& face : out) {
-		std::cout << "Face:\n";
-		for (int i = 0; i < face.poly.getCount(); i++) {
-			const auto& vert = face.poly.verts[i];
-			std::cout << std::format("Vert{}: ({} {} {})\n", i + 1, vert.pos.x, vert.pos.y, vert.pos.z);
-		}
-		
-	}
-}
-
 
 static Vec3 parseOrigin(const std::string& str)
 {
@@ -120,7 +100,7 @@ static std::string getProperty(const MapEntity& entity, const std::string& key)
 	return iter->second;
 }
 
-void BrushFaceBuilder::build(FaceList& out, Vec3& start, const Map& map)
+void BrushFaceBuilder::build(FaceList& out, Vec3List& playerStart, const Map& map, const TextureTable& table)
 {
 	for (const auto& entity : map.entities) {
 
@@ -128,27 +108,14 @@ void BrushFaceBuilder::build(FaceList& out, Vec3& start, const Map& map)
 
 		if (classname == "worldspawn") {
 			for (const auto& brushes : entity.brushes) {
-				build(out, brushes);
+				build(out, brushes, table);
 			}
 		}
-		else if (classname == "info_player_start") {
-			start = parseOrigin(getProperty(entity, "origin"));
+		else if (classname.starts_with("info_player_start")) {
+			Vec3 origin = parseOrigin(getProperty(entity, "origin"));
+			playerStart.push_back(origin);
+
+			Debug::printf("Player start '{}' at ('{}', '{}', '{}')", classname, origin.x, origin.y, origin.z);
 		}
-
-	}
-}
-
-size_t BrushFaceBuilder::getTextureId(std::string texName)
-{
-
-	auto iter = textures.find(texName);
-
-	if (iter == textures.end()) {
-		size_t texId = SDL_rand(7);
-		textures[texName] = texId;
-		return texId;
-	}
-	else {
-		return iter->second;
 	}
 }

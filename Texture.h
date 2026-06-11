@@ -15,103 +15,118 @@ class Texture
 {
 public:
     Texture();
-    Texture(size_t width, size_t height, size_t pitch, Color* pixels);
+    Texture(size_t width, size_t height, Color* pixels);
 
     size_t getWidth() const;
     size_t getHeight() const;
     Color getSample(float u, float v) const;
 
-private:
     size_t width;
     size_t height;
-    
+
     size_t shiftWidth;
 
     Color* pixels;
+    
 };
+
+using TextureList = std::vector<Texture>;
 
 class TextureManager
 {
 public:
 
-    const size_t invalidTexIdx = 0xffffffff;
+    const size_t invalidTexIdx = 0;
 
     TextureManager()
     {
-       
+        size_t width = 32;
+        size_t height = 32;
+        size_t cellsSize = 8;
+
+        const Color color1 = Color(255, 0, 255);
+        const Color color2 = Color(0, 0, 0);
+
+        Color* pointer = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                bool even = ((((x / cellsSize) + (y / cellsSize)) & 1) == 0);
+                pointer[x + y * width] = even ? color1 : color2;
+            }
+        }
+        
+        pointers.push_back(pointer);
+        textures.push_back(Texture(width, height, pointer));
     }
 
     ~TextureManager()
     {
-        for (auto ptr : dataList) {
+        for (auto ptr : pointers) {
             std::free(ptr);
         }
     }
 
-    bool add(std::string name, size_t width, size_t height, size_t pitch, uint8_t* data)
+    bool add(size_t width, size_t height, Color* pixels)
     {
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
-
-
-        std::cout << name << "\n";
-
-        if (names.contains(name)) {
-            return false;
-        }
-      
-
         size_t texIdx = textures.size();
+        Color* pointer = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
 
-        names[name] = texIdx;
+        std::memcpy(pointer, pixels, width * height * sizeof(Color));
+        pointers.push_back(pointer);
 
-        Color* dstData = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
-
-
-        for (int y = 0; y < height; y++) {
-            Color* srcRow = reinterpret_cast<Color*>(data + y * pitch);
-            Color* dstRow = dstData + y * width;
-
-            std::memcpy(dstRow, srcRow, width * sizeof(Color));
-        }
-
-        dataList.push_back(dstData);
-
-        textures.push_back(Texture(width, height, pitch, dstData));
+        textures.push_back(Texture(width, height, pointer));
         return true;
     }
 
-    Texture get(const std::string& name) const
-    {
-        auto iter = names.find(name);
-
-        if (iter == names.end()) {
-            return defaultTex;
-        }
-
-        return textures[iter->second];
-    }
-
-    Texture get(size_t texIdx) const
+    const Texture& get(size_t texIdx) const
     {
         return textures[texIdx];
     }
 
-    size_t getIdx(const std::string& name) const
+    const size_t getTextureCount() const
     {
-        auto iter = names.find(name);
-
-        if (iter == names.end()) {
-            return 0;
-        }
-
-        return iter->second;
+        return textures.size();
     }
 
 private:
 
     Texture defaultTex;
 
-    std::unordered_map<std::string, size_t> names;
-    std::vector<Texture> textures;
-    std::vector<Color*> dataList;
+    TextureList textures;
+    std::vector<Color*> pointers;
+};
+
+class TextureTable
+{
+
+public:
+
+    size_t find(std::string name) const
+    {
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+
+        auto iter = table.find(name);
+
+        if (iter == table.end()) {
+            return 0;
+        }
+
+        return iter->second;
+    }
+
+    void set(std::string name, size_t idx)
+    {
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+
+        if (table.contains(name)) {
+            return;
+        }
+
+        table[name] = idx;
+    }
+
+private:
+
+    std::unordered_map<std::string, size_t> table;
 };

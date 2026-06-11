@@ -11,6 +11,7 @@
 
 #include "Texture.h"
 #include "Color.h"
+#include "Debug.h"
 
 constexpr int32_t BSPVERSION = 29;
 constexpr size_t LUMP_TEXTURES = 2;
@@ -54,120 +55,31 @@ struct RGB
 };
 
 
+
 class TextureConverter
 {
 public:
 
-	TextureConverter(TextureManager& manager)
-		: manager(manager) {
+	~TextureConverter();
+
+	bool load(const std::string& path, const std::string& palettePath);
+
+	const TextureList& getTextures() {
+		return textures;
 	}
 
-	std::array<uint8_t, 64 * 256> colormap;
+	const TextureTable& getTable() {
+		return table;
+	}
+
+private:
+
 	std::array<RGB, 256> palette;
+	TextureTable table;
+	TextureList textures;
+	std::vector<Color*> pointers;
 
-	TextureManager& manager;
-
-	//std::ifstream file;
-
-	void load(const std::string& path)
-	{
-		readColormap();
-		readPalette();
-
-		std::ifstream file(path, std::ios::binary);
-
-		if (!file) {
-			throw std::runtime_error(std::format("Error opening '{}'.", path));
-		}
-		
-		BSPHeader header = read<BSPHeader>(file);
-
-		std::cout << std::format("Version: {}\n", header.version);
-
-		size_t lumpOffset = header.lumps[LUMP_TEXTURES].offset;
-
-		file.seekg(lumpOffset, std::ios::beg);
-
-		int32_t numTextures = read<int32_t>(file);
-
-		std::cout << std::format("Texture count: {}\n", numTextures);
-
-		int32_t* offsets = (int32_t*)std::malloc(numTextures * sizeof(int32_t));
-
-		for (int i = 0; i < numTextures; i++) {
-			offsets[i] = read<int32_t>(file);
-		}
-		
-		for (int i = 0; i < numTextures; i++) {
-			int32_t offset = offsets[i];
-
-			if (offset == -1) {
-				continue;
-			}
-
-			int32_t miptexPos = lumpOffset + offset;
-			file.seekg(miptexPos, std::ios::beg);
-
-			MipTex texHeader = read<MipTex>(file);
-
-			std::cout << std::format("Texture {}x{}: '{}'\n", texHeader.width, texHeader.height, texHeader.name);
-
-			int32_t pixelsPos = lumpOffset + offset + texHeader.mip0Offset;
-
-			uint8_t* pixels = (uint8_t*)std::malloc(texHeader.width * texHeader.height);
-
-			file.seekg(pixelsPos, std::ios::beg);
-			file.read(reinterpret_cast<char*>(pixels), texHeader.width * texHeader.height);
-
-			Color* dst = (Color*)std::malloc(texHeader.width * texHeader.height * sizeof(Color));
-			std::memset(dst, 255, texHeader.width * texHeader.height * sizeof(Color));
-
-			for (int j = 0; j < texHeader.width * texHeader.height; j++) {
-				uint8_t colorIdx = pixels[j];
-				uint8_t colormapIdx = colormap[256 * 0 + colorIdx];
-				
-				RGB val = palette[colorIdx];
-
-				dst[j].r = val.r;
-				dst[j].g = val.g;
-				dst[j].b = val.b;
-				dst[j].a = 255;
-
-			}
-
-			manager.add(texHeader.name, texHeader.width, texHeader.height, texHeader.width * sizeof(Color), (uint8_t*)dst);
-
-			std::free(pixels);
-			std::free(dst);
-		}
-
-	}
-
-	void readColormap()
-	{
-		std::ifstream file("colormap.lmp", std::ios::binary);
-
-		if (!file) {
-			throw std::runtime_error("Error opening 'colormap.lmp'.");
-		}
-
-		file.read(reinterpret_cast<char*>(colormap.data()), colormap.size());
-	}
-
-	void readPalette()
-	{
-		std::ifstream file("palette.lmp", std::ios::binary);
-
-		if (!file) {
-			throw std::runtime_error("Error opening 'palette.lmp'.");
-		}
-
-		for (int i = 0; i < 256; i++) {
-			file.read(reinterpret_cast<char*>(&palette[i].r), 1);
-			file.read(reinterpret_cast<char*>(&palette[i].g), 1);
-			file.read(reinterpret_cast<char*>(&palette[i].b), 1);
-		}
-	}
+	void readPalette(const std::string& palettePath);
 
 	template<typename T>
 	T read(std::ifstream& file)
@@ -176,8 +88,4 @@ public:
 		file.read(reinterpret_cast<char*>(&value), sizeof(T));
 		return value;
 	}
-
-
-
 };
-

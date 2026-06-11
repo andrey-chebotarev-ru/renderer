@@ -18,12 +18,12 @@ bool MapFile::load(const std::string& path)
 	std::ifstream file(path);
 
 	if (!file) {
-		std::cerr << "Failed to open file: " << path << "\n";
 		return false;
 	}
 
 	content = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 	
+
 	return true;
 }
 

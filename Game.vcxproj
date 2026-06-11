@@ -166,7 +166,6 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="ViewportClipper.cpp" />
-    <ClCompile Include="Constructor.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -174,7 +173,7 @@
     <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="Vertex.cpp" />
-    <ClCompile Include="World.cpp" />
+    <ClCompile Include="RenderFaces.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BrushFaceBuilder.h" />
@@ -192,14 +191,13 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureConverter.h" />
     <ClInclude Include="ViewportClipper.h" />
-    <ClInclude Include="Constructor.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vertex.h" />
-    <ClInclude Include="World.h" />
+    <ClInclude Include="RenderFaces.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="SDL3-3.4.4\VisualC\SDL\SDL.vcxproj">

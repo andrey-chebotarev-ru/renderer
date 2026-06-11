@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
+#include <conio.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -16,8 +17,7 @@
 #include "Vector.h"
 #include "Camera.h"
 #include "Model.h"
-#include "Constructor.h"
-#include "World.h"
+#include "RenderFaces.h"
 #include "BSP.h"
 #include "Debug.h"
 #include "Math.h"
@@ -39,10 +39,9 @@ static SDL_Texture* sdlFramebufferTexture = NULL;
 static TextureManager textureManager;
 static Debug debug(&sdlRenderer);
 static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, textureManager, debug);
-static Constructor constructor(textureManager);
 static Camera camera;
 static std::vector<Model> models;
-static World world;
+static RenderFaces world;
 static Tree tree;
 static BSP bsp(tree);
 static ResourceLoader loader(tree);
@@ -50,116 +49,14 @@ static PortalRenderer portalRenderer(gameRenderer, bsp);
 static bool fill = false;
 static bool drawPortals = false;
 
-static BrushFaceBuilder faceBuilder(textureManager);
-static TextureConverter converter(textureManager);
+static BrushFaceBuilder faceBuilder;
+static TextureConverter converter;
 
 
 static bool fullscreen = true;
 
-static int randomAngle()
-{
-    return SDL_rand(360);
-}
-
-
-struct Angles
-{
-    static const int count = 12;
-
-    int values[count];
-    bool loaded = false, saved = false;
-
-    Angles()
-    {
-        for (int i = 0; i < count; i++) {
-            values[i] = randomAngle();
-        }
-    }
-
-    void save()
-    {
-        FILE* f;
-        fopen_s(&f, "angles.dat", "w");
-
-        if (!f) {
-            return;
-        }
-
-        fwrite(values, sizeof(int), count, f);
-        fclose(f);
-
-        saved = true;
-    }
-
-    void load()
-    {
-        FILE* f;
-        fopen_s(&f, "angles.dat", "r");
-
-        if (!f) {
-            return;
-        }
-
-        fread(values, sizeof(int), count, f);
-        fclose(f);
-
-        loaded = true;
-    }
-};
-
-static Angles angles;
 static bool leaked = false;
 static bool update = true;
-
-bool loadTexture(const char* name)
-{
-    SDL_Surface* loadedTexture;
-    SDL_Surface* convertedTexture;
-
-
-    char buf[256];
-
-    sprintf_s(buf, "textures/%s.jpg", name);
-
-    if (!(loadedTexture = IMG_Load(buf))) {
-        SDL_Log("Couldn't load image: %s", SDL_GetError());
-        return false;
-    }
-
-    if (!(convertedTexture = SDL_ConvertSurface(loadedTexture, SDL_PIXELFORMAT_RGBA32))) {
-        SDL_DestroySurface(loadedTexture);
-        SDL_Log("Couldn't convert texture: %s", SDL_GetError());
-        return false;
-    }
-
-    SDL_DestroySurface(loadedTexture);
-
-
-    SDL_LockSurface(convertedTexture);
-    
-    textureManager.add(name, convertedTexture->w, convertedTexture->h, convertedTexture->pitch, (uint8_t*)convertedTexture->pixels);
-    
-    SDL_UnlockSurface(convertedTexture);
-    SDL_DestroySurface(convertedTexture);
-
-    return true;
-}
-
-bool loadTextures()
-{
-    bool loaded = loadTexture("brick1");
-
-    loaded = loaded && loadTexture("brick2");
-    loaded = loaded && loadTexture("cells1");
-    loaded = loaded && loadTexture("cells2");
-    loaded = loaded && loadTexture("cells3");
-    loaded = loaded && loadTexture("rock1");
-    loaded = loaded && loadTexture("lava1");
-    loaded = loaded && loadTexture("wood1");
-
-    return loaded;
-}
-
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
@@ -169,63 +66,39 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     std::cin >> name;
 
-    Vec3 pos = { 0, 0, 0 };
+    Vec3List playerStart;
 
-    converter.load(std::format("{}.bsp", name));
-
-    if (!loader.load(std::format("{}.dat", name))) {
     
+
+    if (!loader.load(std::format("maps/{}.bin", name), textureManager, playerStart)) {
+    
+        converter.load(std::format("sources/{}.bsp", name), "sources/palette.lmp");
+
         Map map;
         MapFile mapFile;
-        mapFile.load(std::format("{}.map", name));
+        
+        if (!mapFile.load(std::format("sources/{}.map", name))) {
+            std::cerr << std::format("Could not open 'sources/{}.map'", name);
+            _getch();
+            return SDL_APP_FAILURE;
+        }
+        
         mapFile.parse(map);
-        //mapFile.printMap(map);
-
+        
         FaceList faces;
-        faceBuilder.build(faces, pos, map);
+        faceBuilder.build(faces, playerStart, map, converter.getTable());
 
-        std::cout << faces.size();
+        leaked = bsp.compile(faces, playerStart);
 
-        leaked = bsp.compile(faces, pos);
+        loader.save(std::format("maps/{}.bin", name), converter.getTextures(), playerStart);
 
-        loader.startPos = pos;
-        loader.save(std::format("{}.dat", name));
-    }
-    else {
-        pos = loader.startPos;
-    }
+        std::cout << "Compilation complete. Press any key...\n";
+        _getch();
 
-    /*
-    if (!loadTextures()) {
         return SDL_APP_FAILURE;
     }
-    */
 
-    
-
-    
-
-   
-
-    
-    
-
-    
-
-
-
-    
-
-    //return SDL_APP_FAILURE;
-
-    angles.load();
-
-    
-    
-
-    camera.position = pos;
-    camera.yaw(90.0f);
-    //camera.yaw = 0;
+    camera.position = playerStart[0];
     
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
@@ -268,12 +141,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
-    SDL_SetWindowRelativeMouseMode(window, true);
+    
 
     if (fullscreen) {
         SDL_SetWindowFullscreen(window, true);
     }
     
+    SDL_SetWindowRelativeMouseMode(window, true);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -295,9 +169,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     case SDL_EVENT_KEY_DOWN:
         if (event->key.key == SDLK_LCTRL) {
             ctrlPressed = true;
-        }
-        if (event->key.key == SDLK_P && ctrlPressed) {
-            angles.save();
         }
         if (event->key.key == SDLK_E) {
             boxMode = !boxMode;
@@ -520,14 +391,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", count);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s) %s", leafIdx, leaf.valid ? "Inside" : "Void", leaf.outside ? "(Outside leaf)" : "");
-
-    if (angles.loaded) {
-        SDL_RenderDebugText(sdlRenderer, 10, 40, "Angles loaded");
-    }
-
-    if (angles.saved) {
-        SDL_RenderDebugText(sdlRenderer, 10, 50, "Angles saved");
-    }
 
     if (leaked) {
         SDL_RenderDebugText(sdlRenderer, 10, 60, "Leak detected!");
