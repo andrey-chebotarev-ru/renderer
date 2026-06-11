@@ -202,7 +202,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         }
         
         for (const auto& preparedTri : preparedTris) {
-            rasterizer.drawTriangle<true>(preparedTri, tex);
+            rasterizer.drawTriangle<true, false>(preparedTri, tex);
             count++;
         }
     }
@@ -241,8 +241,10 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
             Texture tex = textureManager.get(face.texIdx);
             Color fillColor = face.debugColor;
 
+            bool notWater = (face.type != FaceType::Water);
+
             Poly2D renderPoly;
-            if (!prepareForRendering(renderPoly, face.poly, cam, true)) {
+            if (!prepareForRendering(renderPoly, face.poly, cam, notWater)) {
                 continue;
             }
 
@@ -252,7 +254,12 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
                 drawWireframe(renderPoly, Color(0, 0, 0));
             }
             else {
-                count += rasterizer.drawPolygon<false>(renderPoly, tex);
+                if (notWater) {
+                    count += rasterizer.drawPolygon<false, false>(renderPoly, tex);
+                }
+                else {
+                    count += rasterizer.drawPolygon<false, true>(renderPoly, tex);
+                }
             }
         }
         

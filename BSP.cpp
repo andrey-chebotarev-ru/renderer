@@ -638,6 +638,10 @@ PortalList BSP::carvePortal(const Portal& in)
 
 	for (const auto& face : getNode(in.nodeIdx).coplanarFaces)
 	{
+		if (face.type == FaceType::Water) {
+			continue;
+		}
+
 		Poly3DList next;
 
 		for (const auto& piece : pieces) {

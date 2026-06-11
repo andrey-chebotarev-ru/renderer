@@ -56,7 +56,13 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const Texture
 
 		std::reverse(poly.verts.begin(), poly.verts.end());
 
-		out.push_back(Face(poly, table.find(side.texName)));
+		FaceType type = FaceType::Solid;
+
+		if (std::string(side.texName).starts_with("*")) {
+			type = FaceType::Water;
+		}
+
+		out.push_back(Face(poly, table.find(side.texName), type));
 	}
 }
 

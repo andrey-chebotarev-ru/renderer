@@ -14,12 +14,32 @@
 class Texture
 {
 public:
-    Texture();
-    Texture(size_t width, size_t height, Color* pixels);
+    Texture() {}
+    
+    Texture(size_t width, size_t height, Color* pixels)
+        : width(width), height(height), pixels(pixels)
+    {
+        //assert(Math::isPow2(width));
+        shiftWidth = Math::shift(width);
+    }
 
-    size_t getWidth() const;
-    size_t getHeight() const;
-    Color getSample(float u, float v) const;
+    size_t getWidth() const {
+        return width;
+    }
+
+    size_t getHeight() const {
+        return height;
+    }
+
+    inline const Color& getSample(float u, float v) const
+    {
+        int x = int(u) & (width - 1);
+        int y = int(v) & (height - 1);
+
+        int offset = x + (y << shiftWidth);
+
+        return pixels[offset];
+    }
 
     size_t width;
     size_t height;

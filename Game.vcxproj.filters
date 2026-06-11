@@ -45,9 +45,6 @@
     <ClCompile Include="Rasterizer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Color.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>

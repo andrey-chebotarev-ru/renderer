@@ -246,6 +246,7 @@ using LabelList = std::vector<Label>;
 enum class FaceType
 {
     Solid,
+    Water,
     Bounds,
     Debug,
 };

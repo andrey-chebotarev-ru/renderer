@@ -63,7 +63,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
     std::string name, path;
 
-
+    std::cout << "Map name: ";
     std::cin >> name;
 
     Vec3List playerStart;

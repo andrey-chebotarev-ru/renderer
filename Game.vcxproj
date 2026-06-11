@@ -163,7 +163,6 @@
     <ClCompile Include="PortalRenderer.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
-    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="ViewportClipper.cpp" />
     <ClCompile Include="Game.cpp" />
