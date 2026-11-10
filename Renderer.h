@@ -27,6 +27,10 @@ public:
         aspect = float(screenWidth) / screenHeight;
     }
 
+    void setPitchOffset(float pitchOffset) {
+        this->pitchOffset = pitchOffset;
+    }
+
     int getScreenWidth() const {
         return screenWidth;
     }
@@ -88,6 +92,8 @@ private:
 
     Debug debug;
     const TextureManager& textureManager;
+
+    float pitchOffset = 0.0f;
 
     
 

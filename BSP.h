@@ -4,12 +4,14 @@
 #include <functional>
 #include <string>
 
+#include "Common.h"
 #include "Vector.h"
 #include "Triangle.h"
 #include "Math.h"
 #include "RenderFaces.h"
 #include "Camera.h"
 #include "Geometry.h"
+//#include "PVS.h"
 
 using IndicesList = std::vector<int>;
 
@@ -112,7 +114,7 @@ public:
 	}
 
 	bool compile(FaceList& polys, const Vec3List& playerStart);
-	void render(const Vec3& pos, RenderFaces& renderFaces, bool includePortals = false);
+	void render(const Vec3& pos, RenderFaces& renderFaces, const BoolList& pvsTableRow, bool includePortals = false, bool renderOnlyCurrentLeaf = false);
 	FaceList renderPortals(const Vec3& pos);
 	LabelList renderPortalLabels(const Vec3& pos);
 
@@ -173,7 +175,7 @@ private:
 	Splitter findSplitter(const FaceList& polys);
 
 	void build(const FaceList& faces, const Context& ctx);
-	void traverse(int nodeIndex, const Vec3& pos, RenderFaces& renderFaces);
+	void traverse(int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, const BoolList& pvsTableRow);
 
 	AABB3D makeAABB(const FaceList& polys);
 	PlaneList getPlanes(const AABB3D& aabb);
@@ -182,6 +184,8 @@ private:
 	void pushFace(const BSPFace& face, int nodeIdx);
 
 	void buildPortalsFromNode(int nodeIdx);
+	Portal flipPortal(const Portal& portal);
+
 	void pushPortal(Portal portal, int nodeAIdx, int nodeBIdx);
 	void refinePortalSide(const Portal& portal, int splitNodeIdx, int otherNodeIdx, PortalSide side);
 	bool clipPortal(Portal& portal);

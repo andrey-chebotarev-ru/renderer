@@ -161,6 +161,7 @@
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="MapFile.cpp" />
     <ClCompile Include="PortalRenderer.cpp" />
+    <ClCompile Include="PVS.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
@@ -180,11 +181,13 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clipper.h" />
     <ClInclude Include="Color.h" />
+    <ClInclude Include="Common.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapFile.h" />
     <ClInclude Include="PortalRenderer.h" />
+    <ClInclude Include="PVS.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="Texture.h" />

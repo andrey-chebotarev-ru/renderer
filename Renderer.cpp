@@ -5,7 +5,12 @@
 #include "Geometry.h"
 
 const float Renderer::nearPlaneDistance = 1.0f;
+
+#ifdef _DEBUG
 const float Renderer::farPlaneDistance = 100.0f;
+#else
+const float Renderer::farPlaneDistance = 1000.0f;
+#endif
 
 void Renderer::setFramebuffer(int pitch, uint8_t* pixels)
 {
@@ -53,7 +58,7 @@ Vec2 Renderer::project(const Vec3& vec) const
     float invZ = 1.0f / vec.z;
 
     proj.x = screenCenter.x + (vec.x * invZ) * focusDistance * aspect;
-    proj.y = screenCenter.y + (vec.y * invZ) * focusDistance;
+    proj.y = screenCenter.y + pitchOffset + (vec.y * invZ) * focusDistance;
 
     return proj;
 }

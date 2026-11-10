@@ -26,6 +26,7 @@
 #include "BrushFaceBuilder.h"
 #include "TextureConverter.h"
 #include "ResourceLoader.h"
+#include "PVS.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -46,17 +47,24 @@ static Tree tree;
 static BSP bsp(tree);
 static ResourceLoader loader(tree);
 static PortalRenderer portalRenderer(gameRenderer, bsp);
+static PVS pvs(tree);
 static bool fill = false;
 static bool drawPortals = false;
+static bool renderOnlyCurrentLeaf = false;
+static float pitchOffset = 0.0f;
 
 static BrushFaceBuilder faceBuilder;
 static TextureConverter converter;
+
+PVSTable pvsTable;
+BoolList* pvsRow = nullptr;
 
 
 static bool fullscreen = true;
 
 static bool leaked = false;
 static bool update = true;
+static bool updatePvs = true;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
@@ -97,6 +105,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
         return SDL_APP_FAILURE;
     }
+
+    std::cout << "Calculating PVS...\n";
+    pvs.calculate(pvsTable);
 
     camera.position = playerStart[0];
     
@@ -148,13 +159,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
     
     SDL_SetWindowRelativeMouseMode(window, true);
+    SDL_RaiseWindow(window);
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
 static float boxYawSpeed = 0, boxPitchSpeed = 0;
 static bool boxMode = false;
-static bool renderOnlyCurrentLeaf = false;
 
 static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
@@ -167,8 +178,20 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
     case SDL_EVENT_KEY_DOWN:
+        if (event->key.key == SDLK_PAGEUP) {
+            pitchOffset += 10;
+        }
+        if (event->key.key == SDLK_PAGEDOWN) {
+            pitchOffset -= 10;
+        }
+        if (event->key.key == SDLK_END) {
+            pitchOffset = 0;
+        }
         if (event->key.key == SDLK_LCTRL) {
             ctrlPressed = true;
+        }
+        if (event->key.key == SDLK_P) {
+            renderOnlyCurrentLeaf = !renderOnlyCurrentLeaf;
         }
         if (event->key.key == SDLK_E) {
             boxMode = !boxMode;
@@ -187,6 +210,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_U) {
             update = !update;
+        }
+        if (event->key.key == SDLK_V) {
+            updatePvs = !updatePvs;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -326,6 +352,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         
     }
 
+    gameRenderer.setPitchOffset(pitchOffset);
+
     if (boxYawSpeed != 0) {
         models[0].yaw(boxYawSpeed * deltaTime);
     }
@@ -343,10 +371,14 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         world.clear();
 
         if (update) {
-            portalRenderer.render(camera);
+            //portalRenderer.render(camera);
         }
-        
-        bsp.render(camera.position, world, drawPortals);
+
+        if (updatePvs) {
+            pvsRow = &pvsTable[bsp.getLeafIdx(camera.position)];
+        }
+
+        bsp.render(camera.position, world, *pvsRow, drawPortals, renderOnlyCurrentLeaf);
 
 
 

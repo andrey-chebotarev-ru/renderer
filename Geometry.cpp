@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-const float Geometry::epsilon = 0.01f;
+const float Geometry::epsilon = 0.1f;
 
 PlaneBasis::PlaneBasis(const Vec3& origin, const Vec3& u, const Vec3& v)
 	: origin(origin), u(u), v(v) {

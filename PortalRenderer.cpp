@@ -69,7 +69,7 @@ bool PortalRenderer::isContainedInPrevAABB(int leafIdx, const AABB2D& aabb) cons
 
 void PortalRenderer::traverse(int leafIdx, const Camera& cam, const AABB2D& view, int depth)
 {
-	if (depth > 64) {
+	if (depth > 32) {
 		return;
 	}
 
@@ -83,6 +83,7 @@ void PortalRenderer::traverse(int leafIdx, const Camera& cam, const AABB2D& view
 	
 	for (int portalIdx : bsp.getLeaf(leafIdx).portalIdxs) {
 		const Portal& portal = bsp.getPortal(portalIdx);
+
 
 		AABB2D intersection;
 		if (std::abs(Math::distanceToPlane(portal.poly.getPlane(), cam.position)) < 2.0f)
