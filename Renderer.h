@@ -76,6 +76,10 @@ public:
     void drawWireframe(const Poly2D& poly, const Color& color);
     void drawAABB(const AABB2D& aabb, const Color& color);
 
+    void setPixel(int x, int y, const Color& color);
+
+    int drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool debug);
+
 private:
     static const float nearPlaneDistance, farPlaneDistance;
     int screenWidth, screenHeight;
@@ -100,7 +104,7 @@ private:
     
     
     int drawModel(const Model& model, const Camera& cam);
-    int drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool debug);
+    
 
     
 };

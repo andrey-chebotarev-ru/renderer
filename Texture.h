@@ -10,6 +10,7 @@
 
 #include "Math.h"
 #include "Color.h"
+#include "Debug.h"
 
 class Texture
 {
@@ -33,12 +34,38 @@ public:
 
     inline const Color& getSample(float u, float v) const
     {
+        /*
         int x = int(u) & (width - 1);
         int y = int(v) & (height - 1);
 
         int offset = x + (y << shiftWidth);
+        */
 
-        return pixels[offset];
+        const int w = static_cast<int>(width);
+        const int h = static_cast<int>(height);
+        
+        int x = static_cast<int>(std::floor(u)) % w;
+        int y = static_cast<int>(std::floor(v)) % h;
+        
+        if (y < 0) {
+            y += h;
+        }
+
+        if (x < 0) {
+            x += w;
+        }
+
+        int offset = x + (y * width);
+
+
+        /*
+        int x = static_cast<int>(floorf(u));
+        int y = static_cast<int>(floorf(v));
+
+        x = ((x % width) + width) % width;
+        y = ((y % height) + height) % height;
+        */
+        return pixels[y * width + x];
     }
 
     size_t width;
@@ -129,6 +156,7 @@ public:
         auto iter = table.find(name);
 
         if (iter == table.end()) {
+            Debug::printf("Texture not found: '{}'", name);
             return 0;
         }
 

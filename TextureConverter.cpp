@@ -21,9 +21,12 @@ bool TextureConverter::load(const std::string& path, const std::string& paletteP
 
 	BSPHeader header = read<BSPHeader>(file);
 
-	if (header.version != 29) {
+	if (header.version != 29 && header.version != 30) {
+		Debug::printf("Invalid bsp version '{}'", header.version);
 		return false;
 	}
+
+	bool hl1 = (header.version == 30);
 
 	size_t lumpOffset = header.lumps[LUMP_TEXTURES].offset;
 
@@ -51,7 +54,10 @@ bool TextureConverter::load(const std::string& path, const std::string& paletteP
 
 		MipTex texHeader = read<MipTex>(file);
 
-		
+		if (texHeader.mip0Offset == 0) {
+			Debug::printf("\tSkipping texture '{}'", texHeader.name);
+			continue;
+		}
 
 		int32_t pixelsPos = lumpOffset + offset + texHeader.mip0Offset;
 
@@ -66,6 +72,18 @@ bool TextureConverter::load(const std::string& path, const std::string& paletteP
 		std::memset(dst, 255, texHeader.width * texHeader.height * sizeof(Color));
 
 		pointers.push_back(dst);
+
+		if (hl1) {
+			int paletteOffset = lumpOffset + offset + texHeader.mip3Offset + (texHeader.width / 8) * (texHeader.height / 8);
+			file.seekg(paletteOffset + 2, std::ios::beg);
+
+			for (int i = 0; i < 256; i++) {
+				file.read(reinterpret_cast<char*>(&palette[i].r), 1);
+				file.read(reinterpret_cast<char*>(&palette[i].g), 1);
+				file.read(reinterpret_cast<char*>(&palette[i].b), 1);
+			}
+
+		}
 
 		for (int j = 0; j < texHeader.width * texHeader.height; j++) {
 
@@ -84,7 +102,7 @@ bool TextureConverter::load(const std::string& path, const std::string& paletteP
 		textures.push_back(tex);
 
 		table.set(texHeader.name, idx);
-
+		
 		std::free(pixels);
 	}
 

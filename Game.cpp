@@ -66,6 +66,8 @@ static bool leaked = false;
 static bool update = true;
 static bool updatePvs = true;
 
+const double targetFrameTime = 1000.0 / 60.0;
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
@@ -287,7 +289,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 {
     SDL_FRect dst_rect;
     const Uint64 now = SDL_GetTicks();
-    SDL_Surface* surface = NULL;
 
     uint8_t* pixels = nullptr;
     int pitch;
@@ -381,21 +382,32 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         bsp.render(camera.position, world, *pvsRow, drawPortals, renderOnlyCurrentLeaf);
 
 
-
+        
        
 
         count = gameRenderer.drawScene(world, models, camera, fill);
+
+        /*
+        RenderFaces rf;
+        Face f;
+        FaceList fs;
+        f.poly = Poly3D();
+        f.poly.addVert(Vertex3D(Vec3(-100, -100, 100), Vec2(-64, -96)));
+        f.poly.addVert(Vertex3D(Vec3(100, -100, 100), Vec2(0, -96)));
+        f.poly.addVert(Vertex3D(Vec3(100, 100, 100), Vec2(0, 0)));
+        f.poly.addVert(Vertex3D(Vec3(-100, 100, 100), Vec2(-64, 0)));
+        std::reverse(f.poly.verts.begin(), f.poly.verts.end());
+        f.texIdx = 23;
+        fs.push_back(f);
+        rf.addGeometry(fs);
+
+        gameRenderer.drawWorld(rf, camera, false);
+        */
+
+
    
         if (drawPortals) {
             //gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
-        }
-
-        
-        if (drawAABBs) {
-            portalRenderer.drawAABBs(camera);
-            for (const auto& intersection : portalRenderer.intersections) {
-                gameRenderer.drawAABB(intersection, Color(255, 255, 255));
-            }
         }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
@@ -434,6 +446,12 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
+
+    double elapsed = double(SDL_GetTicks() - now);
+
+    if (elapsed < targetFrameTime) {
+        SDL_Delay(Uint32(targetFrameTime) - elapsed);
+    }
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }

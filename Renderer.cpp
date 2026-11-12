@@ -340,3 +340,8 @@ void Renderer::drawAABB(const AABB2D& aabb, const Color& color)
     rasterizer.drawLine(v11, v01, color);
     rasterizer.drawLine(v01, v00, color);
 }
+
+void Renderer::setPixel(int x, int y, const Color& color)
+{
+    rasterizer.setPixel(x, y, color);
+}

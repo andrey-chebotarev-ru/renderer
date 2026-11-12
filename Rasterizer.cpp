@@ -129,7 +129,7 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
         x1 = 0;
     }
 
-    if (x2 >= screenWidth) {
+    if (x2 > screenWidth) {
         x2 = screenWidth - 1;
     }
 

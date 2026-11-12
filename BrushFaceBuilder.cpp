@@ -8,7 +8,7 @@
 
 static Vec3 convert(const Vec3& vec)
 {
-	return Vec3(vec.x, -vec.z, vec.y) / 5;
+	return Vec3(vec.x, -vec.z, vec.y) / 5.0f;
 }
 
 void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const TextureTable& table)
@@ -32,7 +32,7 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const Texture
 			clipPlanes.push_back(clipPlane);
 		}
 
-		Poly3D poly = Geometry::makePolygonOnPlane(sidePlane, 100000.0f);
+		Poly3D poly = Geometry::makePolygonOnPlane(sidePlane, 10000.0f);
 
 		poly = Geometry::clip(poly, clipPlanes);
 
@@ -42,27 +42,21 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const Texture
 
 		for (auto& vert : poly.verts) {
 
-			float u = Vec3::dot(vert.pos, side.uAxis);
-			float v = Vec3::dot(vert.pos, side.vAxis);
-
-			u = u / side.xScale + side.uShift;
-			v = v / side.yScale + side.vShift;
+			vert.uv.x = Vec3::dot(vert.pos, side.uAxis) / side.xScale + side.uShift;
+			vert.uv.y = Vec3::dot(vert.pos, side.vAxis) / side.yScale + side.vShift;
 
 			vert.pos = convert(vert.pos);
-
-			vert.uv.x = u;
-			vert.uv.y = v;
 		}
 
 		std::reverse(poly.verts.begin(), poly.verts.end());
 
 		FaceType type = FaceType::Solid;
 
-		if (std::string(side.texName).starts_with("*")) {
+		if (std::string(side.texName).starts_with("*") || std::string(side.texName).starts_with("!")) {
 			type = FaceType::Water;
 		}
 
-		out.push_back(Face(poly, table.find(side.texName), type));
+		out.push_back(Face(poly, table.find(side.texName), type));	
 	}
 }
 

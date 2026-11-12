@@ -123,6 +123,7 @@ bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 
 	Debug::print("Building BSP tree...");
 	build(faces, ctx);
+	//restoreBorderFaces();
 
 	Debug::print("Building portals...");
 	buildPortalsFromNode(tree.rootNodeIdx);
@@ -143,6 +144,8 @@ bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 	Debug::printf("\tLeaves: {}", tree.leaves.size());
 	Debug::printf("\tFaces: {}", tree.faces.size());
 	Debug::printf("\tPortals: {}", tree.portals.size());
+
+	
 
 	FaceList finalFaces;
 
@@ -192,6 +195,7 @@ bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 	Debug::printf("\tPortals: {}", tree.portals.size());
 
 	//restoreBorderFaces();
+	
 	return leakFound;
 }
 
@@ -600,7 +604,14 @@ void BSP::traverse(int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, con
 		if (leaf.valid && /*leaf.visible &&*/ pvsTableRow[node.leafIdx]) {
 			for (int faceIdx : leaf.faceIdxs) {
 				BSPFace bspFace = tree.faces[faceIdx];
-				bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
+
+				if (bspFace.face.texIdx == 23 && bspFace.face.poly.verts[2].uv.x == -64) {
+					bspFace.face.debugColor = Color(255, 255, 255);
+				}
+				else {
+					bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
+				}
+				
 				renderFaces.addGeometry(bspFace.face);
 			}
 		}

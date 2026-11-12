@@ -79,6 +79,8 @@ public:
 
     Color blend(const Color& dstColor, const Color& srcColor, float alpha);
     Color darken(const Color& color);
+
+    void setPixel(int x, int y, const Color& color);
     
 private:
     // TODO: framebuffer struct
@@ -103,7 +105,5 @@ private:
     
     template<bool depthTest, bool screenDoor>
     void drawColoredSpan(const Span& span, const Color& fillColor);
-    
-    void setPixel(int x, int y, const Color& color);
 };
 
