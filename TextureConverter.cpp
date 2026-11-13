@@ -96,12 +96,12 @@ bool TextureConverter::load(const std::string& path, const std::string& paletteP
 		}
 
 
-		Texture tex = Texture(texHeader.width, texHeader.height, dst);
+		//Texture tex = Texture(texHeader.width, texHeader.height, dst);
 
 		size_t idx = textures.size() + 1;
-		textures.push_back(tex);
+		//textures.push_back(tex);
 
-		table.set(texHeader.name, idx);
+		//table.set(texHeader.name, idx);
 		
 		std::free(pixels);
 	}

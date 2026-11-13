@@ -27,6 +27,7 @@
 #include "TextureConverter.h"
 #include "ResourceLoader.h"
 #include "PVS.h"
+#include "WadLoader.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -48,6 +49,8 @@ static BSP bsp(tree);
 static ResourceLoader loader(tree);
 static PortalRenderer portalRenderer(gameRenderer, bsp);
 static PVS pvs(tree);
+static WadLoader wadLoader(textureManager);
+
 static bool fill = false;
 static bool drawPortals = false;
 static bool renderOnlyCurrentLeaf = false;
@@ -78,12 +81,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     Vec3List playerStart;
 
-    
+    StringList textureNames;
 
-    if (!loader.load(std::format("maps/{}.bin", name), textureManager, playerStart)) {
-    
-        converter.load(std::format("sources/{}.bsp", name), "sources/palette.lmp");
-
+    if (!loader.load(std::format("maps/{}.bin", name), textureNames, playerStart)) {
+      
         Map map;
         MapFile mapFile;
         
@@ -96,16 +97,26 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         mapFile.parse(map);
         
         FaceList faces;
-        faceBuilder.build(faces, playerStart, map, converter.getTable());
+        textureNames = faceBuilder.build(faces, playerStart, map);
+
+        for (const auto& textureName : textureNames) {
+            Debug::printf("Texture name: '{}'", textureName);
+        }
 
         leaked = bsp.compile(faces, playerStart);
 
-        loader.save(std::format("maps/{}.bin", name), converter.getTextures(), playerStart);
+        loader.save(std::format("maps/{}.bin", name), textureNames, playerStart);
 
         std::cout << "Compilation complete. Press any key...\n";
         _getch();
 
         return SDL_APP_FAILURE;
+    }
+
+    IndicesList remap = wadLoader.load(textureNames, std::format("maps/{}.wad", name), "common");
+
+    for (auto& face : tree.faces) {
+        face.face.texIdx = remap[face.face.texIdx];
     }
 
     std::cout << "Calculating PVS...\n";

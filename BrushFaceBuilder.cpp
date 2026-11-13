@@ -11,7 +11,7 @@ static Vec3 convert(const Vec3& vec)
 	return Vec3(vec.x, -vec.z, vec.y) / 5.0f;
 }
 
-void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const TextureTable& table)
+void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, TextureTable& table)
 {
 	for (int j = 0; j < brush.sides.size(); j++) {
 
@@ -56,7 +56,8 @@ void BrushFaceBuilder::build(FaceList& out, const MapBrush& brush, const Texture
 			type = FaceType::Water;
 		}
 
-		out.push_back(Face(poly, table.find(side.texName), type));	
+		uint32_t idx = table.add(side.texName);
+		out.push_back(Face(poly, idx, type));	
 	}
 }
 
@@ -100,8 +101,10 @@ static std::string getProperty(const MapEntity& entity, const std::string& key)
 	return iter->second;
 }
 
-void BrushFaceBuilder::build(FaceList& out, Vec3List& playerStart, const Map& map, const TextureTable& table)
+StringList BrushFaceBuilder::build(FaceList& out, Vec3List& playerStart, const Map& map)
 {
+	TextureTable table;
+
 	for (const auto& entity : map.entities) {
 
 		std::string classname = getProperty(entity, "classname");
@@ -118,4 +121,6 @@ void BrushFaceBuilder::build(FaceList& out, Vec3List& playerStart, const Map& ma
 			Debug::printf("Player start '{}' at ('{}', '{}', '{}')", classname, origin.x, origin.y, origin.z);
 		}
 	}
+
+	return table.getNames();
 }

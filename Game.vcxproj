@@ -174,6 +174,7 @@
     <ClCompile Include="Vector.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="RenderFaces.cpp" />
+    <ClCompile Include="WadLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BrushFaceBuilder.h" />
@@ -200,6 +201,7 @@
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="RenderFaces.h" />
+    <ClInclude Include="WadLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="SDL3-3.4.4\VisualC\SDL\SDL.vcxproj">

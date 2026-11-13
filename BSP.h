@@ -13,7 +13,7 @@
 #include "Geometry.h"
 //#include "PVS.h"
 
-using IndicesList = std::vector<int>;
+
 
 struct Node
 {

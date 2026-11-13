@@ -4,7 +4,7 @@
 
 #include "Debug.h"
 
-bool ResourceLoader::save(const std::string& path, const TextureList& textures, const Vec3List& playerStart)
+bool ResourceLoader::save(const std::string& path, const StringList& textureNames, const Vec3List& playerStart)
 {
     file.open(path, std::ios::out | std::ios::binary);
 
@@ -12,19 +12,19 @@ bool ResourceLoader::save(const std::string& path, const TextureList& textures, 
         return false;
     }
 
+    Debug::print("Writing texture names...");
+    writeTextureNames(textureNames);
+
     Debug::print("Writing tree...");
     writeTree();
 
     Debug::print("Writing player start positions...");
     writePlayerStart(playerStart);
     
-    Debug::print("Writing textures...");
-    writeTextures(textures);
-
     return true;
 }
 
-bool ResourceLoader::load(const std::string& path, TextureManager& textureManager, Vec3List& playerStart)
+bool ResourceLoader::load(const std::string& path, StringList& textureNames, Vec3List& playerStart)
 {
     file.open(path, std::ios::in | std::ios::binary);
 
@@ -32,15 +32,15 @@ bool ResourceLoader::load(const std::string& path, TextureManager& textureManage
         return false;
     }
 
+    Debug::print("Reading texture names...");
+    readTextureNames(textureNames);
+
     Debug::print("Reading tree...");
     readTree();
     
     Debug::print("Reading player start positions...");
     playerStart = readPlayerStart();
     
-    Debug::print("Reading textures...");
-    readTextures(textureManager);
-
     return true;
 }
 
@@ -79,6 +79,57 @@ IndicesList ResourceLoader::readIndices()
     }
 
     return indices;
+}
+
+void ResourceLoader::writeString(const std::string& name)
+{
+    size_t length = name.length();
+    const char* data = name.data();
+
+    write(length);
+
+    for (int i = 0; i < length; i++) {
+        write(data[i]);
+    }
+}
+
+std::string ResourceLoader::readString()
+{
+    size_t length = read<size_t>();
+
+    char data[256];
+
+    for (int i = 0; i < length; i++) {
+        data[i] = read<char>();
+    }
+
+    data[length] = '\0';
+
+    return std::string(data);
+}
+
+void ResourceLoader::writeTextureNames(const StringList& names)
+{
+    Debug::printf("\Texture names: {}", names.size());
+
+    write(names.size());
+
+    for (const auto& name : names) {
+        writeString(name);
+    }
+}
+
+void ResourceLoader::readTextureNames(StringList& names)
+{
+    size_t count = read<size_t>();
+    names.clear();
+    names.reserve(count);
+
+    Debug::printf("\tTexture names: {}", count);
+
+    for (int i = 0; i < count; i++) {
+        names.push_back(readString());
+    }
 }
 
 void ResourceLoader::writeNode(const Node& node)
@@ -356,54 +407,6 @@ Vec3List ResourceLoader::readPlayerStart()
     }
 
     return playerStart;
-}
-
-void ResourceLoader::writeTexture(const Texture& tex)
-{
-    write(tex.width);
-    write(tex.height);
-
-    for (int i = 0; i < tex.width * tex.height; i++) {
-        write(tex.pixels[i]);
-    }
-}
-
-void ResourceLoader::readTexture(TextureManager& textureManager)
-{
-    size_t width = read<size_t>();
-    size_t height = read<size_t>();
-
-    Color* pixels = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
-
-    for (int i = 0; i < width * height; i++) {
-        pixels[i] = read<Color>();
-    }
-
-    textureManager.add(width, height, pixels);
-
-    std::free(pixels);
-}
-
-void ResourceLoader::writeTextures(const TextureList& textures)
-{
-    Debug::printf("\tTextures: {}", textures.size());
-
-    write(textures.size());
-
-    for (const auto& tex : textures) {
-        writeTexture(tex);
-    }
-}
-
-void ResourceLoader::readTextures(TextureManager& textureManager)
-{
-    size_t count = read<size_t>();
-    
-    Debug::printf("Textures: {}", count);
-
-    for (int i = 0; i < count; i++) {
-        readTexture(textureManager);
-    }
 }
 
 void ResourceLoader::writeTree()

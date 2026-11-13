@@ -7,7 +7,9 @@
 #include <assert.h>
 #include <iostream>
 #include <algorithm>
+#include <array>
 
+#include "Common.h"
 #include "Math.h"
 #include "Color.h"
 #include "Debug.h"
@@ -16,7 +18,7 @@ class Texture
 {
 public:
     Texture() {}
-    
+
     Texture(size_t width, size_t height, Color* pixels)
         : width(width), height(height), pixels(pixels)
     {
@@ -43,10 +45,10 @@ public:
 
         const int w = static_cast<int>(width);
         const int h = static_cast<int>(height);
-        
+
         int x = static_cast<int>(std::floor(u)) % w;
         int y = static_cast<int>(std::floor(v)) % h;
-        
+
         if (y < 0) {
             y += h;
         }
@@ -74,7 +76,7 @@ public:
     size_t shiftWidth;
 
     Color* pixels;
-    
+
 };
 
 using TextureList = std::vector<Texture>;
@@ -102,7 +104,7 @@ public:
                 pointer[x + y * width] = even ? color1 : color2;
             }
         }
-        
+
         pointers.push_back(pointer);
         textures.push_back(Texture(width, height, pointer));
     }
@@ -114,7 +116,7 @@ public:
         }
     }
 
-    bool add(size_t width, size_t height, Color* pixels)
+    uint32_t add(size_t width, size_t height, Color* pixels)
     {
         size_t texIdx = textures.size();
         Color* pointer = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
@@ -123,7 +125,7 @@ public:
         pointers.push_back(pointer);
 
         textures.push_back(Texture(width, height, pointer));
-        return true;
+        return texIdx;
     }
 
     const Texture& get(size_t texIdx) const
@@ -146,35 +148,31 @@ private:
 
 class TextureTable
 {
-
 public:
 
-    size_t find(std::string name) const
+    uint32_t add(std::string name)
     {
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+       // std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
 
-        auto iter = table.find(name);
-
-        if (iter == table.end()) {
-            Debug::printf("Texture not found: '{}'", name);
-            return 0;
+        if (auto it = table.find(name); it != table.end()) {
+            return it->second;
         }
 
-        return iter->second;
+        uint32_t idx = static_cast<uint32_t>(names.size());
+        
+        names.push_back(name);
+        table.emplace(name, idx);
+        
+        return idx;
     }
 
-    void set(std::string name, size_t idx)
+    const StringList& getNames() const
     {
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
-
-        if (table.contains(name)) {
-            return;
-        }
-
-        table[name] = idx;
+        return names;
     }
 
 private:
 
-    std::unordered_map<std::string, size_t> table;
+    std::unordered_map<std::string, uint32_t> table;
+    StringList names;
 };

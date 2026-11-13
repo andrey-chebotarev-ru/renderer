@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 
+#include "Common.h"
 #include "BSP.h"
 #include "Texture.h"
 
@@ -14,9 +15,9 @@ public:
 		: tree(tree) {
 	}
 
-	bool save(const std::string& path, const TextureList& textures, const Vec3List& playerStart);
+	bool save(const std::string& path, const StringList& textureNames, const Vec3List& playerStart);
 
-	bool load(const std::string& path, TextureManager& textureManager, Vec3List& playerStart);
+	bool load(const std::string& path, StringList& textureNames, Vec3List& playerStart);
 	
 private:
 
@@ -29,11 +30,17 @@ private:
 	void writeIndices(const IndicesList& indices);
 	IndicesList readIndices();
 
+	void writeString(const std::string& name);
+	std::string readString();
+
+	void writeTextureNames(const StringList& names);
+	void readTextureNames(StringList& names);
+
 	void writeNode(const Node& node);
 	Node readNode();
 	
-	NodeList readNodes();
 	void writeNodes(const NodeList& nodes);
+	NodeList readNodes();
 
 	void writeLeaf(const Leaf& leaf);
 	Leaf readLeaf();
@@ -61,12 +68,6 @@ private:
 
 	void writePlayerStart(const Vec3List& playerStart);
 	Vec3List readPlayerStart();
-
-	void writeTexture(const Texture& tex);
-	void readTexture(TextureManager& textureManager);
-
-	void writeTextures(const TextureList& textures);
-	void readTextures(TextureManager& textureManager);
 
 	void writeTree();
 	void readTree();
