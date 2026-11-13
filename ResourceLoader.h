@@ -15,9 +15,9 @@ public:
 		: tree(tree) {
 	}
 
-	bool save(const std::string& path, const StringList& textureNames, const Vec3List& playerStart);
+	bool save(const std::string& path, const StringList& textureNames, const PVSTable& pvsTable, const Vec3List& playerStart);
 
-	bool load(const std::string& path, StringList& textureNames, Vec3List& playerStart);
+	bool load(const std::string& path, StringList& textureNames, PVSTable& pvsTable, Vec3List& playerStart);
 	
 private:
 
@@ -66,8 +66,12 @@ private:
 	void writePortals(const PortalList& portals);
 	PortalList readPortals();
 
+	void writePVSTable(const PVSTable& pvsTable);
+	void readPVSTable(PVSTable& pvsTable);
+
 	void writePlayerStart(const Vec3List& playerStart);
 	Vec3List readPlayerStart();
+
 
 	void writeTree();
 	void readTree();

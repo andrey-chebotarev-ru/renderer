@@ -83,7 +83,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     StringList textureNames;
 
-    if (!loader.load(std::format("maps/{}.bin", name), textureNames, playerStart)) {
+    if (!loader.load(std::format("maps/{}.bin", name), textureNames, pvsTable, playerStart)) {
       
         Map map;
         MapFile mapFile;
@@ -105,7 +105,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
         leaked = bsp.compile(faces, playerStart);
 
-        loader.save(std::format("maps/{}.bin", name), textureNames, playerStart);
+        std::cout << "Calculating PVS...\n";
+        pvs.calculate(pvsTable);
+
+        loader.save(std::format("maps/{}.bin", name), textureNames, pvsTable, playerStart);
 
         std::cout << "Compilation complete. Press any key...\n";
         _getch();
@@ -119,8 +122,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         face.face.texIdx = remap[face.face.texIdx];
     }
 
-    std::cout << "Calculating PVS...\n";
-    pvs.calculate(pvsTable);
+   
 
     camera.position = playerStart[0];
     

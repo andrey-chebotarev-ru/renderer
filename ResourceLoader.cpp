@@ -4,7 +4,7 @@
 
 #include "Debug.h"
 
-bool ResourceLoader::save(const std::string& path, const StringList& textureNames, const Vec3List& playerStart)
+bool ResourceLoader::save(const std::string& path, const StringList& textureNames, const PVSTable& pvsTable, const Vec3List& playerStart)
 {
     file.open(path, std::ios::out | std::ios::binary);
 
@@ -18,13 +18,16 @@ bool ResourceLoader::save(const std::string& path, const StringList& textureName
     Debug::print("Writing tree...");
     writeTree();
 
+    Debug::print("Writing PVS table...");
+    writePVSTable(pvsTable);
+
     Debug::print("Writing player start positions...");
     writePlayerStart(playerStart);
     
     return true;
 }
 
-bool ResourceLoader::load(const std::string& path, StringList& textureNames, Vec3List& playerStart)
+bool ResourceLoader::load(const std::string& path, StringList& textureNames, PVSTable& pvsTable, Vec3List& playerStart)
 {
     file.open(path, std::ios::in | std::ios::binary);
 
@@ -37,6 +40,9 @@ bool ResourceLoader::load(const std::string& path, StringList& textureNames, Vec
 
     Debug::print("Reading tree...");
     readTree();
+
+    Debug::print("Reading PVS table...");
+    readPVSTable(pvsTable);
     
     Debug::print("Reading player start positions...");
     playerStart = readPlayerStart();
@@ -380,6 +386,42 @@ PortalList ResourceLoader::readPortals()
     }
 
     return portals;
+}
+
+void ResourceLoader::writePVSTable(const PVSTable& pvsTable)
+{
+    write(pvsTable.size());
+
+    for (const auto& pvsRow : pvsTable) {
+
+        write(pvsRow.size());
+
+        for (const auto& pvsCell : pvsRow) {
+            write(static_cast<int>(pvsCell));
+        }
+    }
+}
+
+void ResourceLoader::readPVSTable(PVSTable& pvsTable)
+{
+    size_t rowCount = read<size_t>();
+
+    pvsTable.clear();
+    pvsTable.reserve(rowCount);
+
+    for (int j = 0; j < rowCount; j++) {
+
+        size_t cellCount = read<size_t>();
+
+        BoolList pvsRow;
+        pvsRow.reserve(cellCount);
+
+        for (int i = 0; i < cellCount; i++) {
+            pvsRow.push_back(bool(read<int>()));
+        }
+
+        pvsTable.push_back(pvsRow);
+    }
 }
 
 void ResourceLoader::writePlayerStart(const Vec3List& playerStart)
