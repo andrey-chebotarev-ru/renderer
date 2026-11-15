@@ -331,6 +331,8 @@ void ResourceLoader::writePortal(const Portal& portal)
 {
     writePoly(portal.poly);
     
+    write(portal.flippedIdx);
+
     write(portal.nodeIdx);
 
     write(portal.frontNodeIdx);
@@ -347,6 +349,8 @@ Portal ResourceLoader::readPortal()
     Portal portal;
 
     portal.poly = readPoly();
+
+    portal.flippedIdx = read<int>();
 
     portal.nodeIdx = read<int>();
 
@@ -397,7 +401,7 @@ void ResourceLoader::writePVSTable(const PVSTable& pvsTable)
         write(pvsRow.size());
 
         for (const auto& pvsCell : pvsRow) {
-            write(static_cast<int>(pvsCell));
+            write(static_cast<uint8_t>(pvsCell));
         }
     }
 }
@@ -417,7 +421,7 @@ void ResourceLoader::readPVSTable(PVSTable& pvsTable)
         pvsRow.reserve(cellCount);
 
         for (int i = 0; i < cellCount; i++) {
-            pvsRow.push_back(bool(read<int>()));
+            pvsRow.push_back(bool(read<uint8_t>()));
         }
 
         pvsTable.push_back(pvsRow);

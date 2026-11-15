@@ -110,11 +110,12 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
         loader.save(std::format("maps/{}.bin", name), textureNames, pvsTable, playerStart);
 
-        std::cout << "Compilation complete. Press any key...\n";
-        _getch();
+        std::cout << "Compilation complete.\n";
 
-        return SDL_APP_FAILURE;
+        //return SDL_APP_FAILURE;
     }
+
+    
 
     IndicesList remap = wadLoader.load(textureNames, std::format("maps/{}.wad", name), "common");
 
@@ -122,10 +123,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         face.face.texIdx = remap[face.face.texIdx];
     }
 
-   
+    std::cout << "Press any key...\n";
+    _getch();
 
     camera.position = playerStart[0];
     
+   
+
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -138,6 +142,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
+#ifdef _DEBUG
+    fullscreen = false;
+#endif
     /*
     if (fullscreen) {
         windowWidth = displayMode->w;

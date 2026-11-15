@@ -92,6 +92,10 @@ struct Vec2
         return sqrtf(x * x + y * y);
     }
 
+    float lengthSquared() const {
+        return x * x + y * y;
+    }
+
     static Vec2 lerp(const Vec2& v1, const Vec2& v2, float t) {
         return v1 + t * (v2 - v1);
     }
@@ -205,6 +209,10 @@ struct Vec3
 
     float length() const {
         return sqrtf(x * x + y * y + z * z);
+    }
+
+    float lengthSquared() const {
+        return x * x + y * y + z * z;
     }
 
     static Vec3 lerp(const Vec3& v1, const Vec3& v2, float t) {

@@ -74,12 +74,13 @@ public:
 
 	static void makeCW(Poly3D& poly);
 	static void makeCCW(Poly3D& poly);
-	static Side test(const Vec3& vec, const Plane& plane);
-	static SplitResult3D classify(const Poly3D& poly, const Plane& plane);
+	static Side test(const Vec3& vec, const Plane& plane, float epsilon = Geometry::epsilon);
+	static SplitResult3D classify(const Poly3D& poly, const Plane& plane, float epsilon = Geometry::epsilon);
 	static Vertex3D intersect(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
 	static SplittedPoly3D split(const Poly3D& in, const Plane& plane);
-	static Poly3D clip(const Poly3D& poly, const Plane& plane);
-	static Poly3D clip(const Poly3D& poly, const PlaneList& bounds);
+	static Poly3D clip(const Poly3D& poly, const Plane& plane, bool strict = true, float epsilon = Geometry::epsilon);
+	static Poly3D clip(const Poly3D& poly, const PlaneList& bounds, bool strict = true, float epsilon = Geometry::epsilon);
+	static Vertex3D clipIntersection(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane);
 	static Vec3 makePerpendicular(const Vec3& vec);
 	static PlaneBasis makePlaneBasis(const Plane& plane);
 

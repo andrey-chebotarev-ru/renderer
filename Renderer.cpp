@@ -7,7 +7,7 @@
 const float Renderer::nearPlaneDistance = 1.0f;
 
 #ifdef _DEBUG
-const float Renderer::farPlaneDistance = 100.0f;
+const float Renderer::farPlaneDistance = 500.0f;
 #else
 const float Renderer::farPlaneDistance = 1000.0f;
 #endif

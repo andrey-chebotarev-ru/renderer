@@ -109,7 +109,7 @@ bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 	tree.faces.clear();
 
 	AABB3D worldAABB = makeAABB(faces);
-	FaceList worldBounds = makeWorldBounds(worldAABB, 0.0f);
+	FaceList worldBounds = makeWorldBounds(worldAABB, 10.0f);
 
 	faces.insert(faces.end(), worldBounds.begin(), worldBounds.end());
 
@@ -168,7 +168,7 @@ bool BSP::compile(FaceList& faces, const Vec3List& playerStart)
 	tree.portals.clear();
 
 	worldAABB = makeAABB(finalFaces);
-	worldBounds = makeWorldBounds(worldAABB, 0.0f);
+	//worldBounds = makeWorldBounds(worldAABB, 10.0f);
 
 	//finalFaces.insert(finalFaces.end(), worldBounds.begin(), worldBounds.end());
 
@@ -271,6 +271,9 @@ void BSP::pushPortal(Portal portal, int nodeAIdx, int nodeBIdx)
 				for (const auto& finalPortal : finalPortals) {
 					int portalIdx = addPortal(finalPortal);
 					int flippedPortalIdx = addPortal(flipPortal(finalPortal));
+
+					getPortal(portalIdx).flippedIdx = flippedPortalIdx;
+					getPortal(flippedPortalIdx).flippedIdx = portalIdx;
 
 					getLeaf(leafA).portalIdxs.push_back(flippedPortalIdx);
 					getLeaf(leafB).portalIdxs.push_back(portalIdx);
@@ -758,32 +761,6 @@ PortalList BSP::carvePortal(const Portal& in)
 
 	return out;
 }
-
-/*
-bool BSP::floodFill(int leafIdx)
-{
-	const Leaf& leaf = getLeaf(leafIdx);
-	bool leakDetected = leaf.outside;
-	
-	getLeaf(leafIdx).valid = true;
-
-	for (int portalIdx : leaf.portalIdxs) {
-		const Portal& portal = getPortal(portalIdx);
-		if (!portal.visited) {
-			int otherLeafIdx = (portal.frontLeafIdx == leafIdx ? portal.backLeafIdx : portal.frontLeafIdx);
-			getLeaf(otherLeafIdx).valid = true;
-			getPortal(portalIdx).visited = true;
-			getPortal(portalIdx).visited = true;
-			if (floodFill(otherLeafIdx)) {
-				leakDetected = true;
-			}
-		}
-	}
-
-	return leakDetected;
-}
-*/
-
 
 bool BSP::floodFill(int startLeafIdx)
 {

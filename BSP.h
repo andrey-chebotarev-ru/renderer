@@ -49,8 +49,10 @@ struct Portal
 {
 	Poly3D poly;
 	
-	int nodeIdx = -1;
+	int flippedIdx = -1;
 	
+	int nodeIdx = -1;
+
 	int frontNodeIdx = -1;
 	int backNodeIdx = -1;
 

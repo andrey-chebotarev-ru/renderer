@@ -266,7 +266,7 @@ void Geometry::makeCCW(Poly3D& poly)
 	}
 }
 
-Side Geometry::test(const Vec3& vec, const Plane& plane)
+Side Geometry::test(const Vec3& vec, const Plane& plane, float epsilon)
 {
 	float dist = Math::distanceToPlane(plane, vec);
 
@@ -284,12 +284,12 @@ Side Geometry::test(const Vec3& vec, const Plane& plane)
 /*
 * Классификация полигона относительно плоскости
 */
-SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane)
+SplitResult3D Geometry::classify(const Poly3D& poly, const Plane& plane, float epsilon)
 {
 	int frontCount = 0, backCount = 0;
 
 	for (const auto& vert : poly.verts) {
-		Side side = test(vert.pos, plane);
+		Side side = test(vert.pos, plane, epsilon);
 
 		if (side == Side::Front) {
 			frontCount++;
@@ -382,7 +382,7 @@ SplittedPoly3D Geometry::split(const Poly3D& in, const Plane& plane)
 	return splittedPoly;
 }
 
-Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
+Poly3D Geometry::clip(const Poly3D& in, const Plane& plane, bool strict, float epsilon)
 {
 	Poly3D out;
 
@@ -390,9 +390,9 @@ Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
 		return out;
 	}
 
-	SplitResult3D result = classify(in, plane);
+	SplitResult3D result = classify(in, plane, epsilon);
 
-	if (result == SplitResult3D::Coplanar) {
+	if (strict && result == SplitResult3D::Coplanar) {
 		return in;
 	}
 
@@ -408,9 +408,17 @@ Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
 	for (int edgeIdx = 0; edgeIdx < in.getEdgeCount(); edgeIdx++) {
 		const Edge3D& edge = in.getEdge(edgeIdx);
 
-		bool vert1Inside = (test(edge.vert1.pos, plane) == Side::Front);
-		bool vert2Inside = (test(edge.vert2.pos, plane) == Side::Front);
+		bool vert1Inside, vert2Inside;
 
+		if (strict) {
+			vert1Inside = (test(edge.vert1.pos, plane, epsilon) == Side::Front);
+			vert2Inside = (test(edge.vert2.pos, plane, epsilon) == Side::Front);
+		}
+		else {
+			vert1Inside = (test(edge.vert1.pos, plane, epsilon) != Side::Back);
+			vert2Inside = (test(edge.vert2.pos, plane, epsilon) != Side::Back);
+		}
+		
 		if (vert1Inside && vert2Inside) {
 			out.addVert(edge.vert2);
 		}
@@ -426,7 +434,7 @@ Poly3D Geometry::clip(const Poly3D& in, const Plane& plane)
 	return out;
 }
 
-Poly3D Geometry::clip(const Poly3D& in, const PlaneList& bounds)
+Poly3D Geometry::clip(const Poly3D& in, const PlaneList& bounds, bool strict, float epsilon)
 {
 	Poly3D out = in;
 
@@ -437,7 +445,7 @@ Poly3D Geometry::clip(const Poly3D& in, const PlaneList& bounds)
 
 	for (const Plane& plane : bounds)
 	{
-		out = Geometry::clip(out, plane);
+		out = Geometry::clip(out, plane, strict, epsilon);
 
 		if (!out.isValid()) {
 			out.clear();
@@ -446,6 +454,22 @@ Poly3D Geometry::clip(const Poly3D& in, const PlaneList& bounds)
 	}
 
 	return out;
+}
+
+Vertex3D Geometry::clipIntersection(const Vertex3D& vert1, const Vertex3D& vert2, const Plane& plane)
+{
+	float dist1 = Math::distanceToPlane(plane, vert1.pos);
+	float dist2 = Math::distanceToPlane(plane, vert2.pos);
+
+	if (std::abs(dist1) <= epsilon) {
+		return vert1;
+	}
+
+	if (std::abs(dist2) <= epsilon) {
+		return vert2;
+	}
+
+	return intersect(vert1, vert2, plane);
 }
 
 Vec3 Geometry::makePerpendicular(const Vec3& vec)
