@@ -99,7 +99,7 @@ void Rasterizer::setPixel(int x, int y, const Color& color)
 }
 
 template<bool depthTest, bool screenDoor>
-void Rasterizer::drawSpan(const Span& span, const Texture& tex)
+void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -169,12 +169,12 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
                 if (zBuffer[zindex] < iz) {
                     if constexpr (screenDoor) {
                         if (((x ^ span.y) & 1)) {
-                            *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+                            *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
                             zBuffer[zindex] = iz;
                         }
                     }
                     else {
-                        *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+                        *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
                         zBuffer[zindex] = iz;
                     } 
                 }
@@ -182,12 +182,12 @@ void Rasterizer::drawSpan(const Span& span, const Texture& tex)
             else {
                 if constexpr (screenDoor) {
                     if (((x ^ span.y) & 1)) {
-                        *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+                        *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
                         zBuffer[zindex] = iz;
                     }
                 }
                 else {
-                    *(Color*)(framebuffer + pos) = tex.getSample(u, v);
+                    *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
                     zBuffer[zindex] = iz;
                 }
             }
@@ -318,7 +318,7 @@ void Rasterizer::drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color
 }
 
 template<bool depthTest, bool screenDoor>
-bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
+bool Rasterizer::drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t mipLevel)
 {
     sortTriangle(tri);
 
@@ -337,7 +337,7 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSpan<depthTest, screenDoor>(span, tex);
+            drawSpan<depthTest, screenDoor>(span, surf, mipLevel);
 
             longEdge.step();
             topEdge.step();
@@ -349,7 +349,7 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const Texture& tex)
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSpan<depthTest, screenDoor>(span, tex);
+            drawSpan<depthTest, screenDoor>(span, surf, mipLevel);
             
             longEdge.step();
             bottomEdge.step();
@@ -407,19 +407,19 @@ bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
     return true;
 }
 
-template int Rasterizer::drawPolygon<false, false>(const Poly2D& poly, const Texture& tex);
-template int Rasterizer::drawPolygon<true, false>(const Poly2D& poly, const Texture& tex);
-template int Rasterizer::drawPolygon<false, true>(const Poly2D& poly, const Texture& tex);
-template int Rasterizer::drawPolygon<true, true>(const Poly2D& poly, const Texture& tex);
+template int Rasterizer::drawPolygon<false, false>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
+template int Rasterizer::drawPolygon<true, false>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
+template int Rasterizer::drawPolygon<false, true>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
+template int Rasterizer::drawPolygon<true, true>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
 
 template<bool depthTest, bool screenDoor>
-int Rasterizer::drawPolygon(const Poly2D& poly, const Texture& tex)
+int Rasterizer::drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel)
 {
     Triangle2DList tris = poly.triangulate();
     int count = 0;
 
     for (int i = 0; i < tris.size(); i++) {
-        if (drawTriangle<depthTest, screenDoor>(tris[i], tex)) {
+        if (drawTriangle<depthTest, screenDoor>(tris[i], surf, mipLevel)) {
             count++;
         }
     }

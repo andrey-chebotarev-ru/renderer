@@ -121,6 +121,7 @@ void PVS::portalFlow(uint32_t srcLeafIdx, uint32_t srcPortalIdx, uint32_t thread
 	size_t maxStackSize = 0;
 
 	static uint64_t clippedCount = 0;
+	static uint64_t visitedCount = 0;
 
 	while (!stack.empty()) {
 
@@ -136,7 +137,7 @@ void PVS::portalFlow(uint32_t srcLeafIdx, uint32_t srcPortalIdx, uint32_t thread
 		uint32_t currentLeafIdx = portal.frontLeafIdx;
 
 		// Добавляем индекс предыдущего листа
-		state.visitedLeaves.push_back(portal.backLeafIdx);
+		//state.visitedLeaves.push_back(portal.backLeafIdx);
 
 		// Текущий лист доступен из исходного портала
 		visBitsTable[srcPortalIdx][currentLeafIdx] = true;
@@ -149,15 +150,18 @@ void PVS::portalFlow(uint32_t srcLeafIdx, uint32_t srcPortalIdx, uint32_t thread
 
 			assert(nextPortal.backLeafIdx == currentLeafIdx);
 
-			// Пропускаем портал, ведущий в лист в котором уже побывали
-			if (std::find(state.visitedLeaves.begin(), state.visitedLeaves.end(), nextLeafIdx) != state.visitedLeaves.end()) {
-				continue;
-			}
-
 			// Пропускаем портал, ведущий в лист до которого не добраться
 			if (!state.mightSee[nextLeafIdx]) {
 				continue;
 			}
+
+			// Пропускаем портал, ведущий в лист в котором уже побывали
+			/*
+			if (std::find(state.visitedLeaves.begin(), state.visitedLeaves.end(), nextLeafIdx) != state.visitedLeaves.end()) {
+
+				continue;
+			}
+			*/
 
 			// Выбираем таблицу видимости для следующего портала
 			const auto& testBits = (portalStatusTable[nextPortalIdx] == PortalStatus::Done ? visBitsTable[nextPortalIdx] : mightSeeTable[nextPortalIdx]);
@@ -214,6 +218,18 @@ void PVS::portalFlow(uint32_t srcLeafIdx, uint32_t srcPortalIdx, uint32_t thread
 				}
 
 				clipToSeparators(passPortal.poly, srcPortal.poly, targetPortal.poly, true);
+
+				if (!targetPortal.poly.isValid()) {
+					continue;
+				}
+
+				clipToSeparators(targetPortal.poly, passPortal.poly, srcPortal.poly, false);
+
+				if (!targetPortal.poly.isValid()) {
+					continue;
+				}
+
+				clipToSeparators(passPortal.poly, targetPortal.poly, srcPortal.poly, true);
 
 				if (!targetPortal.poly.isValid()) {
 					continue;

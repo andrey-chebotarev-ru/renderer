@@ -13,15 +13,30 @@
 #include "Math.h"
 #include "Color.h"
 #include "Debug.h"
+//#include "Vector.h"
+//#include "Vertex.h"
+
+//#include "Triangle.h"
+
 
 class Texture
 {
 public:
     Texture() {}
 
-    Texture(size_t width, size_t height, Color* pixels)
-        : width(width), height(height), pixels(pixels)
+    Texture(size_t width, size_t height, Color* pixels[4])
+        : width(width), height(height)
     {
+        this->pixels[0] = pixels[0];
+        this->pixels[1] = pixels[1];
+        this->pixels[2] = pixels[2];
+        this->pixels[3] = pixels[3];
+
+        scale[0] = 1.0f;
+        scale[1] = 1.0f / float(1 << 1);
+        scale[2] = 1.0f / float(1 << 2);
+        scale[3] = 1.0f / float(1 << 3);
+
         //assert(Math::isPow2(width));
         shiftWidth = Math::shift(width);
     }
@@ -34,7 +49,7 @@ public:
         return height;
     }
 
-    inline const Color& getSample(float u, float v) const
+    inline const Color& getSample(float u, float v, uint8_t mipLevel) const
     {
         /*
         int x = int(u) & (width - 1);
@@ -43,11 +58,11 @@ public:
         int offset = x + (y << shiftWidth);
         */
 
-        const int w = static_cast<int>(width);
-        const int h = static_cast<int>(height);
+        const int w = static_cast<int>(width >> mipLevel);
+        const int h = static_cast<int>(height >> mipLevel);
 
-        int x = static_cast<int>(std::floor(u)) % w;
-        int y = static_cast<int>(std::floor(v)) % h;
+        int x = static_cast<int>(std::floor(u * scale[mipLevel])) % w;
+        int y = static_cast<int>(std::floor(v * scale[mipLevel])) % h;
 
         if (y < 0) {
             y += h;
@@ -57,7 +72,7 @@ public:
             x += w;
         }
 
-        int offset = x + (y * width);
+        int offset = x + (y * w);
 
 
         /*
@@ -67,7 +82,7 @@ public:
         x = ((x % width) + width) % width;
         y = ((y % height) + height) % height;
         */
-        return pixels[y * width + x];
+        return pixels[mipLevel][y * w + x];
     }
 
     size_t width;
@@ -75,7 +90,8 @@ public:
 
     size_t shiftWidth;
 
-    Color* pixels;
+    Color* pixels[4];
+    float scale[4];
 
 };
 
@@ -91,21 +107,29 @@ public:
     {
         size_t width = 32;
         size_t height = 32;
-        size_t cellsSize = 8;
+        size_t cellsSize = 16;
 
         const Color color1 = Color(255, 0, 255);
         const Color color2 = Color(0, 0, 0);
 
-        Color* pointer = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
+        Color* pointer[4];
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                bool even = ((((x / cellsSize) + (y / cellsSize)) & 1) == 0);
-                pointer[x + y * width] = even ? color1 : color2;
+        for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
+            int w = width >> mipLevel;
+            int h = height >> mipLevel;
+            int c = cellsSize >> mipLevel;
+            pointer[mipLevel] = static_cast<Color*>(std::malloc(w * h * sizeof(Color)));
+
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    bool even = ((((x / c) + (y / c)) & 1) == 0);
+                    pointer[mipLevel][x + y * w] = even ? color1 : color2;
+                }
             }
-        }
 
-        pointers.push_back(pointer);
+            pointers.push_back(pointer[mipLevel]);
+        }
+        
         textures.push_back(Texture(width, height, pointer));
     }
 
@@ -116,13 +140,20 @@ public:
         }
     }
 
-    uint32_t add(size_t width, size_t height, Color* pixels)
+    uint32_t add(size_t width, size_t height, Color* pixels[4])
     {
         size_t texIdx = textures.size();
-        Color* pointer = static_cast<Color*>(std::malloc(width * height * sizeof(Color)));
+        
+        Color* pointer[4];
 
-        std::memcpy(pointer, pixels, width * height * sizeof(Color));
-        pointers.push_back(pointer);
+        for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
+            int w = width >> mipLevel;
+            int h = height >> mipLevel;
+            pointer[mipLevel] = static_cast<Color*>(std::malloc(w * h * sizeof(Color)));
+
+            std::memcpy(pointer[mipLevel], pixels[mipLevel], w * h * sizeof(Color));
+            pointers.push_back(pointer[mipLevel]);
+        }
 
         textures.push_back(Texture(width, height, pointer));
         return texIdx;
@@ -176,3 +207,6 @@ private:
     std::unordered_map<std::string, uint32_t> table;
     StringList names;
 };
+
+
+

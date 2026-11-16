@@ -14,13 +14,14 @@
 #include "RenderFaces.h"
 #include "Debug.h"
 #include "Texture.h"
+#include "Surface.h"
 
 class Renderer
 {
 public:
     
-    Renderer(size_t screenWidth, size_t screenHeight, float fov, const TextureManager& textureManager, const Debug& debug)
-        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth - 1, 0, screenHeight - 1), textureManager(textureManager), debug(debug)
+    Renderer(size_t screenWidth, size_t screenHeight, float fov, const TextureManager& textureManager, const SurfaceCache& surfaceCache, const Debug& debug)
+        : screenWidth(screenWidth), screenHeight(screenHeight), rasterizer(screenWidth, screenHeight, debug), viewport(0, screenWidth - 1, 0, screenHeight - 1), textureManager(textureManager), surfaceCache(surfaceCache), debug(debug)
     {
         screenCenter = Vec2(float(screenWidth) / 2, screenHeight / 2);
         focusDistance = screenCenter.x / tanf(Math::degToRad(fov) / 2);
@@ -65,13 +66,15 @@ public:
     Poly3D clip(const Poly3D& in) const;
     Poly2D clip(const Poly2D& in) const;
     
+    uint8_t getMipLevel(const Triangle3& tri) const;
+    uint8_t getMipLevel(const Poly3D& poly) const;
+
     Triangle2DList prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling) const;
-    bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling) const;
+    bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, uint8_t& mipLevel, bool backfaceCulling) const;
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     
     int drawScene(const RenderFaces& renderFaces, const ModelList& models, const Camera& cam, bool debug);
-    void drawExtras(const FaceList& polys, const Camera& cam);
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);
     void drawAABB(const AABB2D& aabb, const Color& color);
@@ -96,6 +99,7 @@ private:
 
     Debug debug;
     const TextureManager& textureManager;
+    const SurfaceCache& surfaceCache;
 
     float pitchOffset = 0.0f;
 

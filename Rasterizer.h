@@ -4,6 +4,7 @@
 #include "ViewportClipper.h"
 #include "Texture.h"
 #include "Color.h"
+#include "Surface.h"
 #include "Debug.h"
 
 struct Span
@@ -66,13 +67,13 @@ public:
     void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
 
     template<bool depthTest, bool screenDoor>
-    bool drawTriangle(Triangle2 tri, const Texture& tex);
+    bool drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t mipLevel);
 
     template<bool depthTest, bool screenDoor>
     bool drawColoredTriangle(Triangle2 tri, const Color& fillColor);
 
     template<bool depthTest, bool screenDoor>
-    int drawPolygon(const Poly2D& poly, const Texture& tex);
+    int drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
     
     template<bool depthTest, bool screenDoor>
     int drawColoredPolygon(const Poly2D& poly, const Color& fillColor);
@@ -101,7 +102,7 @@ private:
     void sortTriangle(Triangle2& triangle);
     
     template<bool depthTest, bool screenDoor>
-    void drawSpan(const Span& span, const Texture& tex);
+    void drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel);
     
     template<bool depthTest, bool screenDoor>
     void drawColoredSpan(const Span& span, const Color& fillColor);

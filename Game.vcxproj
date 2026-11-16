@@ -160,10 +160,10 @@
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="MapFile.cpp" />
-    <ClCompile Include="PortalRenderer.cpp" />
     <ClCompile Include="PVS.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
+    <ClCompile Include="Surface.cpp" />
     <ClCompile Include="TextureConverter.cpp" />
     <ClCompile Include="ViewportClipper.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -187,10 +187,10 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapFile.h" />
-    <ClInclude Include="PortalRenderer.h" />
     <ClInclude Include="PVS.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="ResourceLoader.h" />
+    <ClInclude Include="Surface.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureConverter.h" />
     <ClInclude Include="ViewportClipper.h" />

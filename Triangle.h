@@ -6,6 +6,7 @@
 
 #include "Vertex.h"
 #include "Color.h"
+//#include "Texture.h"
 
 struct Plane
 {
@@ -260,6 +261,8 @@ struct Face
     size_t texIdx = 0;
     Color debugColor;
     bool canSplit = true;
+
+    size_t surfIdx;
 
     Face() {};
     Face(const Poly3D& poly, int texIdx, FaceType type = FaceType::Solid, Color debugColor = Color(255, 255, 255))

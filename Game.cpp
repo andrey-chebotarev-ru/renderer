@@ -28,6 +28,8 @@
 #include "ResourceLoader.h"
 #include "PVS.h"
 #include "WadLoader.h"
+#include "Triangle.h"
+#include "Surface.h"
 
 #define VIEWPORT_WIDTH 1024
 #define VIEWPORT_HEIGHT 768
@@ -40,7 +42,8 @@ static SDL_Renderer* sdlRenderer = NULL;
 static SDL_Texture* sdlFramebufferTexture = NULL;
 static TextureManager textureManager;
 static Debug debug(&sdlRenderer);
-static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, textureManager, debug);
+static SurfaceCache surfaceCache;
+static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, textureManager, surfaceCache, debug);
 static Camera camera;
 static std::vector<Model> models;
 static RenderFaces world;
@@ -50,6 +53,7 @@ static ResourceLoader loader(tree);
 static PortalRenderer portalRenderer(gameRenderer, bsp);
 static PVS pvs(tree);
 static WadLoader wadLoader(textureManager);
+
 
 static bool fill = false;
 static bool drawPortals = false;
@@ -121,6 +125,31 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     for (auto& face : tree.faces) {
         face.face.texIdx = remap[face.face.texIdx];
+
+        const Texture& tex = textureManager.get(face.face.texIdx);
+
+        float minU = face.face.poly.verts[0].uv.x;
+        float minV = face.face.poly.verts[0].uv.y;
+
+        for (const auto& vert : face.face.poly.verts) {
+            minU = std::min(minU, vert.uv.x);
+            minU = std::min(minV, vert.uv.y);
+        }
+
+        float offsetU = -std::floor(minU / tex.getWidth()) * tex.getWidth();
+        float offsetV = -std::floor(minV / tex.getHeight()) * tex.getHeight();
+
+        for (auto& vert : face.face.poly.verts) {
+            vert.uv.x += offsetU;
+            vert.uv.y += offsetV;
+        }
+    }
+
+    Debug::printf("Caching surfaces...");
+
+    for (auto& face : tree.faces) {
+        const Texture& tex = textureManager.get(face.face.texIdx);
+        face.face.surfIdx = surfaceCache.cache(face.face, tex);
     }
 
     std::cout << "Press any key...\n";

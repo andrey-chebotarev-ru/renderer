@@ -167,7 +167,14 @@ uint32_t WadLoader::loadTexture(std::ifstream& file, const WadLump& lump, uint64
 		}
 	}
 
-	return textureManager.add(width, height, mipPixels[0].data());
+	Color* pointer[4];
+
+	pointer[0] = mipPixels[0].data();
+	pointer[1] = mipPixels[1].data();
+	pointer[2] = mipPixels[2].data();
+	pointer[3] = mipPixels[3].data();
+
+	return textureManager.add(width, height, pointer);
 }
 
 void WadLoader::loadWad(const std::filesystem::path& path, const StringList& names, IndicesList& remap, size_t& remaining)

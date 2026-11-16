@@ -121,6 +121,34 @@ Poly2D Renderer::clip(const Poly2D& in) const
     return viewportClipper.clip(in, viewport);
 }
 
+uint8_t Renderer::getMipLevel(const Triangle3& tri) const
+{
+    return 0;
+}
+
+uint8_t Renderer::getMipLevel(const Poly3D& poly) const
+{
+    float minZ = poly.verts[0].pos.z;
+
+    for (const auto& vert : poly.verts) {
+        minZ = std::min(minZ, vert.pos.z);
+    }
+
+    if (minZ < 60) {
+        return 0;
+    }
+
+    if (minZ < 200) {
+        return 1;
+    }
+
+    if (minZ < 300) {
+        return 2;
+    }
+
+    return 3;
+}
+
 Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling) const
 {
     Triangle2DList out;
@@ -160,7 +188,7 @@ Triangle2DList Renderer::prepareForRendering(const Triangle3& in, const Camera& 
     return out;
 }
 
-bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, bool backfaceCulling) const
+bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, uint8_t& mipLevel, bool backfaceCulling) const
 {
     // Backface culling
     if (backfaceCulling && Geometry::test(cam.position, in.getPlane()) != Side::Front) {
@@ -178,6 +206,9 @@ bool Renderer::prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& 
     if (!poly.isValid()) {
         return false;
     }
+
+    // Mip
+    mipLevel = getMipLevel(poly);
 
     // Projection
     Poly2D projectedPoly = project(poly);
@@ -198,7 +229,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
 
         transformToWorld(tri, tr);
 
-        Texture tex = textureManager.get(model.getTextureIndex());
+        const CachedSurface& surf = surfaceCache.get(model.getTextureIndex());
 
         Triangle2DList preparedTris = prepareForRendering(tri, cam, true);
 
@@ -207,7 +238,7 @@ int Renderer::drawModel(const Model& model, const Camera& cam)
         }
         
         for (const auto& preparedTri : preparedTris) {
-            rasterizer.drawTriangle<true, false>(preparedTri, tex);
+            rasterizer.drawTriangle<true, false>(preparedTri, surf, 0);
             count++;
         }
     }
@@ -227,13 +258,15 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
             continue;
         }
 
+        uint8_t mipLevel = 0;
+
         if (face.type == FaceType::Debug)
         {
             Color fillColor = face.debugColor;
 
             Poly2D renderPoly;
             
-            if (!prepareForRendering(renderPoly, face.poly, cam, false)) {
+            if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, false)) {
                 continue;
             }
             
@@ -243,13 +276,13 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
         }
         else
         {
-            Texture tex = textureManager.get(face.texIdx);
+            const CachedSurface& surf = surfaceCache.get(face.surfIdx);
             Color fillColor = face.debugColor;
 
             bool notWater = (face.type != FaceType::Water);
 
             Poly2D renderPoly;
-            if (!prepareForRendering(renderPoly, face.poly, cam, notWater)) {
+            if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, notWater)) {
                 continue;
             }
 
@@ -260,10 +293,10 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
             }
             else {
                 if (notWater) {
-                    count += rasterizer.drawPolygon<false, false>(renderPoly, tex);
+                    count += rasterizer.drawPolygon<false, false>(renderPoly, surf, mipLevel);
                 }
                 else {
-                    count += rasterizer.drawPolygon<false, true>(renderPoly, tex);
+                    count += rasterizer.drawPolygon<false, true>(renderPoly, surf, mipLevel);
                 }
             }
         }
@@ -284,19 +317,6 @@ int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList&models, 
     }
 
     return count;
-}
-
-void Renderer::drawExtras(const FaceList& faces, const Camera& cam)
-{
-    for (const auto& face : faces) {
-        Poly2D poly;
-
-        if (!prepareForRendering(poly, face.poly, cam, false)) {
-            continue;
-        }
-
-        rasterizer.drawColoredPolygon<true, true>(poly, face.debugColor);
-    }
 }
 
 void Renderer::drawLabels(const LabelList& labels, const Camera& cam)
