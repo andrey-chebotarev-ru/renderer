@@ -23,6 +23,7 @@ size_t SurfaceCache::cache(const Face& face, const Texture& tex)
     int texWidth = tex.getWidth();
     int texHeight = tex.getHeight();
     Color* pixels[4];
+
     for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
         int cw = cacheWidth >> mipLevel;
         int ch = cacheHeight >> mipLevel;
@@ -48,8 +49,12 @@ size_t SurfaceCache::cache(const Face& face, const Texture& tex)
 
     surf.startU = startU;
     surf.startV = startV;
-    surf.width = cacheWidth;
-    surf.height = cacheHeight;
+
+    for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
+        surf.widths[mipLevel] = cacheWidth >> mipLevel;
+        surf.heights[mipLevel] = cacheHeight >> mipLevel;
+    }
+   
     std::memcpy(surf.pixels, pixels, 4 * sizeof(Color*));
 
     size_t idx = surfaces.size();

@@ -31,8 +31,8 @@
 #include "Triangle.h"
 #include "Surface.h"
 
-#define VIEWPORT_WIDTH 1024
-#define VIEWPORT_HEIGHT 768
+#define VIEWPORT_WIDTH 1600
+#define VIEWPORT_HEIGHT 900
 
 static int windowWidth = 0, windowHeight = 0;
 
@@ -73,7 +73,7 @@ static bool leaked = false;
 static bool update = true;
 static bool updatePvs = true;
 
-const double targetFrameTime = 1000.0 / 60.0;
+const double targetFrameTime = 1000.0 / 100.0;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
@@ -174,6 +174,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 #ifdef _DEBUG
     fullscreen = false;
 #endif
+
     /*
     if (fullscreen) {
         windowWidth = displayMode->w;
@@ -184,6 +185,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         windowHeight = VIEWPORT_HEIGHT;
     }
     */
+
 
     windowWidth = VIEWPORT_WIDTH;
     windowHeight = VIEWPORT_HEIGHT;
@@ -421,7 +423,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         world.clear();
 
         if (update) {
-            //portalRenderer.render(camera);
+           // portalRenderer.render(camera);
         }
 
         if (updatePvs) {

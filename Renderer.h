@@ -25,7 +25,6 @@ public:
     {
         screenCenter = Vec2(float(screenWidth) / 2, screenHeight / 2);
         focusDistance = screenCenter.x / tanf(Math::degToRad(fov) / 2);
-        aspect = float(screenWidth) / screenHeight;
     }
 
     void setPitchOffset(float pitchOffset) {
@@ -89,7 +88,6 @@ private:
 
     Vec2 screenCenter;
     float focusDistance;
-    float aspect;
     
     Viewport viewport;
 

@@ -9,7 +9,7 @@ const float Renderer::nearPlaneDistance = 1.0f;
 #ifdef _DEBUG
 const float Renderer::farPlaneDistance = 500.0f;
 #else
-const float Renderer::farPlaneDistance = 1000.0f;
+const float Renderer::farPlaneDistance = 3000.0f;
 #endif
 
 void Renderer::setFramebuffer(int pitch, uint8_t* pixels)
@@ -57,7 +57,7 @@ Vec2 Renderer::project(const Vec3& vec) const
     Vec2 proj;
     float invZ = 1.0f / vec.z;
 
-    proj.x = screenCenter.x + (vec.x * invZ) * focusDistance * aspect;
+    proj.x = screenCenter.x + (vec.x * invZ) * focusDistance;
     proj.y = screenCenter.y + pitchOffset + (vec.y * invZ) * focusDistance;
 
     return proj;
@@ -134,15 +134,15 @@ uint8_t Renderer::getMipLevel(const Poly3D& poly) const
         minZ = std::min(minZ, vert.pos.z);
     }
 
-    if (minZ < 60) {
+    if (minZ < 130) {
         return 0;
     }
 
-    if (minZ < 200) {
+    if (minZ < 300) {
         return 1;
     }
 
-    if (minZ < 300) {
+    if (minZ < 600) {
         return 2;
     }
 

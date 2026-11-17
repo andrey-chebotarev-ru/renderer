@@ -101,6 +101,10 @@ void Rasterizer::setPixel(int x, int y, const Color& color)
 template<bool depthTest, bool screenDoor>
 void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
 {
+    static const float scales[4] = { 1.0f, 0.5f, 0.25f, 0.125f };
+
+    float scale = scales[mipLevel];
+
     if (span.y < 0 || span.y >= screenHeight) {
         return;
     }
@@ -138,6 +142,9 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
 
     int x = x1;
 
+    int width = surf.widths[mipLevel];
+    int height = surf.heights[mipLevel];
+
     while (x < x2)
     {
         int blockLength = std::min(x2 - x, 16);
@@ -150,9 +157,17 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
         float uStart = uzStart * zStart;
         float vStart = vzStart * zStart;
 
+        // Оптимизация
+        uStart = (uStart - surf.startU) * scale;
+        vStart = (vStart - surf.startV) * scale;
+
         float zEnd = 1.0f / izEnd;
         float uEnd = uzEnd * zEnd;
         float vEnd = vzEnd * zEnd;
+
+        // Оптимизация
+        uEnd = (uEnd - surf.startU) * scale;
+        vEnd = (vEnd - surf.startV) * scale;
 
         float duDx = (uEnd - uStart) * invTable[blockLength - 1];
         float dvDx = (vEnd - vStart) * invTable[blockLength - 1];
@@ -161,46 +176,100 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
         float v = vStart;
         float iz = izStart;
 
-       
+        // Оптимизация
+        float uMin = std::min(uStart, uEnd);
+        float uMax = std::max(uStart, uEnd);
+        
+        // Оптимизация
+        float vMin = std::min(vStart, vEnd);
+        float vMax = std::max(vStart, vEnd);
 
-        for (int i = 0; i < blockLength; i++) {
+        if (uMin >= 0.0f && uMax < width && vMin >= 0.0f && vMax < height) {
 
-            if constexpr (depthTest) {
-                if (zBuffer[zindex] < iz) {
+            for (int i = 0; i < blockLength; i++) {
+
+                if constexpr (depthTest) {
+                    if (zBuffer[zindex] < iz) {
+                        if constexpr (screenDoor) {
+                            if (((x ^ span.y) & 1)) {
+                                *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
+                                zBuffer[zindex] = iz;
+                            }
+                        }
+                        else {
+                            *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
+                            zBuffer[zindex] = iz;
+                        }
+                    }
+                }
+                else {
                     if constexpr (screenDoor) {
                         if (((x ^ span.y) & 1)) {
-                            *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
+                            *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
                             zBuffer[zindex] = iz;
                         }
                     }
                     else {
-                        *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
-                        zBuffer[zindex] = iz;
-                    } 
-                }
-            }
-            else {
-                if constexpr (screenDoor) {
-                    if (((x ^ span.y) & 1)) {
-                        *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
+                        *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
                         zBuffer[zindex] = iz;
                     }
                 }
-                else {
-                    *(Color*)(framebuffer + pos) = surf.getSample(u, v, mipLevel);
-                    zBuffer[zindex] = iz;
-                }
+
+                u += duDx;
+                v += dvDx;
+                iz += span.izStep;
+
+                x++;
+
+                zindex++;
+                pos += 4;
             }
 
-            u += duDx;
-            v += dvDx;
-            iz += span.izStep;
-
-            x++;
-
-            zindex++;
-            pos += 4;
         }
+        else {
+
+            for (int i = 0; i < blockLength; i++) {
+
+                if constexpr (depthTest) {
+                    if (zBuffer[zindex] < iz) {
+                        if constexpr (screenDoor) {
+                            if (((x ^ span.y) & 1)) {
+                                *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
+                                zBuffer[zindex] = iz;
+                            }
+                        }
+                        else {
+                            *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
+                            zBuffer[zindex] = iz;
+                        }
+                    }
+                }
+                else {
+                    if constexpr (screenDoor) {
+                        if (((x ^ span.y) & 1)) {
+                            *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
+                            zBuffer[zindex] = iz;
+                        }
+                    }
+                    else {
+                        *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
+                        zBuffer[zindex] = iz;
+                    }
+                }
+
+                u += duDx;
+                v += dvDx;
+                iz += span.izStep;
+
+                x++;
+
+                zindex++;
+                pos += 4;
+            }
+
+        }
+
+        
 
         uzStart = uzEnd;
         vzStart = vzEnd;
