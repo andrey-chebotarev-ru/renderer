@@ -246,15 +246,16 @@ using LabelList = std::vector<Label>;
 
 enum class FaceType
 {
-    Solid,
-    Water,
+    Wall,
+    Liquid,
     Bounds,
     Debug,
+    Entity,
 };
 
 struct Face
 {
-    FaceType type = FaceType::Solid;
+    FaceType type = FaceType::Wall;
 
     Poly3D poly;
 
@@ -265,7 +266,7 @@ struct Face
     size_t surfIdx;
 
     Face() {};
-    Face(const Poly3D& poly, int texIdx, FaceType type = FaceType::Solid, Color debugColor = Color(255, 255, 255))
+    Face(const Poly3D& poly, int texIdx, FaceType type = FaceType::Wall, Color debugColor = Color(255, 255, 255))
         : type(type), poly(poly), texIdx(texIdx), debugColor(debugColor) {
     }
 

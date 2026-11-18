@@ -734,7 +734,7 @@ PortalList BSP::carvePortal(const Portal& in)
 
 	for (const auto& face : getNode(in.nodeIdx).coplanarFaces)
 	{
-		if (face.type == FaceType::Water) {
+		if (face.type == FaceType::Liquid || face.type == FaceType::Entity) {
 			continue;
 		}
 

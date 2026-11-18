@@ -368,6 +368,8 @@ void PVS::leafFlow(uint32_t leafIdx)
 
 void PVS::calculate(PVSTable& table)
 {	
+	Debug::print("Calculating PVS...");
+
 	calculateBaseVis();
 
 	const size_t portalCount = tree.portals.size();

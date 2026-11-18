@@ -4,16 +4,13 @@
 #include <functional>
 #include <string>
 
-#include "Common.h"
+#include "common/Common.h"
 #include "Vector.h"
 #include "Triangle.h"
 #include "Math.h"
 #include "RenderFaces.h"
 #include "Camera.h"
 #include "Geometry.h"
-//#include "PVS.h"
-
-
 
 struct Node
 {

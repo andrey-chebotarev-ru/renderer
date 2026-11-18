@@ -279,7 +279,7 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
             const CachedSurface& surf = surfaceCache.get(face.surfIdx);
             Color fillColor = face.debugColor;
 
-            bool notWater = (face.type != FaceType::Water);
+            bool notWater = (face.type != FaceType::Liquid);
 
             Poly2D renderPoly;
             if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, notWater)) {
@@ -306,7 +306,66 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
     return count;
 }
 
-int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList&models, const Camera& cam, bool debug)
+int Renderer::drawEntities(const EntityList& entities, const Camera& cam, bool debug, bool fill)
+{
+    int count = 0;
+
+    for (int entityIdx = 0; entityIdx < entities.size(); entityIdx++) {
+
+        for (int faceIdx = 0; faceIdx < entities[entityIdx].faces.size(); faceIdx++) {
+
+            const Face& face = entities[entityIdx].faces[faceIdx];
+
+            uint8_t mipLevel = 0;
+
+            if (face.type == FaceType::Debug)
+            {
+                Color fillColor = face.debugColor;
+
+                Poly2D renderPoly;
+
+                if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, false)) {
+                    continue;
+                }
+
+                // Drawing
+                count += rasterizer.drawColoredPolygon<false, true>(renderPoly, fillColor);
+                drawWireframe(renderPoly, Color(0, 0, 0));
+            }
+            else
+            {
+                const CachedSurface& surf = surfaceCache.get(face.surfIdx);
+                Color fillColor = face.debugColor;
+
+                bool notWater = (face.type != FaceType::Liquid);
+
+                Poly2D renderPoly;
+                if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, notWater)) {
+                    continue;
+                }
+
+                // Drawing
+                if (fill) {
+                    count += rasterizer.drawColoredPolygon<false, false>(renderPoly, fillColor);
+                    drawWireframe(renderPoly, Color(0, 0, 0));
+                }
+                else {
+                    if (notWater) {
+                        count += rasterizer.drawPolygon<true, false>(renderPoly, surf, mipLevel);
+                    }
+                    else {
+                        count += rasterizer.drawPolygon<true, true>(renderPoly, surf, mipLevel);
+                    }
+                }
+            }
+
+        }
+    }
+
+    return count;
+}
+
+int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList &models, const EntityList& entities, const Camera& cam, bool debug)
 {
     rasterizer.clearBuffers();
     
@@ -315,6 +374,8 @@ int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList&models, 
     for (const Model& model : models) {
         count += drawModel(model, cam);
     }
+
+    count += drawEntities(entities, cam, debug, false);
 
     return count;
 }

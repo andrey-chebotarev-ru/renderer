@@ -152,14 +152,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BrushFaceBuilder.cpp" />
     <ClCompile Include="BSP.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Clipper.cpp" />
     <ClCompile Include="Color.cpp" />
+    <ClCompile Include="common\Entity.cpp" />
+    <ClCompile Include="common\Map.cpp" />
+    <ClCompile Include="components\MapBuiler\BrushMap.cpp" />
+    <ClCompile Include="components\MapBuiler\MapBuilder.cpp" />
+    <ClCompile Include="components\MapBuiler\Parser.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Geometry.cpp" />
-    <ClCompile Include="MapFile.cpp" />
     <ClCompile Include="PVS.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="ResourceLoader.cpp" />
@@ -177,16 +180,18 @@
     <ClCompile Include="WadLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BrushFaceBuilder.h" />
     <ClInclude Include="BSP.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Clipper.h" />
     <ClInclude Include="Color.h" />
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="common\Common.h" />
+    <ClInclude Include="common\Entity.h" />
+    <ClInclude Include="common\Map.h" />
+    <ClInclude Include="components\MapBuiler\BrushMap.h" />
+    <ClInclude Include="components\MapBuiler\MapBuilder.h" />
+    <ClInclude Include="components\MapBuiler\Parser.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="Geometry.h" />
-    <ClInclude Include="Map.h" />
-    <ClInclude Include="MapFile.h" />
     <ClInclude Include="PVS.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="ResourceLoader.h" />
@@ -210,6 +215,9 @@
     <ProjectReference Include="SDL3_image-3.4.2\VisualC\SDL_image.vcxproj">
       <Project>{2bd5534e-00e2-4bea-ac96-d9a92ea24696}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Notes.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

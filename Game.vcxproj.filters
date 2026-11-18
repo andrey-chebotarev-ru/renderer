@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Исходные файлы\MapBuilder">
+      <UniqueIdentifier>{730e00c2-f060-414f-840e-11c9eb3ab1e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\MapBuilder">
+      <UniqueIdentifier>{6c161751-42ed-434b-8dd5-63c588de1072}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы заголовков\Common">
+      <UniqueIdentifier>{e41d91ff-7f7b-43fc-bd83-f28995cd9d19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Common">
+      <UniqueIdentifier>{a90da1e8-f6e9-4637-90d2-29db22e70b62}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp">
@@ -63,12 +75,6 @@
     <ClCompile Include="Geometry.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="MapFile.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="BrushFaceBuilder.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="TextureConverter.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -83,6 +89,21 @@
     </ClCompile>
     <ClCompile Include="Surface.cpp">
       <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="components\MapBuiler\MapBuilder.cpp">
+      <Filter>Исходные файлы\MapBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="components\MapBuiler\Parser.cpp">
+      <Filter>Исходные файлы\MapBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="common\Entity.cpp">
+      <Filter>Исходные файлы\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="components\MapBuiler\BrushMap.cpp">
+      <Filter>Исходные файлы\MapBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="common\Map.cpp">
+      <Filter>Исходные файлы\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -134,15 +155,6 @@
     <ClInclude Include="Geometry.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="MapFile.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Map.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="BrushFaceBuilder.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="TextureConverter.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -152,14 +164,32 @@
     <ClInclude Include="PVS.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Common.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="WadLoader.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Surface.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="components\MapBuiler\BrushMap.h">
+      <Filter>Файлы заголовков\MapBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="components\MapBuiler\MapBuilder.h">
+      <Filter>Файлы заголовков\MapBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="components\MapBuiler\Parser.h">
+      <Filter>Файлы заголовков\MapBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Common.h">
+      <Filter>Файлы заголовков\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Entity.h">
+      <Filter>Файлы заголовков\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\Map.h">
+      <Filter>Файлы заголовков\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Notes.txt" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,8 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
 
+#include "common/Common.h"
+#include "components/MapBuiler/MapBuilder.h"
 #include "Vector.h"
 #include "Camera.h"
 #include "Model.h"
@@ -21,15 +23,13 @@
 #include "BSP.h"
 #include "Debug.h"
 #include "Math.h"
-#include "PortalRenderer.h"
-#include "MapFile.h"
-#include "BrushFaceBuilder.h"
 #include "TextureConverter.h"
 #include "ResourceLoader.h"
 #include "PVS.h"
 #include "WadLoader.h"
 #include "Triangle.h"
 #include "Surface.h"
+
 
 #define VIEWPORT_WIDTH 1600
 #define VIEWPORT_HEIGHT 900
@@ -47,11 +47,10 @@ static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 90.0f, textureMana
 static Camera camera;
 static std::vector<Model> models;
 static RenderFaces world;
-static Tree tree;
-static BSP bsp(tree);
-static ResourceLoader loader(tree);
-static PortalRenderer portalRenderer(gameRenderer, bsp);
-static PVS pvs(tree);
+static Map map;
+static BSP bsp(map.tree);
+static ResourceLoader loader;
+static PVS pvs(map.tree);
 static WadLoader wadLoader(textureManager);
 
 
@@ -60,7 +59,7 @@ static bool drawPortals = false;
 static bool renderOnlyCurrentLeaf = false;
 static float pitchOffset = 0.0f;
 
-static BrushFaceBuilder faceBuilder;
+static MapBuilder mapBuilder;
 static TextureConverter converter;
 
 PVSTable pvsTable;
@@ -83,47 +82,29 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     std::cout << "Map name: ";
     std::cin >> name;
 
-    Vec3List playerStart;
 
-    StringList textureNames;
-
-    if (!loader.load(std::format("maps/{}.bin", name), textureNames, pvsTable, playerStart)) {
+    if (!loader.load(std::format("maps/{}.bin", name), map)) {
       
-        Map map;
-        MapFile mapFile;
-        
-        if (!mapFile.load(std::format("sources/{}.map", name))) {
+        if (!mapBuilder.buildMap(map, std::format("sources/{}.map", name))) {
             std::cerr << std::format("Could not open 'sources/{}.map'", name);
             _getch();
             return SDL_APP_FAILURE;
         }
+      
+
+        loader.save(std::format("maps/{}.bin", name), map);
         
-        mapFile.parse(map);
-        
-        FaceList faces;
-        textureNames = faceBuilder.build(faces, playerStart, map);
-
-        for (const auto& textureName : textureNames) {
-            Debug::printf("Texture name: '{}'", textureName);
-        }
-
-        leaked = bsp.compile(faces, playerStart);
-
-        std::cout << "Calculating PVS...\n";
-        pvs.calculate(pvsTable);
-
-        loader.save(std::format("maps/{}.bin", name), textureNames, pvsTable, playerStart);
-
-        std::cout << "Compilation complete.\n";
+      
 
         //return SDL_APP_FAILURE;
     }
 
     
+    camera.position = map.playerStart[0];
 
-    IndicesList remap = wadLoader.load(textureNames, std::format("maps/{}.wad", name), "common");
+    IndicesList remap = wadLoader.load(map.textureNames, std::format("maps/{}.wad", name), "common");
 
-    for (auto& face : tree.faces) {
+    for (auto& face : map.tree.faces) {
         face.face.texIdx = remap[face.face.texIdx];
 
         const Texture& tex = textureManager.get(face.face.texIdx);
@@ -147,15 +128,22 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     Debug::printf("Caching surfaces...");
 
-    for (auto& face : tree.faces) {
+    for (auto& face : map.tree.faces) {
         const Texture& tex = textureManager.get(face.face.texIdx);
         face.face.surfIdx = surfaceCache.cache(face.face, tex);
     }
 
+    for (auto& ent : map.entities) {
+
+        for (auto& face : ent.faces) {
+            face.texIdx = remap[face.texIdx];
+            const Texture& tex = textureManager.get(face.texIdx);
+            face.surfIdx = surfaceCache.cache(face, tex);
+        }
+    }
+
     std::cout << "Press any key...\n";
     _getch();
-
-    camera.position = playerStart[0];
     
    
 
@@ -427,7 +415,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         }
 
         if (updatePvs) {
-            pvsRow = &pvsTable[bsp.getLeafIdx(camera.position)];
+            pvsRow = &map.pvsTable[bsp.getLeafIdx(camera.position)];
         }
 
         bsp.render(camera.position, world, *pvsRow, drawPortals, renderOnlyCurrentLeaf);
@@ -436,7 +424,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         
        
 
-        count = gameRenderer.drawScene(world, models, camera, fill);
+        count = gameRenderer.drawScene(world, models, map.entities, camera, fill);
 
         /*
         RenderFaces rf;

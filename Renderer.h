@@ -15,6 +15,7 @@
 #include "Debug.h"
 #include "Texture.h"
 #include "Surface.h"
+#include "common/Entity.h"
 
 class Renderer
 {
@@ -73,7 +74,7 @@ public:
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     
-    int drawScene(const RenderFaces& renderFaces, const ModelList& models, const Camera& cam, bool debug);
+    int drawScene(const RenderFaces& renderFaces, const ModelList& models, const EntityList& entities, const Camera& cam, bool debug);
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);
     void drawAABB(const AABB2D& aabb, const Color& color);
@@ -81,6 +82,7 @@ public:
     void setPixel(int x, int y, const Color& color);
 
     int drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool debug);
+    int drawEntities(const EntityList& entities, const Camera& cam, bool debug, bool fill);
 
 private:
     static const float nearPlaneDistance, farPlaneDistance;

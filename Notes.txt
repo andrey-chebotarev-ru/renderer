@@ -1,0 +1,4 @@
+vec parsing - change to scanf
+surface cache - one memory allocation per source brush side
+vec parsing stage
+include parsing in map builder

@@ -4,7 +4,7 @@
 
 #include "Debug.h"
 
-bool ResourceLoader::save(const std::string& path, const StringList& textureNames, const PVSTable& pvsTable, const Vec3List& playerStart)
+bool ResourceLoader::save(const std::string& path, const Map& map)
 {
     file.open(path, std::ios::out | std::ios::binary);
 
@@ -13,21 +13,24 @@ bool ResourceLoader::save(const std::string& path, const StringList& textureName
     }
 
     Debug::print("Writing texture names...");
-    writeTextureNames(textureNames);
+    writeTextureNames(map.textureNames);
 
     Debug::print("Writing tree...");
-    writeTree();
+    writeTree(map.tree);
 
     Debug::print("Writing PVS table...");
-    writePVSTable(pvsTable);
+    writePVSTable(map.pvsTable);
+
+    Debug::print("Writing entities...");
+    writeEntities(map.entities);
 
     Debug::print("Writing player start positions...");
-    writePlayerStart(playerStart);
+    writePlayerStart(map.playerStart);
     
     return true;
 }
 
-bool ResourceLoader::load(const std::string& path, StringList& textureNames, PVSTable& pvsTable, Vec3List& playerStart)
+bool ResourceLoader::load(const std::string& path, Map& map)
 {
     file.open(path, std::ios::in | std::ios::binary);
 
@@ -36,16 +39,19 @@ bool ResourceLoader::load(const std::string& path, StringList& textureNames, PVS
     }
 
     Debug::print("Reading texture names...");
-    readTextureNames(textureNames);
+    readTextureNames(map.textureNames);
 
     Debug::print("Reading tree...");
-    readTree();
+    readTree(map.tree);
 
     Debug::print("Reading PVS table...");
-    readPVSTable(pvsTable);
+    readPVSTable(map.pvsTable);
     
+    Debug::print("Reading entities...");
+    readEntities(map.entities);
+
     Debug::print("Reading player start positions...");
-    playerStart = readPlayerStart();
+    map.playerStart = readPlayerStart();
     
     return true;
 }
@@ -103,15 +109,13 @@ std::string ResourceLoader::readString()
 {
     size_t length = read<size_t>();
 
-    char data[256];
+    std::string result(length, '\0');
 
     for (int i = 0; i < length; i++) {
-        data[i] = read<char>();
+        result[i] = read<char>();
     }
 
-    data[length] = '\0';
-
-    return std::string(data);
+    return result;
 }
 
 void ResourceLoader::writeTextureNames(const StringList& names)
@@ -428,6 +432,75 @@ void ResourceLoader::readPVSTable(PVSTable& pvsTable)
     }
 }
 
+void ResourceLoader::writeEntityProperties(const EntityProperties& props)
+{
+    write(props.size());
+
+    for (const auto& prop : props) {
+        writeString(prop.first);
+        writeString(prop.second);
+    }
+}
+
+void ResourceLoader::readEntityProperties(EntityProperties& props)
+{
+    size_t propCount = read<size_t>();
+
+    props.clear();
+    props.reserve(propCount);
+
+    for (int i = 0; i < propCount; i++) {
+        std::string name = readString();
+        std::string value = readString();
+
+        props[name] = value;
+    }
+}
+
+void ResourceLoader::writeEntities(const EntityList& entities)
+{
+  
+    write(entities.size());
+
+    for (const auto& entity : entities) {
+        //writeEntityProperties(entity.properties);        
+        write(entity.faces.size());
+
+        for (const auto& face : entity.faces) {
+            writeFace(face);
+        }
+    }
+}
+
+void ResourceLoader::readEntities(EntityList& entities)
+{
+    size_t entityCount = read<size_t>();
+
+    Debug::printf("Entities: {}", entityCount);
+
+    entities.clear();
+    entities.reserve(entityCount);
+
+    for (int j = 0; j < entityCount; j++) {
+        Entity entity;
+
+        //readEntityProperties(entity.properties);
+
+        size_t faceCount = read<size_t>();
+
+        Debug::printf("Faces: {}", faceCount);
+
+        entity.faces.clear();
+        entity.faces.reserve(faceCount);
+
+        for (int i = 0; i < faceCount; i++) {
+            entity.faces.push_back(readFace());
+        }
+
+        entities.push_back(entity);
+    }
+}
+
 void ResourceLoader::writePlayerStart(const Vec3List& playerStart)
 {
     Debug::printf("\tStart positions: {}", playerStart.size());
@@ -455,7 +528,7 @@ Vec3List ResourceLoader::readPlayerStart()
     return playerStart;
 }
 
-void ResourceLoader::writeTree()
+void ResourceLoader::writeTree(const Tree& tree)
 {
     writeNodes(tree.nodes);
     writeLeaves(tree.leaves);
@@ -463,7 +536,7 @@ void ResourceLoader::writeTree()
     writePortals(tree.portals);
 }
 
-void ResourceLoader::readTree()
+void ResourceLoader::readTree(Tree& tree)
 {
     tree.nodes = readNodes();
     tree.leaves = readLeaves();

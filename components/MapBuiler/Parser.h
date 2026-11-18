@@ -5,15 +5,15 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "Map.h"
+#include "BrushMap.h"
 
-class MapFile
+class Parser
 {
 public:
 
 	bool load(const std::string& filename);
-	bool parse(Map& map);
-	void printMap(const Map& map);
+	bool parse(BrushMap& map);
+	void printMap(const BrushMap& map);
 	
 private:
 
@@ -107,9 +107,9 @@ private:
 
 	void printParseException(const ParseException& e);
 	
-	void parseBrushSide(MapBrushSideList& sides);
+	void parseBrushSide(BrushSideList& sides);
 
-	void parseProperty(MapEntityProperties& properties);
+	void parseProperty(BrushEntityProperties& properties);
 
 	std::string filename;
 	std::string content;

@@ -1,18 +1,16 @@
-#include "MapFile.h"
+#include "Parser.h"
 
 #include <format>
 #include <iostream>
 #include <fstream>
 
+const std::string Parser::whitespaces = " \t\r\n";
+const std::string Parser::special = "{}()[]";
+const std::string Parser::digits = "0123456789";
+const std::string Parser::letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const std::string Parser::extra = "!@#$%^&*-+_~/{}\\";
 
-
-const std::string MapFile::whitespaces = " \t\r\n";
-const std::string MapFile::special = "{}()[]";
-const std::string MapFile::digits = "0123456789";
-const std::string MapFile::letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const std::string MapFile::extra = "!@#$%^&*-+_~/{}\\";
-
-bool MapFile::load(const std::string& path)
+bool Parser::load(const std::string& path)
 {
 	filename = path;
 	std::ifstream file(path);
@@ -22,22 +20,21 @@ bool MapFile::load(const std::string& path)
 	}
 
 	content = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-	
 
 	return true;
 }
 
-char MapFile::peekChar()
+char Parser::peekChar()
 {
 	return (pos < content.size() ? content[pos] : '\0');
 }
 
-char MapFile::peekNextChar(int offset)
+char Parser::peekNextChar(int offset)
 {
 	return ((pos + 1) < content.size() ? content[pos + offset] : '\0');
 }
 
-char MapFile::consumeChar()
+char Parser::consumeChar()
 {
 	if (pos < content.size()) {
 		char c = content[pos++];
@@ -55,12 +52,12 @@ char MapFile::consumeChar()
 	}
 }
 
-bool MapFile::checkChar(char c)
+bool Parser::checkChar(char c)
 {
 	return (peekChar() == c);
 }
 
-void MapFile::expectChar(char c)
+void Parser::expectChar(char c)
 {
 	char g = consumeChar();
 	if (g != c) {
@@ -68,67 +65,67 @@ void MapFile::expectChar(char c)
 	}
 }
 
-bool MapFile::isWhitespace(char c)
+bool Parser::isWhitespace(char c)
 {
 	return (std::string_view(whitespaces).find(c) != std::string_view::npos);
 }
 
-bool MapFile::isSpecial(char c)
+bool Parser::isSpecial(char c)
 {
 	return (std::string_view(special).find(c) != std::string_view::npos);
 }
 
-bool MapFile::isDigit(char c)
+bool Parser::isDigit(char c)
 {
 	return (std::string_view(digits).find(c) != std::string_view::npos);
 }
 
-bool MapFile::isLetter(char c)
+bool Parser::isLetter(char c)
 {
 	return (std::string_view(letters).find(c) != std::string_view::npos);
 }
 
-bool MapFile::isExtra(char c)
+bool Parser::isExtra(char c)
 {
 	return (std::string_view(extra).find(c) != std::string_view::npos);
 }
 
-bool MapFile::isQuote(char c)
+bool Parser::isQuote(char c)
 {
 	return (c == '"');
 }
 
-bool MapFile::isSign(char c)
+bool Parser::isSign(char c)
 {
 	return (c == '-');
 }
 
-bool MapFile::isDot(char c)
+bool Parser::isDot(char c)
 {
 	return (c == '.');
 }
 
-bool MapFile::isUnderline(char c)
+bool Parser::isUnderline(char c)
 {
 	return (c == '_');
 }
 
-bool MapFile::isSlash(char c)
+bool Parser::isSlash(char c)
 {
 	return (c == '/');
 }
 
-bool MapFile::isEndOfLine(char c)
+bool Parser::isEndOfLine(char c)
 {
 	return (c == '\n');
 }
 
-bool MapFile::isTerminator(char c)
+bool Parser::isTerminator(char c)
 {
 	return (c == '\0');
 }
 
-std::string MapFile::getTokenTypeName(TokenType type)
+std::string Parser::getTokenTypeName(TokenType type)
 {
 	switch (type) {
 	case TokenType::OpenBrace:
@@ -156,7 +153,7 @@ std::string MapFile::getTokenTypeName(TokenType type)
 	}
 }
 
-void MapFile::skipWhitespacesAndComments()
+void Parser::skipWhitespacesAndComments()
 {
 	while (true) {
 
@@ -175,7 +172,7 @@ void MapFile::skipWhitespacesAndComments()
 	}
 }
 
-MapFile::TokenType MapFile::parseSpecial()
+Parser::TokenType Parser::parseSpecial()
 {
 	TokenType type = TokenType::End;
 
@@ -214,7 +211,7 @@ MapFile::TokenType MapFile::parseSpecial()
 	return type;
 }
 
-std::string MapFile::parseString()
+std::string Parser::parseString()
 {
 	std::string value;
 
@@ -229,7 +226,7 @@ std::string MapFile::parseString()
 	return value;
 }
 
-std::string MapFile::parseNumber()
+std::string Parser::parseNumber()
 {
 	std::string value;
 
@@ -262,7 +259,7 @@ std::string MapFile::parseNumber()
 	return value;
 }
 
-std::string MapFile::parseIdentifier()
+std::string Parser::parseIdentifier()
 {
 	std::string value;
 
@@ -287,12 +284,12 @@ std::string MapFile::parseIdentifier()
 	return value;
 }
 
-MapFile::Token MapFile::peekToken()
+Parser::Token Parser::peekToken()
 {
 	return currentToken;
 }
 
-MapFile::Token MapFile::consumeToken()
+Parser::Token Parser::consumeToken()
 {
 	Token cur = currentToken;
 	
@@ -301,13 +298,13 @@ MapFile::Token MapFile::consumeToken()
 	return cur;
 }
 
-bool MapFile::checkToken(TokenType type)
+bool Parser::checkToken(TokenType type)
 {
 	return (currentToken.type == type);
 }
 
 // number or identifier?
-bool MapFile::analize()
+bool Parser::analize()
 {
 	int pos = 0;
 
@@ -330,7 +327,7 @@ bool MapFile::analize()
 	return false;
 }
 
-MapFile::Token MapFile::nextToken()
+Parser::Token Parser::nextToken()
 {
 	Token token;
 
@@ -372,7 +369,7 @@ MapFile::Token MapFile::nextToken()
 	return token;
 }
 
-MapFile::Token MapFile::expectToken(TokenType type)
+Parser::Token Parser::expectToken(TokenType type)
 {
 	Token t = consumeToken();
 
@@ -383,22 +380,22 @@ MapFile::Token MapFile::expectToken(TokenType type)
 	return t;
 }
 
-std::string MapFile::expectString()
+std::string Parser::expectString()
 {
 	return expectToken(TokenType::String).value;
 }
 
-float MapFile::expectNumber()
+float Parser::expectNumber()
 {
 	return std::stof(expectToken(TokenType::Number).value);
 }
 
-std::string MapFile::expectIdentifier()
+std::string Parser::expectIdentifier()
 {
 	return expectToken(TokenType::Identifier).value;
 }
 
-void MapFile::printParseException(const ParseException& e)
+void Parser::printParseException(const ParseException& e)
 {
 	size_t start = lineStarts[e.getLine() - 1];
 
@@ -422,7 +419,7 @@ void MapFile::printParseException(const ParseException& e)
 	std::cerr << filename << ":" << e.getLine() << ":" << e.getColumn() << "\n" << str << "\n" << str2 << "\n" << "\n" << e.what() << "\n";
 }
 
-void MapFile::printMap(const Map& map)
+void Parser::printMap(const BrushMap& map)
 {
 	for (const auto& entity : map.entities) {
 
@@ -450,9 +447,9 @@ void MapFile::printMap(const Map& map)
 	}
 }
 
-void MapFile::parseBrushSide(MapBrushSideList& sides)
+void Parser::parseBrushSide(BrushSideList& sides)
 {
-	MapBrushSide side;
+	BrushSide side;
 
 	// (
 	expectToken(TokenType::OpenParenthesis);
@@ -512,7 +509,7 @@ void MapFile::parseBrushSide(MapBrushSideList& sides)
 	sides.push_back(side);
 }
 
-void MapFile::parseProperty(MapEntityProperties& properties)
+void Parser::parseProperty(BrushEntityProperties& properties)
 {
 	std::string key = expectString();
 	std::string value = expectString();
@@ -520,7 +517,7 @@ void MapFile::parseProperty(MapEntityProperties& properties)
 	properties[key] = value;
 }
 
-bool MapFile::parse(Map& map)
+bool Parser::parse(BrushMap& map)
 {
 	pos = 0;
 	line = column = 1;
@@ -533,7 +530,7 @@ bool MapFile::parse(Map& map)
 	try {
 		while (true) {
 
-			MapEntity entity;
+			BrushEntity entity;
 
 			if (checkToken(TokenType::End)) {
 				break;
@@ -554,7 +551,7 @@ bool MapFile::parse(Map& map)
 				if (checkToken(TokenType::OpenBrace)) {
 					consumeToken();
 
-					MapBrush brush;
+					Brush brush;
 
 					while (true) {
 

@@ -3,21 +3,19 @@
 #include <string>
 #include <fstream>
 
-#include "Common.h"
+#include "common/Common.h"
 #include "BSP.h"
 #include "Texture.h"
+#include "common/Entity.h"
+#include "common/Map.h"
 
 class ResourceLoader
 {
 public:
 
-	ResourceLoader(Tree& tree)
-		: tree(tree) {
-	}
+	bool save(const std::string& path, const Map& map);
 
-	bool save(const std::string& path, const StringList& textureNames, const PVSTable& pvsTable, const Vec3List& playerStart);
-
-	bool load(const std::string& path, StringList& textureNames, PVSTable& pvsTable, Vec3List& playerStart);
+	bool load(const std::string& path, Map& map);
 	
 private:
 
@@ -66,17 +64,21 @@ private:
 	void writePortals(const PortalList& portals);
 	PortalList readPortals();
 
+	void writeEntityProperties(const EntityProperties& props);
+	void readEntityProperties(EntityProperties& props);
+
 	void writePVSTable(const PVSTable& pvsTable);
 	void readPVSTable(PVSTable& pvsTable);
+
+	void writeEntities(const EntityList& entities);
+	void readEntities(EntityList& entities);
 
 	void writePlayerStart(const Vec3List& playerStart);
 	Vec3List readPlayerStart();
 
 
-	void writeTree();
-	void readTree();
-
-	Tree& tree;
+	void writeTree(const Tree& tree);
+	void readTree(Tree& tree);
 
 	std::fstream file;
 };
