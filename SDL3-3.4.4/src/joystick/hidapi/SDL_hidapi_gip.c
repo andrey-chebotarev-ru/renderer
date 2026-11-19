@@ -1712,7 +1712,7 @@ static bool GIP_HandleCommandFirmware(
         return false;
     }
     if (bytes[0] == 1) {
-        Uint16 major, minor, build, rev;
+        Uint16 major, minor, buildRecursice, rev;
 
         if (num_bytes < 14) {
             SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "GIP: Discarding too-short firmware message");
@@ -1723,12 +1723,12 @@ static bool GIP_HandleCommandFirmware(
         major |= bytes[7] << 8;
         minor = bytes[8];
         minor |= bytes[9] << 8;
-        build = bytes[10];
-        build |= bytes[11] << 8;
+        buildRecursice = bytes[10];
+        buildRecursice |= bytes[11] << 8;
         rev = bytes[12];
         rev |= bytes[13] << 8;
 
-        SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "GIP: Firmware version: %d.%d.%d rev %d", major, minor, build, rev);
+        SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "GIP: Firmware version: %d.%d.%d rev %d", major, minor, buildRecursice, rev);
 
         attachment->firmware_major_version = major;
         attachment->firmware_minor_version = minor;

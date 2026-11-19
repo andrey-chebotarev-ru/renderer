@@ -81,7 +81,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -101,7 +101,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +119,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,7 +140,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Администратор\source\repos\Game\SDL3_image-3.4.2\include;C:\Users\Администратор\source\repos\Game\SDL3-3.4.4\include;$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,63 +152,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BSP.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Clipper.cpp" />
-    <ClCompile Include="Color.cpp" />
-    <ClCompile Include="common\Entity.cpp" />
-    <ClCompile Include="common\Map.cpp" />
-    <ClCompile Include="components\MapBuiler\BrushMap.cpp" />
-    <ClCompile Include="components\MapBuiler\MapBuilder.cpp" />
-    <ClCompile Include="components\MapBuiler\Parser.cpp" />
-    <ClCompile Include="Debug.cpp" />
-    <ClCompile Include="Geometry.cpp" />
-    <ClCompile Include="PVS.cpp" />
-    <ClCompile Include="Rasterizer.cpp" />
-    <ClCompile Include="ResourceLoader.cpp" />
-    <ClCompile Include="Surface.cpp" />
-    <ClCompile Include="TextureConverter.cpp" />
-    <ClCompile Include="ViewportClipper.cpp" />
-    <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Math.cpp" />
-    <ClCompile Include="Model.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Triangle.cpp" />
-    <ClCompile Include="Vector.cpp" />
-    <ClCompile Include="Vertex.cpp" />
-    <ClCompile Include="RenderFaces.cpp" />
-    <ClCompile Include="WadLoader.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="BSP.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Clipper.h" />
-    <ClInclude Include="Color.h" />
-    <ClInclude Include="common\Common.h" />
-    <ClInclude Include="common\Entity.h" />
-    <ClInclude Include="common\Map.h" />
-    <ClInclude Include="components\MapBuiler\BrushMap.h" />
-    <ClInclude Include="components\MapBuiler\MapBuilder.h" />
-    <ClInclude Include="components\MapBuiler\Parser.h" />
-    <ClInclude Include="Debug.h" />
-    <ClInclude Include="Geometry.h" />
-    <ClInclude Include="PVS.h" />
-    <ClInclude Include="Rasterizer.h" />
-    <ClInclude Include="ResourceLoader.h" />
-    <ClInclude Include="Surface.h" />
-    <ClInclude Include="Texture.h" />
-    <ClInclude Include="TextureConverter.h" />
-    <ClInclude Include="ViewportClipper.h" />
-    <ClInclude Include="Math.h" />
-    <ClInclude Include="Model.h" />
-    <ClInclude Include="Renderer.h" />
-    <ClInclude Include="Triangle.h" />
-    <ClInclude Include="Vector.h" />
-    <ClInclude Include="Vertex.h" />
-    <ClInclude Include="RenderFaces.h" />
-    <ClInclude Include="WadLoader.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="SDL3-3.4.4\VisualC\SDL\SDL.vcxproj">
       <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
     </ProjectReference>
@@ -217,7 +160,70 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Notes.txt" />
+    <Text Include="src\Notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\common\Bounds.cpp" />
+    <ClCompile Include="src\common\Camera.cpp" />
+    <ClCompile Include="src\common\Color.cpp" />
+    <ClCompile Include="src\common\Debug.cpp" />
+    <ClCompile Include="src\common\Entity.cpp" />
+    <ClCompile Include="src\common\Face.cpp" />
+    <ClCompile Include="src\common\Geometry.cpp" />
+    <ClCompile Include="src\common\Line.cpp" />
+    <ClCompile Include="src\common\Map.cpp" />
+    <ClCompile Include="src\common\Math.cpp" />
+    <ClCompile Include="src\common\Model.cpp" />
+    <ClCompile Include="src\common\Plane.cpp" />
+    <ClCompile Include="src\common\Surface.cpp" />
+    <ClCompile Include="src\common\Triangle.cpp" />
+    <ClCompile Include="src\common\Vector.cpp" />
+    <ClCompile Include="src\common\Vertex.cpp" />
+    <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\loaders\ResourceLoader.cpp" />
+    <ClCompile Include="src\loaders\WadLoader.cpp" />
+    <ClCompile Include="src\map_builder\BrushMap.cpp" />
+    <ClCompile Include="src\map_builder\MapBuilder.cpp" />
+    <ClCompile Include="src\map_builder\Parser.cpp" />
+    <ClCompile Include="src\renderer\BSP.cpp" />
+    <ClCompile Include="src\renderer\Clipper.cpp" />
+    <ClCompile Include="src\renderer\PVS.cpp" />
+    <ClCompile Include="src\renderer\Rasterizer.cpp" />
+    <ClCompile Include="src\renderer\Renderer.cpp" />
+    <ClCompile Include="src\renderer\RenderFaces.cpp" />
+    <ClCompile Include="src\renderer\ViewportClipper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\common\Bounds.h" />
+    <ClInclude Include="src\common\Camera.h" />
+    <ClInclude Include="src\common\Color.h" />
+    <ClInclude Include="src\common\Common.h" />
+    <ClInclude Include="src\common\Debug.h" />
+    <ClInclude Include="src\common\Entity.h" />
+    <ClInclude Include="src\common\Face.h" />
+    <ClInclude Include="src\common\Geometry.h" />
+    <ClInclude Include="src\common\Line.h" />
+    <ClInclude Include="src\common\Map.h" />
+    <ClInclude Include="src\common\Math.h" />
+    <ClInclude Include="src\common\Model.h" />
+    <ClInclude Include="src\common\Plane.h" />
+    <ClInclude Include="src\common\Surface.h" />
+    <ClInclude Include="src\common\Texture.h" />
+    <ClInclude Include="src\common\Triangle.h" />
+    <ClInclude Include="src\common\Vector.h" />
+    <ClInclude Include="src\common\Vertex.h" />
+    <ClInclude Include="src\loaders\ResourceLoader.h" />
+    <ClInclude Include="src\loaders\WadLoader.h" />
+    <ClInclude Include="src\map_builder\BrushMap.h" />
+    <ClInclude Include="src\map_builder\MapBuilder.h" />
+    <ClInclude Include="src\map_builder\Parser.h" />
+    <ClInclude Include="src\renderer\BSP.h" />
+    <ClInclude Include="src\renderer\Clipper.h" />
+    <ClInclude Include="src\renderer\PVS.h" />
+    <ClInclude Include="src\renderer\Rasterizer.h" />
+    <ClInclude Include="src\renderer\Renderer.h" />
+    <ClInclude Include="src\renderer\RenderFaces.h" />
+    <ClInclude Include="src\renderer\ViewportClipper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

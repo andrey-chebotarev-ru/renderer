@@ -1,195 +1,199 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Исходные файлы">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Text Include="src\Notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="renderer">
+      <UniqueIdentifier>{ed43e217-6492-4c64-b6a8-4a2f5f31cda6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы заголовков">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="map_builder">
+      <UniqueIdentifier>{e4e137bb-bf5a-4057-8691-404eb9b59f7e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы ресурсов">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="common">
+      <UniqueIdentifier>{76343261-d51f-4d7f-8710-456b1ff8d7da}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Исходные файлы\MapBuilder">
-      <UniqueIdentifier>{730e00c2-f060-414f-840e-11c9eb3ab1e0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы заголовков\MapBuilder">
-      <UniqueIdentifier>{6c161751-42ed-434b-8dd5-63c588de1072}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы заголовков\Common">
-      <UniqueIdentifier>{e41d91ff-7f7b-43fc-bd83-f28995cd9d19}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Исходные файлы\Common">
-      <UniqueIdentifier>{a90da1e8-f6e9-4637-90d2-29db22e70b62}</UniqueIdentifier>
+    <Filter Include="loaders">
+      <UniqueIdentifier>{f08d875e-cebb-4620-93cd-728920d1c32a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\BSP.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\Clipper.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Math.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\PVS.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\Rasterizer.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Vector.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\Renderer.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\RenderFaces.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Triangle.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\renderer\ViewportClipper.cpp">
+      <Filter>renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Vertex.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\map_builder\BrushMap.cpp">
+      <Filter>map_builder</Filter>
     </ClCompile>
-    <ClCompile Include="ViewportClipper.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\map_builder\MapBuilder.cpp">
+      <Filter>map_builder</Filter>
     </ClCompile>
-    <ClCompile Include="Rasterizer.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\map_builder\Parser.cpp">
+      <Filter>map_builder</Filter>
     </ClCompile>
-    <ClCompile Include="Color.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Bounds.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="Clipper.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Camera.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="RenderFaces.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Color.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="BSP.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Debug.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="Debug.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Geometry.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="Geometry.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Math.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="TextureConverter.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Model.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="ResourceLoader.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Surface.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="PVS.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Triangle.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="WadLoader.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Vector.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="Surface.cpp">
-      <Filter>Исходные файлы</Filter>
+    <ClCompile Include="src\common\Vertex.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="components\MapBuiler\MapBuilder.cpp">
-      <Filter>Исходные файлы\MapBuilder</Filter>
+    <ClCompile Include="src\loaders\ResourceLoader.cpp">
+      <Filter>loaders</Filter>
     </ClCompile>
-    <ClCompile Include="components\MapBuiler\Parser.cpp">
-      <Filter>Исходные файлы\MapBuilder</Filter>
+    <ClCompile Include="src\loaders\WadLoader.cpp">
+      <Filter>loaders</Filter>
     </ClCompile>
-    <ClCompile Include="common\Entity.cpp">
-      <Filter>Исходные файлы\Common</Filter>
+    <ClCompile Include="src\common\Entity.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="components\MapBuiler\BrushMap.cpp">
-      <Filter>Исходные файлы\MapBuilder</Filter>
+    <ClCompile Include="src\common\Map.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="common\Map.cpp">
-      <Filter>Исходные файлы\Common</Filter>
+    <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\common\Plane.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\Line.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\Face.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Math.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\BSP.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\Clipper.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Vector.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\PVS.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\Rasterizer.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Triangle.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\Renderer.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Vertex.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\RenderFaces.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="ViewportClipper.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\renderer\ViewportClipper.h">
+      <Filter>renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\map_builder\BrushMap.h">
+      <Filter>map_builder</Filter>
     </ClInclude>
-    <ClInclude Include="Rasterizer.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\map_builder\MapBuilder.h">
+      <Filter>map_builder</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\map_builder\Parser.h">
+      <Filter>map_builder</Filter>
     </ClInclude>
-    <ClInclude Include="Color.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Bounds.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="Clipper.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Camera.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="RenderFaces.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Color.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="BSP.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Debug.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="Debug.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Geometry.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="Geometry.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Math.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="TextureConverter.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Model.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="ResourceLoader.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Surface.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="PVS.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Texture.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="WadLoader.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Triangle.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="Surface.h">
-      <Filter>Файлы заголовков</Filter>
+    <ClInclude Include="src\common\Vector.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="components\MapBuiler\BrushMap.h">
-      <Filter>Файлы заголовков\MapBuilder</Filter>
+    <ClInclude Include="src\common\Vertex.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="components\MapBuiler\MapBuilder.h">
-      <Filter>Файлы заголовков\MapBuilder</Filter>
+    <ClInclude Include="src\loaders\ResourceLoader.h">
+      <Filter>loaders</Filter>
     </ClInclude>
-    <ClInclude Include="components\MapBuiler\Parser.h">
-      <Filter>Файлы заголовков\MapBuilder</Filter>
+    <ClInclude Include="src\loaders\WadLoader.h">
+      <Filter>loaders</Filter>
     </ClInclude>
-    <ClInclude Include="common\Common.h">
-      <Filter>Файлы заголовков\Common</Filter>
+    <ClInclude Include="src\common\Common.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="common\Entity.h">
-      <Filter>Файлы заголовков\Common</Filter>
+    <ClInclude Include="src\common\Entity.h">
+      <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="common\Map.h">
-      <Filter>Файлы заголовков\Common</Filter>
+    <ClInclude Include="src\common\Map.h">
+      <Filter>common</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Notes.txt" />
+    <ClInclude Include="src\common\Plane.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\Line.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\Face.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
