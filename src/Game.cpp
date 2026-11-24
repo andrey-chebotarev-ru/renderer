@@ -25,6 +25,7 @@
 #include "common/Triangle.h"
 #include "common/Surface.h"
 #include "common/Geometry.h"
+#include "renderer/RenderEntity.h"
 
 
 #define VIEWPORT_WIDTH 1600
@@ -78,6 +79,8 @@ static bool updatePvs = true;
 
 const double targetFrameTime = 1000.0 / 100.0;
 
+static RenderEntityList renderEntities;
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 {
@@ -130,6 +133,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         }
     }
 
+
+
     Debug::printf("Caching surfaces...");
 
     for (auto& face : map.tree.faces) {
@@ -137,14 +142,30 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         face.face.surfIdx = surfaceCache.cache(face.face, tex);
     }
 
+    
+
     for (auto& ent : map.entities) {
 
-        for (auto& face : ent.faces) {
-            face.texIdx = remap[face.texIdx];
-            const Texture& tex = textureManager.get(face.texIdx);
-            face.surfIdx = surfaceCache.cache(face, tex);
+        if (ent.getClassname() == "worldspawn" || ent.getClassname().starts_with("func_")) {
+
+            RenderEntity renderEntity;
+            Bounds::AABB3 aabb = Bounds::create(ent.faces);
+
+            BSP::findTouchedLeaves(map.tree, map.tree.rootNodeIdx, aabb, renderEntity.touchedLeaves);
+
+            for (auto& face : ent.faces) {
+                face.texIdx = remap[face.texIdx];
+                const Texture& tex = textureManager.get(face.texIdx);
+                face.surfIdx = surfaceCache.cache(face, tex);
+            }
+
+            renderEntity.entity = ent;
+
+            renderEntities.push_back(renderEntity);
         }
     }
+
+
 
     std::cout << "Press any key...\n";
     _getch();
@@ -414,44 +435,22 @@ SDL_AppResult SDL_AppIterate(void* appstate)
 
         world.clear();
 
-        if (update) {
-           // portalRenderer.render(camera);
-        }
+        
 
         if (updatePvs) {
             pvsRow = &map.pvsTable[BSP::getLeafIdx(map.tree, camera.position)];
         }
 
-        BSP::render(map.tree, camera, world, *pvsRow, drawPortals, renderOnlyCurrentLeaf);
+
+
+       
 
 
         
        
 
-        count = gameRenderer.drawScene(world, models, map.entities, camera, fill);
+        count = gameRenderer.drawScene(map, models, renderEntities, camera, fill, !updatePvs);
 
-        /*
-        RenderFaces rf;
-        Face f;
-        FaceList fs;
-        f.poly = Poly3D();
-        f.poly.addVert(Vertex3D(Vec3(-100, -100, 100), Vec2(-64, -96)));
-        f.poly.addVert(Vertex3D(Vec3(100, -100, 100), Vec2(0, -96)));
-        f.poly.addVert(Vertex3D(Vec3(100, 100, 100), Vec2(0, 0)));
-        f.poly.addVert(Vertex3D(Vec3(-100, 100, 100), Vec2(-64, 0)));
-        std::reverse(f.poly.verts.begin(), f.poly.verts.end());
-        f.texIdx = 23;
-        fs.push_back(f);
-        rf.addGeometry(fs);
-
-        gameRenderer.drawWorld(rf, camera, false);
-        */
-
-
-   
-        if (drawPortals) {
-            //gameRenderer.drawExtras(bsp.renderPortals(camera.position), camera);
-        }
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
     }
@@ -473,11 +472,20 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     
     int leafIdx = BSP::getLeafIdx(map.tree, camera.position);
     const BSP::Leaf& leaf = map.tree.getLeaf(leafIdx);
+
+    std::string type = "Unknown";
+
+    if (leaf.contents == Contents::Empty) {
+        type = "Empty";
+    }
+    else if (leaf.contents == Contents::Solid) {
+        type = "Solid";
+    }
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "BSP::Leaf: %i (%s) %s", leafIdx, leaf.valid ? "Inside" : "Void", leaf.outside ? "(Outside leaf)" : "");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s) portals: %i", leafIdx, type.c_str(), leaf.portalIdxs.size());
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "%s", BSP::clipByFrustrum ? "Clip by frustrum enabled" : "");
 
     if (leaked) {

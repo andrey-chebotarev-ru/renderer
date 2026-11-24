@@ -247,7 +247,7 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
         const Face& face = renderFaces.getFace(faceIdx);
 
         if (face.type == FaceType::Bounds) {
-            continue;
+            //continue;
         }
 
         uint8_t mipLevel = 0;
@@ -298,15 +298,29 @@ int Renderer::drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool 
     return count;
 }
 
-int Renderer::drawEntities(const EntityList& entities, const Camera& cam, bool debug, bool fill)
+int Renderer::drawEntities(const RenderEntityList& entities, const Camera& cam, const BoolList& pvsRow, bool debug, bool fill)
 {
     int count = 0;
 
     for (int entityIdx = 0; entityIdx < entities.size(); entityIdx++) {
 
-        for (int faceIdx = 0; faceIdx < entities[entityIdx].faces.size(); faceIdx++) {
+        const RenderEntity& entity = entities[entityIdx];
+        bool visible = false;
 
-            const Face& face = entities[entityIdx].faces[faceIdx];
+        for (auto leafIdx : entity.touchedLeaves) {
+            if (pvsRow[leafIdx]) {
+                visible = true;
+                break;
+            }
+        }
+
+        if (!visible) {
+            continue;
+        }
+
+        for (int faceIdx = 0; faceIdx < entities[entityIdx].entity.faces.size(); faceIdx++) {
+
+            const Face& face = entities[entityIdx].entity.faces[faceIdx];
 
             uint8_t mipLevel = 0;
 
@@ -357,17 +371,29 @@ int Renderer::drawEntities(const EntityList& entities, const Camera& cam, bool d
     return count;
 }
 
-int Renderer::drawScene(const RenderFaces& renderFaces, const ModelList &models, const EntityList& entities, const Camera& cam, bool debug)
+int Renderer::drawScene(const Map& map, const ModelList &models, const RenderEntityList& entities, const Camera& cam, bool debug, bool freezePvs)
 {
+    static const BoolList* pvsRowPtr = nullptr;
+
     rasterizer.clearBuffers();
     
+    size_t leafIdx = BSP::getLeafIdx(map.tree, cam.position);
+
+    if (!freezePvs) {
+        pvsRowPtr = &map.pvsTable[leafIdx];
+    }
+
+    RenderFaces renderFaces;
+
+    BSP::render(map.tree, cam, renderFaces, *pvsRowPtr);
+
     int count = drawWorld(renderFaces, cam, debug);
 
     for (const Model& model : models) {
         count += drawModel(model, cam);
     }
 
-    count += drawEntities(entities, cam, debug, false);
+    count += drawEntities(entities, cam, *pvsRowPtr, debug, false);
 
     return count;
 }

@@ -199,26 +199,20 @@ NodeList ResourceLoader::readNodes()
 
 void ResourceLoader::writeLeaf(const BSP::Leaf& leaf)
 {
-    write(leaf.valid);
-    write(leaf.outside);
-    write(leaf.visible);
-    write(leaf.visited);
-
     writeIndices(leaf.faceIdxs);
     writeIndices(leaf.portalIdxs);
+
+    write(static_cast<uint8_t>(leaf.contents));
 }
 
 BSP::Leaf ResourceLoader::readLeaf()
 {
     BSP::Leaf leaf;
 
-    leaf.valid = read<bool>();
-    leaf.outside = read<bool>();
-    leaf.visible = read<bool>();
-    leaf.visited = read<bool>();
-
     leaf.faceIdxs = readIndices();
     leaf.portalIdxs = readIndices();
+
+    leaf.contents = static_cast<Contents>(read<uint8_t>());
 
     return leaf;
 }
@@ -348,8 +342,6 @@ void ResourceLoader::writePortal(const BSP::Portal& portal)
 
     write(portal.frontLeafIdx);
     write(portal.backLeafIdx);
-
-    write(portal.visited);
 }
 
 BSP::Portal ResourceLoader::readPortal()
@@ -368,7 +360,6 @@ BSP::Portal ResourceLoader::readPortal()
     portal.frontLeafIdx = read<int>();
     portal.backLeafIdx = read<int>();
 
-    portal.visited = read<bool>();
 
     return portal;
 }
@@ -467,7 +458,7 @@ void ResourceLoader::writeEntities(const EntityList& entities)
     write(entities.size());
 
     for (const auto& entity : entities) {
-        //writeEntityProperties(entity.properties);        
+        writeEntityProperties(entity.properties);        
         write(entity.faces.size());
 
         for (const auto& face : entity.faces) {
@@ -488,7 +479,7 @@ void ResourceLoader::readEntities(EntityList& entities)
     for (int j = 0; j < entityCount; j++) {
         Entity entity;
 
-        //readEntityProperties(entity.properties);
+        readEntityProperties(entity.properties);
 
         size_t faceCount = read<size_t>();
 
@@ -535,7 +526,7 @@ Vec3List ResourceLoader::readPlayerStart()
 void ResourceLoader::writeTree(const BSP::Tree& tree)
 {
     writeNodes(tree.nodes);
-    writeLeaves(tree.leaves);
+    writeLeaves(tree.getLeaves());
     writeBSPFaces(tree.faces);
     writePortals(tree.portals);
 }
@@ -543,7 +534,7 @@ void ResourceLoader::writeTree(const BSP::Tree& tree)
 void ResourceLoader::readTree(BSP::Tree& tree)
 {
     tree.nodes = readNodes();
-    tree.leaves = readLeaves();
+    tree.setLeaves(readLeaves());
     tree.faces = readBSPFaces();
     tree.portals = readPortals();
 }

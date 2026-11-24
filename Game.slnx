@@ -5,5 +5,4 @@
   </Configurations>
   <Project Path="Game.vcxproj" Id="48320f61-6462-4f7a-aa5d-10cc9bdb9df1" />
   <Project Path="SDL3-3.4.4/VisualC/SDL/SDL.vcxproj" Id="81ce8daf-ebb2-4761-8e45-b71abcca8c68" />
-  <Project Path="SDL3_image-3.4.2/VisualC/SDL_image.vcxproj" Id="2bd5534e-00e2-4bea-ac96-d9a92ea24696" />
 </Solution>

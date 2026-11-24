@@ -51,7 +51,7 @@ void PVS::calculatePortalSee(int portalIdx, BoolList& portalSee)
 void PVS::simpleFloodFill(int startLeafIdx, const BoolList& portalSee, BoolList& mightSee)
 {
 	IndicesList stack;
-	stack.reserve(tree.leaves.size());
+	stack.reserve(tree.getLeafCount());
 
 	mightSee[startLeafIdx] = true;
 	stack.push_back(startLeafIdx);
@@ -60,7 +60,7 @@ void PVS::simpleFloodFill(int startLeafIdx, const BoolList& portalSee, BoolList&
 		int leafIdx = stack.back();
 		stack.pop_back();
 
-		const BSP::Leaf& leaf = tree.leaves[leafIdx];
+		const BSP::Leaf& leaf = tree.getLeaf(leafIdx);
 
 		for (int portalIdx : leaf.portalIdxs) {
 
@@ -92,7 +92,7 @@ void PVS::calculateBaseVis()
 
 		std::fill(portalSee.begin(), portalSee.end(), false);
 
-		mightSeeTable[portalIdx].resize(tree.leaves.size());
+		mightSeeTable[portalIdx].resize(tree.getLeafCount());
 		std::fill(mightSeeTable[portalIdx].begin(), mightSeeTable[portalIdx].end(), false);
 
 		calculatePortalSee(portalIdx, portalSee);
@@ -133,7 +133,7 @@ void PVS::portalFlow(uint32_t srcLeafIdx, uint32_t srcPortalIdx, uint32_t thread
 		maxStackSize = std::max(maxStackSize, stack.size());
 
 		const BSP::Portal& portal = tree.portals[state.passPortalIdx];
-		const BSP::Leaf& leaf = tree.leaves[portal.frontLeafIdx];
+		const BSP::Leaf& leaf = tree.getLeaf(portal.frontLeafIdx);
 
 		uint32_t currentLeafIdx = portal.frontLeafIdx;
 
@@ -360,7 +360,7 @@ void PVS::clipToSeparators(const Poly3D& source, const Poly3D& pass, Poly3D& tar
 void PVS::leafFlow(uint32_t leafIdx)
 {
 	int threadIdx = 0;
-	for (auto portalIdx : tree.leaves[leafIdx].portalIdxs) {
+	for (auto portalIdx : tree.getLeaf(leafIdx).portalIdxs) {
 		
 		portalFlow(leafIdx, portalIdx, ++threadIdx);
 		portalStatusTable[portalIdx] = PortalStatus::Done;
@@ -374,7 +374,7 @@ void PVS::calculate(PVSTable& table)
 	calculateBaseVis();
 
 	const size_t portalCount = tree.portals.size();
-	const size_t leafCount = tree.leaves.size();
+	const size_t leafCount = tree.getLeafCount();
 
 	// Считаем количество потенциально видимых листьев
 	IndicesList mightSeeCounts(portalCount);
@@ -430,7 +430,7 @@ void PVS::calculate(PVSTable& table)
 
 		
 
-		const BSP::Leaf& leaf = tree.leaves[leafIdx];
+		const BSP::Leaf& leaf = tree.getLeaf(leafIdx);
 
 		for (uint32_t portalIdx : leaf.portalIdxs) {
 			const auto& bits = visBitsTable[portalIdx];

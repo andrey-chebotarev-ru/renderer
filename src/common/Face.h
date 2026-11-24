@@ -13,6 +13,13 @@ enum class FaceType
     Entity,
 };
 
+enum class Contents
+{
+    Solid,
+    Empty,
+};
+
+
 struct Face
 {
     FaceType type = FaceType::Wall;
@@ -21,6 +28,7 @@ struct Face
 
     size_t texIdx = 0;
     Color debugColor;
+    
     bool canSplit = true;
 
     size_t surfIdx;

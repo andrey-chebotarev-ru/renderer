@@ -35,13 +35,10 @@ namespace BSP
 
 	struct Leaf
 	{
-		bool valid = false;
-		bool outside = false;
-		bool visible = false;
-		bool visited = false;
-
 		IndicesList faceIdxs;
 		IndicesList portalIdxs;
+
+		Contents contents = Contents::Empty;
 
 		PlaneList bounds;
 	};
@@ -61,8 +58,6 @@ namespace BSP
 
 		int frontLeafIdx = -1;
 		int backLeafIdx = -1;
-
-		bool visited = false;
 	};
 
 	using PortalList = std::vector<Portal>;
@@ -93,6 +88,8 @@ namespace BSP
 	{
 		bool valid;
 		Plane plane;
+		Contents frontContents;
+		Contents backContents;
 		int idx;
 	};
 
@@ -101,7 +98,6 @@ namespace BSP
 	struct Tree
 	{
 		NodeList nodes;
-		LeafList leaves;
 		BSPFaceList faces;
 		PortalList portals;
 		size_t rootNodeIdx;
@@ -191,6 +187,55 @@ namespace BSP
 			return portals.size() - 1;
 		}
 
+		void clear()
+		{
+			nodes.clear();
+			leaves.clear();
+			faces.clear();
+			portals.clear();
+		}
+
+		const NodeList& getNodes() const
+		{
+			return nodes;
+		}
+
+		const LeafList& getLeaves() const
+		{
+			return leaves;
+		}
+
+		const BSPFaceList& getFaces() const
+		{
+			return faces;
+		}
+
+		const PortalList& getPortals() const
+		{
+			return portals;
+		}
+
+		void setNodes(const NodeList& nodes)
+		{
+			this->nodes = nodes;
+		}
+
+		void setLeaves(const LeafList& leaves)
+		{
+			this->leaves = leaves;
+		}
+
+		void setFaces(const BSPFaceList& faces)
+		{
+			this->faces = faces;
+		}
+
+		void setPortals(const PortalList& portals)
+		{
+			this->portals = portals;
+		}
+		
+
 		/*
 		const size_t getLeafIdx(const Vec3& pos) const {
 			return BSP::getLeafIdx(*this, pos);
@@ -202,6 +247,9 @@ namespace BSP
 			return getLeaf(getLeafIdx(pos));
 		}
 		*/
+
+		private:
+			LeafList leaves;
 	};
 
 	// Private
@@ -219,10 +267,13 @@ namespace BSP
 
 			size_t nodeIdx;
 			PlaneList bounds;
+
+			Contents contents = Contents::Empty;
+
 			size_t depth = 0;
 		};
 
-		bool floodFill(Tree& tree, int leafId);
+		bool floodFill(Tree& tree, int startLeafIdx);
 
 		Portal createPortal(const Tree& tree, int nodeIdx);
 		PortalList carvePortal(const Tree& tree, const Portal& portal);
@@ -230,10 +281,10 @@ namespace BSP
 		Splitter findSplitter(const FaceList& polys);
 
 		void buildRecursive(const FaceList& faces, const Context& ctx);
-		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow);
+		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs);
 
 		PlaneList getPlanes(const Bounds::AABB3& aabb);
-		FaceList createWorldBounds(const Bounds::AABB3& aabb, float padding);
+		FaceList createWorldBounds(const Bounds::AABB3& aabb, float padding, bool flip = false);
 
 		//void pushFace(const BSPFace& face, int nodeIdx);
 
@@ -247,10 +298,13 @@ namespace BSP
 	}
 
 	bool compile(Tree& tree, FaceList& polys, const Vec3List& playerStart);
-	void render(const Tree& tree, const Camera& cam, RenderFaces& renderFaces, const BoolList& pvsTableRow, bool includePortals = false, bool renderOnlyCurrentLeaf = false);
+	void render(const Tree& tree, const Camera& cam, RenderFaces& renderFaces, const BoolList& pvsTableRow);
 	FaceList renderPortals(const Tree& tree, const Vec3& pos);
 	LabelList renderPortalLabels(const Tree& tree, const Vec3& pos);
 
 	PortalList getPortalsInLeaf(const Tree& tree, int leafIdx);
-	int getLeafIdx(const Tree& tree, const Vec3& pos);
+	size_t getLeafIdx(const Tree& tree, const Vec3& pos);
+	bool pointInLeaf(const Tree& tree, size_t leafIdx, const Vec3& pos);
+
+	void findTouchedLeaves(const Tree& tree, size_t nodeIdx, const Bounds::AABB3& aabb3, IndicesList& leafIdxs);
 }

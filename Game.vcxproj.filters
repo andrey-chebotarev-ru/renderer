@@ -195,5 +195,8 @@
     <ClInclude Include="src\common\Face.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderer\RenderEntity.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -13,11 +13,15 @@
 #include "common/Surface.h"
 #include "common/Entity.h"
 #include "common/Bounds.h"
+#include "common/Map.h"
 
 #include "Clipper.h"
 #include "ViewportClipper.h"
 #include "RenderFaces.h"
 #include "Rasterizer.h"
+#include "RenderEntity.h"
+#include "BSP.h"
+#include "PVS.h"
 
 class Renderer
 {
@@ -76,7 +80,7 @@ public:
 
     void setFramebuffer(int pitch, uint8_t* pixels);
     
-    int drawScene(const RenderFaces& renderFaces, const ModelList& models, const EntityList& entities, const Camera& cam, bool debug);
+    int drawScene(const Map& map, const ModelList& models, const RenderEntityList& entities, const Camera& cam, bool debug, bool freezePvs);
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);
     void drawAABB(const Bounds::AABB2& aabb, const Color& color);
@@ -84,7 +88,7 @@ public:
     void setPixel(int x, int y, const Color& color);
 
     int drawWorld(const RenderFaces& renderFaces, const Camera& cam, bool debug);
-    int drawEntities(const EntityList& entities, const Camera& cam, bool debug, bool fill);
+    int drawEntities(const RenderEntityList& entities, const Camera& cam, const BoolList& pvsRow, bool debug, bool fill);
 
 private:
     const float nearPlaneDistance, farPlaneDistance;

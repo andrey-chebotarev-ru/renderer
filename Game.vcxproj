@@ -155,9 +155,6 @@
     <ProjectReference Include="SDL3-3.4.4\VisualC\SDL\SDL.vcxproj">
       <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
     </ProjectReference>
-    <ProjectReference Include="SDL3_image-3.4.2\VisualC\SDL_image.vcxproj">
-      <Project>{2bd5534e-00e2-4bea-ac96-d9a92ea24696}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\Notes.txt" />
@@ -221,6 +218,7 @@
     <ClInclude Include="src\renderer\Clipper.h" />
     <ClInclude Include="src\renderer\PVS.h" />
     <ClInclude Include="src\renderer\Rasterizer.h" />
+    <ClInclude Include="src\renderer\RenderEntity.h" />
     <ClInclude Include="src\renderer\Renderer.h" />
     <ClInclude Include="src\renderer\RenderFaces.h" />
     <ClInclude Include="src\renderer\ViewportClipper.h" />
