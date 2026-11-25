@@ -242,7 +242,7 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
                             }
                         }
                         else {
-                            c = surf.getSample<false>(u, v, mipLevel);
+                            c = surf.getSample<true>(u, v, mipLevel);
                             if (c.a != 0) {
                                 *(Color*)(framebuffer + pos) = c;
                                 zBuffer[zindex] = iz;
