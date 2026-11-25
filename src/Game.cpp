@@ -148,6 +148,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
         if (ent.getClassname() == "worldspawn" || ent.getClassname().starts_with("func_")) {
 
+            if (!ent.faces.size()) {
+                continue;
+            }
+
             RenderEntity renderEntity;
             Bounds::AABB3 aabb = Bounds::create(ent.faces);
 
@@ -218,6 +222,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
         return SDL_APP_FAILURE;
     }
 
+    SDL_SetTextureBlendMode(sdlFramebufferTexture, SDL_BLENDMODE_NONE);
     
 
     if (fullscreen) {
@@ -226,6 +231,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     
     SDL_SetWindowRelativeMouseMode(window, true);
     SDL_RaiseWindow(window);
+
+
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }

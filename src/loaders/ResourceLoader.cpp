@@ -27,6 +27,8 @@ bool ResourceLoader::save(const std::string& path, const Map& map)
     Debug::print("Writing player start positions...");
     writePlayerStart(map.playerStart);
     
+    file.close();
+
     return true;
 }
 
@@ -53,6 +55,8 @@ bool ResourceLoader::load(const std::string& path, Map& map)
     Debug::print("Reading player start positions...");
     map.playerStart = readPlayerStart();
     
+    file.close();
+
     return true;
 }
 
@@ -320,8 +324,6 @@ BSPFaceList ResourceLoader::readBSPFaces()
     size_t count = read<size_t>();
     bspFaces.reserve(count);
 
-    Debug::printf("Faces: {}", count);
-
     for (int i = 0; i < count; i++) {
         bspFaces.push_back(readBSPFace());
     }
@@ -482,8 +484,6 @@ void ResourceLoader::readEntities(EntityList& entities)
         readEntityProperties(entity.properties);
 
         size_t faceCount = read<size_t>();
-
-        Debug::printf("Faces: {}", faceCount);
 
         entity.faces.clear();
         entity.faces.reserve(faceCount);

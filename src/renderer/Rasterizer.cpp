@@ -184,8 +184,9 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
         float vMin = std::min(vStart, vEnd);
         float vMax = std::max(vStart, vEnd);
 
+        Color c;
         if (uMin >= 0.0f && uMax < width && vMin >= 0.0f && vMax < height) {
-
+            
             for (int i = 0; i < blockLength; i++) {
 
                 if constexpr (depthTest) {
@@ -197,8 +198,11 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
                             }
                         }
                         else {
-                            *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
-                            zBuffer[zindex] = iz;
+                            c = surf.getSample<false>(u, v, mipLevel);
+                            if (c.a != 0) {
+                                *(Color*)(framebuffer + pos) = c;
+                                zBuffer[zindex] = iz;
+                            }
                         }
                     }
                 }
@@ -227,7 +231,6 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
 
         }
         else {
-
             for (int i = 0; i < blockLength; i++) {
 
                 if constexpr (depthTest) {
@@ -239,8 +242,11 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
                             }
                         }
                         else {
-                            *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
-                            zBuffer[zindex] = iz;
+                            c = surf.getSample<false>(u, v, mipLevel);
+                            if (c.a != 0) {
+                                *(Color*)(framebuffer + pos) = c;
+                                zBuffer[zindex] = iz;
+                            }
                         }
                     }
                 }
