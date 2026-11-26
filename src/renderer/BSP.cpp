@@ -568,7 +568,7 @@ namespace BSP
 			return leakDetected;
 		}
 
-		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs)
+		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, FaceList& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs)
 		{
 			if (nodeIndex == -1) {
 				return;
@@ -590,7 +590,7 @@ namespace BSP
 
 						bspFace.face.debugColor = Color::getDebugColor(bspFace.leafIdx);
 
-						renderFaces.addGeometry(bspFace.face);
+						renderFaces.push_back(bspFace.face);
 					}
 				}
 			}
@@ -775,8 +775,10 @@ namespace BSP
 	}
 
 
-	void render(const Tree& tree, const Camera& cam, RenderFaces& renderFaces, const BoolList& pvsTableRow)
+	void render(const Tree& tree, const Camera& cam, FaceList& renderFaces, const BoolList& pvsTableRow)
 	{
+		renderFaces.clear();
+
 		PlaneList frustrum = cam.getFrustrum();
 
 		bool usePvs = !(getLeafIdx(tree, cam.position) == 0);

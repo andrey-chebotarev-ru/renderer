@@ -132,6 +132,9 @@ uint32_t WadLoader::loadTexture(std::ifstream& file, const WadLump& lump, uint64
 		);
 	}
 
+	// В GoldSrc текстуры с прозрачностью начинаются с '{'
+	const bool masked = (lump.name[0] == '{');
+
 	// 4 массива пикселей RGB888
 	std::array<std::vector<Color>, 4> mipPixels;
 
@@ -153,9 +156,6 @@ uint32_t WadLoader::loadTexture(std::ifstream& file, const WadLump& lump, uint64
 		auto& pixels = mipPixels[mip];
 		pixels.resize(pixelCount);
 
-		// В GoldSrc текстуры с прозрачностью начинаются с '{'
-		const bool masked = (lump.name[0] == '{');
-
 		// Маппинг индекс -> Color
 		// Индекс прозрачных пикселей - 255
 		for (size_t p = 0; p < pixelCount; p++) {
@@ -174,7 +174,7 @@ uint32_t WadLoader::loadTexture(std::ifstream& file, const WadLump& lump, uint64
 	pointer[2] = mipPixels[2].data();
 	pointer[3] = mipPixels[3].data();
 
-	return textureManager.add(width, height, pointer);
+	return textureManager.add(width, height, pointer, masked);
 }
 
 void WadLoader::loadWad(const std::filesystem::path& path, const StringList& names, IndicesList& remap, size_t& remaining)

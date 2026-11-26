@@ -90,7 +90,7 @@ private:
     size_t pitch;
 
     static const float invTable[16];
-    
+    static const float mipScales[4];
     
     float* zBuffer;
 
@@ -102,10 +102,13 @@ private:
     Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
     
-    template<bool depthTest, bool screenDoor>
+    template<bool depthTest>
     void drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel);
     
     template<bool depthTest, bool screenDoor>
     void drawColoredSpan(const Span& span, const Color& fillColor);
+
+    template<bool depthTest, bool masked, bool clamp>
+    inline void drawBlock(int blockLength, int fbOffset, int zbOffset, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, const CachedSurface& surf, uint8_t mipLevel);
 };
 

@@ -111,6 +111,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     IndicesList remap = wadLoader.load(map.textureNames, std::format("maps/{}.wad", name), "common");
 
+    gameRenderer.prepare(map, remap);
+
+    /*
     for (auto& face : map.tree.faces) {
         face.face.texIdx = remap[face.face.texIdx];
 
@@ -163,13 +166,13 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
                 face.surfIdx = surfaceCache.cache(face, tex);
             }
 
-            renderEntity.entity = ent;
+     //       renderEntity.entity = ent;
 
             renderEntities.push_back(renderEntity);
         }
     }
 
-
+    */
 
     std::cout << "Press any key...\n";
     _getch();
@@ -456,7 +459,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         
        
 
-        count = gameRenderer.drawScene(map, models, renderEntities, camera, fill, !updatePvs);
+        count = gameRenderer.drawScene(camera, fill, !updatePvs);
 
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */

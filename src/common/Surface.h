@@ -16,6 +16,7 @@ public:
     int32_t widths[4];
     int32_t heights[4];
     Color* pixels[4];
+    bool masked;
 
     template<bool clamp>
     inline const Color& getSample(float s, float t, uint8_t mipLevel) const

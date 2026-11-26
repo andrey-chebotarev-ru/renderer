@@ -3,6 +3,7 @@
 #include <cmath>
 
 const float Rasterizer::invTable[16] = { 1.0f, 1.0f / 2, 1.0f / 3, 1.0f / 4, 1.0f / 5, 1.0f / 6, 1.0f / 7, 1.0f / 8, 1.0f / 9, 1.0f / 10, 1.0f / 11, 1.0f / 12, 1.0f / 13, 1.0f / 14, 1.0f / 15, 1.0f / 16 };
+const float Rasterizer::mipScales[4] = { 1.0f, 0.5f, 0.25f, 0.125f };
 
 void Rasterizer::setFramebuffer(int pitch, uint8_t* framebuffer)
 {
@@ -98,12 +99,10 @@ void Rasterizer::setPixel(int x, int y, const Color& color)
     *(Color*)(framebuffer + pos) = color;
 }
 
-template<bool depthTest, bool screenDoor>
+template<bool depthTest>
 void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
 {
-    static const float scales[4] = { 1.0f, 0.5f, 0.25f, 0.125f };
-
-    float scale = scales[mipLevel];
+    float scale = mipScales[mipLevel];
 
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -184,37 +183,28 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
         float vMin = std::min(vStart, vEnd);
         float vMax = std::max(vStart, vEnd);
 
-        Color c;
-        if (uMin >= 0.0f && uMax < width && vMin >= 0.0f && vMax < height) {
-            
+        bool clamp = (uMin < 0.0f || uMax >= width || vMin < 0.0f || vMax >= height);
+
+        if (clamp) {
+
+           // drawBlock<depthTest, true, false>(blockLength, pos, zindex, uStart, vStart, izStart, duDx, dvDx, span.izStep, surf, mipLevel);
+           // zindex += blockLength;
+           // pos += (blockLength << 2);
+
             for (int i = 0; i < blockLength; i++) {
 
-                if constexpr (depthTest) {
-                    if (zBuffer[zindex] < iz) {
-                        if constexpr (screenDoor) {
-                            if (((x ^ span.y) & 1)) {
-                                *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
-                                zBuffer[zindex] = iz;
-                            }
-                        }
-                        else {
-                            c = surf.getSample<false>(u, v, mipLevel);
-                            if (c.a != 0) {
-                                *(Color*)(framebuffer + pos) = c;
-                                zBuffer[zindex] = iz;
-                            }
-                        }
-                    }
-                }
-                else {
-                    if constexpr (screenDoor) {
-                        if (((x ^ span.y) & 1)) {
-                            *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
-                            zBuffer[zindex] = iz;
-                        }
-                    }
-                    else {
-                        *(Color*)(framebuffer + pos) = surf.getSample<false>(u, v, mipLevel);
+                if (!depthTest || zBuffer[zindex] < iz) {
+
+                    int s = static_cast<int>(u);
+                    int t = static_cast<int>(v);
+
+                    s = std::clamp(s, 0, width - 1);
+                    t = std::clamp(t, 0, height - 1);
+
+                    const Color* c = &surf.pixels[mipLevel][t * width + s];
+
+                    if (!surf.masked || c->a != 0) {
+                        *(Color*)(framebuffer + pos) = *c;
                         zBuffer[zindex] = iz;
                     }
                 }
@@ -222,43 +212,28 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
                 u += duDx;
                 v += dvDx;
                 iz += span.izStep;
-
-                x++;
-
-                zindex++;
                 pos += 4;
-            }
-
+                zindex++;
+            }                       
         }
         else {
+
+            //drawBlock<depthTest, true, true>(blockLength, pos, zindex, uStart, vStart, izStart, duDx, dvDx, span.izStep, surf, mipLevel);
+            //zindex += blockLength;
+            //pos += (blockLength << 2);
+
+
             for (int i = 0; i < blockLength; i++) {
 
-                if constexpr (depthTest) {
-                    if (zBuffer[zindex] < iz) {
-                        if constexpr (screenDoor) {
-                            if (((x ^ span.y) & 1)) {
-                                *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
-                                zBuffer[zindex] = iz;
-                            }
-                        }
-                        else {
-                            c = surf.getSample<true>(u, v, mipLevel);
-                            if (c.a != 0) {
-                                *(Color*)(framebuffer + pos) = c;
-                                zBuffer[zindex] = iz;
-                            }
-                        }
-                    }
-                }
-                else {
-                    if constexpr (screenDoor) {
-                        if (((x ^ span.y) & 1)) {
-                            *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
-                            zBuffer[zindex] = iz;
-                        }
-                    }
-                    else {
-                        *(Color*)(framebuffer + pos) = surf.getSample<true>(u, v, mipLevel);
+                if (!depthTest || zBuffer[zindex] < iz) {
+
+                    int s = static_cast<int>(u);
+                    int t = static_cast<int>(v);
+
+                    const Color* c = &surf.pixels[mipLevel][t * width + s];
+                    
+                    if (!surf.masked || c->a != 0) {
+                        *(Color*)(framebuffer + pos) = *c;
                         zBuffer[zindex] = iz;
                     }
                 }
@@ -266,20 +241,58 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
                 u += duDx;
                 v += dvDx;
                 iz += span.izStep;
-
-                x++;
-
-                zindex++;
                 pos += 4;
+                zindex++;
             }
-
         }
 
-        
+        x += blockLength;
 
         uzStart = uzEnd;
         vzStart = vzEnd;
         izStart = izEnd;
+    }
+}
+
+template<bool depthTest, bool masked, bool clamp>
+inline void Rasterizer::drawBlock(int blockLength, int fbOffset, int zbOffset, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, const CachedSurface& surf, uint8_t mipLevel)
+{
+    float u = uStart;
+    float v = vStart;
+    float iz = izStart;
+
+    Color* fbPtr = (Color*)(framebuffer + fbOffset);
+    float* zbPtr = (zBuffer + zbOffset);
+
+    for (int i = 0; i < blockLength; i++) {
+        
+        if (!depthTest || *zbPtr < iz) {
+            
+            int w = surf.widths[mipLevel];
+            int h = surf.heights[mipLevel];
+            
+            int s = static_cast<int>(u);
+            int t = static_cast<int>(v);
+
+            if constexpr (clamp) {
+                s = std::clamp(s, 0, w - 1);
+                t = std::clamp(t, 0, h - 1);
+            }
+
+            const Color* c = &surf.pixels[mipLevel][t * w + s];
+            
+            if (!masked || c->a != 0) {
+                *fbPtr = *c;
+                *zbPtr = iz;
+            }  
+        }
+       
+        u += uStep;
+        v += vStep;
+        iz += izStep;
+        
+        ++fbPtr;
+        ++zbPtr;
     }
 }
 
@@ -412,8 +425,9 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t 
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawSpan<depthTest, screenDoor>(span, surf, mipLevel);
 
+            drawSpan<depthTest>(span, surf, mipLevel);
+            
             longEdge.step();
             topEdge.step();
         }
@@ -424,7 +438,8 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t 
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawSpan<depthTest, screenDoor>(span, surf, mipLevel);
+
+            drawSpan<depthTest>(span, surf, mipLevel);
             
             longEdge.step();
             bottomEdge.step();

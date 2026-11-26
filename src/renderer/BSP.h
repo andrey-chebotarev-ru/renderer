@@ -281,7 +281,7 @@ namespace BSP
 		Splitter findSplitter(const FaceList& polys);
 
 		void buildRecursive(const FaceList& faces, const Context& ctx);
-		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, RenderFaces& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs);
+		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, FaceList& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs);
 
 		PlaneList getPlanes(const Bounds::AABB3& aabb);
 		FaceList createWorldBounds(const Bounds::AABB3& aabb, float padding, bool flip = false);
@@ -298,7 +298,7 @@ namespace BSP
 	}
 
 	bool compile(Tree& tree, FaceList& polys, const Vec3List& playerStart);
-	void render(const Tree& tree, const Camera& cam, RenderFaces& renderFaces, const BoolList& pvsTableRow);
+	void render(const Tree& tree, const Camera& cam, FaceList& renderFaces, const BoolList& pvsTableRow);
 	FaceList renderPortals(const Tree& tree, const Vec3& pos);
 	LabelList renderPortalLabels(const Tree& tree, const Vec3& pos);
 

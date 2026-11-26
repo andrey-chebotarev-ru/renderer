@@ -7,7 +7,7 @@
 
 struct RenderEntity
 {
-	Entity entity;
+	FaceList faces;
 	IndicesList touchedLeaves;
 };
 

@@ -50,6 +50,8 @@ size_t SurfaceCache::cache(const Face& face, const Texture& tex)
     surf.startU = startU;
     surf.startV = startV;
 
+    surf.masked = tex.masked;
+
     for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
         surf.widths[mipLevel] = cacheWidth >> mipLevel;
         surf.heights[mipLevel] = cacheHeight >> mipLevel;

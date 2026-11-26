@@ -24,8 +24,8 @@ class Texture
 public:
     Texture() {}
 
-    Texture(size_t width, size_t height, Color* pixels[4])
-        : width(width), height(height)
+    Texture(size_t width, size_t height, Color* pixels[4], bool masked)
+        : width(width), height(height), masked(masked)
     {
         this->pixels[0] = pixels[0];
         this->pixels[1] = pixels[1];
@@ -49,42 +49,6 @@ public:
         return height;
     }
 
-    inline const Color& getSample(float u, float v, uint8_t mipLevel) const
-    {
-        /*
-        int x = int(u) & (width - 1);
-        int y = int(v) & (height - 1);
-
-        int offset = x + (y << shiftWidth);
-        */
-
-        const int w = static_cast<int>(width >> mipLevel);
-        const int h = static_cast<int>(height >> mipLevel);
-
-        int x = static_cast<int>(std::floor(u * scale[mipLevel])) % w;
-        int y = static_cast<int>(std::floor(v * scale[mipLevel])) % h;
-
-        if (y < 0) {
-            y += h;
-        }
-
-        if (x < 0) {
-            x += w;
-        }
-
-        int offset = x + (y * w);
-
-
-        /*
-        int x = static_cast<int>(floorf(u));
-        int y = static_cast<int>(floorf(v));
-
-        x = ((x % width) + width) % width;
-        y = ((y % height) + height) % height;
-        */
-        return pixels[mipLevel][y * w + x];
-    }
-
     size_t width;
     size_t height;
 
@@ -92,6 +56,8 @@ public:
 
     Color* pixels[4];
     float scale[4];
+
+    bool masked;
 
 };
 
@@ -130,7 +96,7 @@ public:
             pointers.push_back(pointer[mipLevel]);
         }
         
-        textures.push_back(Texture(width, height, pointer));
+        textures.push_back(Texture(width, height, pointer, false));
     }
 
     ~TextureManager()
@@ -140,7 +106,7 @@ public:
         }
     }
 
-    uint32_t add(size_t width, size_t height, Color* pixels[4])
+    uint32_t add(size_t width, size_t height, Color* pixels[4], bool masked)
     {
         size_t texIdx = textures.size();
         
@@ -155,7 +121,7 @@ public:
             pointers.push_back(pointer[mipLevel]);
         }
 
-        textures.push_back(Texture(width, height, pointer));
+        textures.push_back(Texture(width, height, pointer, masked));
         return texIdx;
     }
 
