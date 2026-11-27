@@ -17,7 +17,6 @@
 
 #include "Clipper.h"
 #include "ViewportClipper.h"
-#include "RenderFaces.h"
 #include "Rasterizer.h"
 #include "RenderEntity.h"
 
@@ -104,12 +103,6 @@ private:
     
 
     float pitchOffset = 0.0f;
-
-    
-
-    
-    
-    int drawModel(const Model& model, const Camera& cam);
 
 protected:
 

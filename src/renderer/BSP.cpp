@@ -9,8 +9,6 @@
 
 namespace BSP
 {
-	bool clipByFrustrum = true;
-
 	namespace
 	{
 		/*
@@ -70,24 +68,6 @@ namespace BSP
 			planes.push_back(Plane(Vec3(0, 0, 1), aabb.min.z));
 
 			return planes;
-		}
-
-		bool aabbInFrustrum(const Bounds::AABB3& aabb, const PlaneList& frustrum)
-		{
-			for (const auto& plane : frustrum) {
-
-				Vec3 p;
-
-				p.x = plane.normal.x >= 0 ? aabb.max.x : aabb.min.x;
-				p.y = plane.normal.y >= 0 ? aabb.max.y : aabb.min.y;
-				p.z = plane.normal.z >= 0 ? aabb.max.z : aabb.min.z;
-
-				if (Geometry::test(p, plane, 0.0f) == Side::Back) {
-					return false;
-				}
-			}
-
-			return true;
 		}
 
 		/*
@@ -568,7 +548,7 @@ namespace BSP
 			return leakDetected;
 		}
 
-		void traverse(const Tree& tree, int nodeIndex, const Vec3& pos, FaceList& renderFaces, const PlaneList& frustrum, const BoolList& pvsTableRow, bool usePvs)
+		void traverse(const Tree& tree, int nodeIndex, const Camera& cam, FaceList& renderFaces, const BoolList& pvsTableRow, bool usePvs)
 		{
 			if (nodeIndex == -1) {
 				return;
@@ -576,7 +556,7 @@ namespace BSP
 
 			const Node& node = tree.getNode(nodeIndex);
 
-			if (!aabbInFrustrum(node.aabb, frustrum) && clipByFrustrum) {
+			if (!cam.aabbInFrustrum(node.aabb)) {
 				return;
 			}
 
@@ -596,19 +576,19 @@ namespace BSP
 			}
 			else
 			{
-				Side side = Geometry::test(pos, node.plane);
+				Side side = Geometry::test(cam.position, node.plane);
 
 				if (side == Side::Front) {
-					traverse(tree, node.backIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
-					traverse(tree, node.frontIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
+					traverse(tree, node.backIdx, cam, renderFaces, pvsTableRow, usePvs);
+					traverse(tree, node.frontIdx, cam, renderFaces, pvsTableRow, usePvs);
 				}
 				else if (side == Side::Back) {
-					traverse(tree, node.frontIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
-					traverse(tree, node.backIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
+					traverse(tree, node.frontIdx, cam, renderFaces, pvsTableRow, usePvs);
+					traverse(tree, node.backIdx, cam, renderFaces, pvsTableRow, usePvs);
 				}
 				else {
-					traverse(tree, node.frontIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
-					traverse(tree, node.backIdx, pos, renderFaces, frustrum, pvsTableRow, usePvs);
+					traverse(tree, node.frontIdx, cam, renderFaces, pvsTableRow, usePvs);
+					traverse(tree, node.backIdx, cam, renderFaces, pvsTableRow, usePvs);
 				}
 			}
 		}
@@ -779,65 +759,9 @@ namespace BSP
 	{
 		renderFaces.clear();
 
-		PlaneList frustrum = cam.getFrustrum();
-
 		bool usePvs = !(getLeafIdx(tree, cam.position) == 0);
 
-		traverse(tree, tree.rootNodeIdx, cam.position, renderFaces, frustrum, pvsTableRow, usePvs);
-		
-		/*
-		if (includePortals) {
-			int currentLeafIdx = getLeafIdx(tree, cam.position);
-			const Leaf& leaf = tree.getLeaf(currentLeafIdx);
-			for (int portalIdx : leaf.portalIdxs) {
-				const Portal& portal = tree.getPortal(portalIdx);
-				if (1) {
-					int otherLeafIdx = portal.frontLeafIdx == currentLeafIdx ? portal.backLeafIdx : portal.frontLeafIdx;
-					renderFaces.addGeometry(Face(portal.poly, -1, FaceType::Debug, Color::getDebugColor(currentLeafIdx + otherLeafIdx)));
-				}
-			}
-		}
-		*/
-	}
-
-	FaceList renderPortals(const Tree& tree, const Vec3& pos)
-	{
-		FaceList portalFaces;
-
-		portalFaces.clear();
-
-		int currentLeafIdx = getLeafIdx(tree, pos);
-		const Leaf& leaf = tree.getLeaf(currentLeafIdx);
-
-		for (int portalIdx : leaf.portalIdxs) {
-			const Portal& portal = tree.getPortal(portalIdx);
-			if (1) {
-				int otherLeafIdx = portal.frontLeafIdx == currentLeafIdx ? portal.backLeafIdx : portal.frontLeafIdx;
-				//portalFaces.push_back(Face(portal.poly, -1, FaceType::Debug, Color::getDebugColor(currentLeafIdx + otherLeafIdx)));
-			}
-		}
-
-		return portalFaces;
-	}
-
-	LabelList renderPortalLabels(const Tree& tree, const Vec3& pos)
-	{
-		LabelList portalLabels;
-		static char buf[256];
-
-		int currentLeafIdx = getLeafIdx(tree, pos);
-		const Leaf& leaf = tree.getLeaf(currentLeafIdx);
-
-		for (int portalIdx : leaf.portalIdxs) {
-			const Portal& portal = tree.getPortal(portalIdx);
-			if (1) {
-				int otherLeafIdx = portal.frontLeafIdx == currentLeafIdx ? portal.backLeafIdx : portal.frontLeafIdx;
-				sprintf_s(buf, "#%i %i <=> %i", portalIdx, currentLeafIdx, otherLeafIdx);
-				portalLabels.push_back(Label(portal.poly.getCenter(), Color(255, 0, 0), buf));
-			}
-		}
-
-		return portalLabels;
+		traverse(tree, tree.rootNodeIdx, cam, renderFaces, pvsTableRow, usePvs);
 	}
 
 	PortalList getPortalsInLeaf(const Tree& tree, int leafIdx)

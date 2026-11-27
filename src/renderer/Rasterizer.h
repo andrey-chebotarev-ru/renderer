@@ -38,7 +38,7 @@ public:
     float vzStep;
     float izStep;
 
-    void step()
+    inline void step()
     {
         x += xStep;
         uz += uzStep;
@@ -67,19 +67,19 @@ public:
 
     void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
 
-    template<bool depthTest, bool screenDoor>
+    template<bool depthTest>
     bool drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t mipLevel);
 
-    template<bool depthTest, bool screenDoor>
+    template<bool depthTest>
     bool drawColoredTriangle(Triangle2 tri, const Color& fillColor);
 
-    template<bool depthTest, bool screenDoor>
-    int drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
+    template<bool depthTest, bool translucent>
+    inline int drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
     
-    template<bool depthTest, bool screenDoor>
+    template<bool depthTest>
     int drawColoredPolygon(const Poly2D& poly, const Color& fillColor);
 
-    Color blend(const Color& dstColor, const Color& srcColor, float alpha);
+    static inline uint32_t blend(uint32_t src, uint32_t dst, uint32_t alpha);
     Color darken(const Color& color);
 
     void setPixel(int x, int y, const Color& color);
@@ -98,15 +98,17 @@ private:
 
     Debug debug;
 
-    EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
-    Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
+    inline EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
+    Span __forceinline makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
     
     template<bool depthTest>
-    void drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel);
+    inline void drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel);
     
-    template<bool depthTest, bool screenDoor>
-    void drawColoredSpan(const Span& span, const Color& fillColor);
+    inline void drawTranslucentSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel);
+
+    template<bool depthTest>
+    inline void drawColoredSpan(const Span& span, const Color& fillColor);
 
     template<bool depthTest, bool masked, bool clamp>
     inline void drawBlock(int blockLength, int fbOffset, int zbOffset, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, const CachedSurface& surf, uint8_t mipLevel);

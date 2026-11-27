@@ -2,6 +2,13 @@
 
 #include "BaseRenderer.h"
 
+struct RenderStat
+{
+	size_t polyCount = 0;
+	size_t trisCount = 0;
+	size_t entCount = 0;
+};
+
 class Renderer : public BaseRenderer
 {
 public:
@@ -12,16 +19,24 @@ public:
 
 	void prepare(const Map& inMap, const IndicesList& remap);
 
-	int drawFaces(const Camera& cam, bool debug);
-	int drawEntities(const Camera& cam, const BoolList& pvsRow, bool debug, bool fill);
+	bool checkEntityVisibility(const RenderEntity& ent, const Camera& cam, const BoolList& pvsRow);
 
-	int drawScene(const Camera& cam, bool debug, bool freezePvs);
+	void drawFaces(const FaceList& faces, const Camera& cam, bool fill, RenderStat& stat);
+	void drawEntities(const RenderEntityList& ents, const Camera& cam, const BoolList& pvsRow, RenderStat& stat);
+
+	RenderStat drawScene(const Camera& cam, bool debug, bool includePortals, bool updateWorldPVS, bool updateEntsPVS);
+
+	void drawPortals(const Camera& cam, RenderStat& stat);
+	void drawPortalLabels(const Camera& cam);
 	
 private:
 
 	Map map;
 
+	size_t currentLeafIdx;
+
 	RenderEntityList renderEntities;
+	RenderEntityList translucentEntities;
 	FaceList renderFaces;
 
 	const TextureManager& textureManager;

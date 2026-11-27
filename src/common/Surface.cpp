@@ -1,6 +1,6 @@
 #include "Surface.h"
 
-size_t SurfaceCache::cache(const Face& face, const Texture& tex)
+size_t SurfaceCache::cache(const Face& face, const Texture& tex, float amt)
 {
     constexpr int BLOCK = 16;
     float minU = face.poly.verts[0].uv.x;
@@ -47,10 +47,13 @@ size_t SurfaceCache::cache(const Face& face, const Texture& tex)
 
     CachedSurface surf;
 
+    surf.name = tex.name;
+
     surf.startU = startU;
     surf.startV = startV;
 
     surf.masked = tex.masked;
+    surf.alpha = amt;
 
     for (int mipLevel = 0; mipLevel < 4; mipLevel++) {
         surf.widths[mipLevel] = cacheWidth >> mipLevel;

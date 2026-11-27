@@ -24,8 +24,8 @@ class Texture
 public:
     Texture() {}
 
-    Texture(size_t width, size_t height, Color* pixels[4], bool masked)
-        : width(width), height(height), masked(masked)
+    Texture(const std::string& name, size_t width, size_t height, Color* pixels[4], bool masked)
+        : name(name), width(width), height(height), masked(masked)
     {
         this->pixels[0] = pixels[0];
         this->pixels[1] = pixels[1];
@@ -49,6 +49,8 @@ public:
         return height;
     }
 
+    std::string name;
+
     size_t width;
     size_t height;
 
@@ -58,7 +60,6 @@ public:
     float scale[4];
 
     bool masked;
-
 };
 
 using TextureList = std::vector<Texture>;
@@ -96,7 +97,7 @@ public:
             pointers.push_back(pointer[mipLevel]);
         }
         
-        textures.push_back(Texture(width, height, pointer, false));
+        textures.push_back(Texture("none", width, height, pointer, false));
     }
 
     ~TextureManager()
@@ -106,7 +107,7 @@ public:
         }
     }
 
-    uint32_t add(size_t width, size_t height, Color* pixels[4], bool masked)
+    uint32_t add(const std::string& name, size_t width, size_t height, Color* pixels[4], bool masked)
     {
         size_t texIdx = textures.size();
         
@@ -121,7 +122,7 @@ public:
             pointers.push_back(pointer[mipLevel]);
         }
 
-        textures.push_back(Texture(width, height, pointer, masked));
+        textures.push_back(Texture(name, width, height, pointer, masked));
         return texIdx;
     }
 

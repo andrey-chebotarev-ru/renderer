@@ -192,7 +192,6 @@
     <ClCompile Include="src\renderer\PVS.cpp" />
     <ClCompile Include="src\renderer\Rasterizer.cpp" />
     <ClCompile Include="src\renderer\Renderer.cpp" />
-    <ClCompile Include="src\renderer\RenderFaces.cpp" />
     <ClCompile Include="src\renderer\ViewportClipper.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -226,7 +225,6 @@
     <ClInclude Include="src\renderer\Rasterizer.h" />
     <ClInclude Include="src\renderer\RenderEntity.h" />
     <ClInclude Include="src\renderer\Renderer.h" />
-    <ClInclude Include="src\renderer\RenderFaces.h" />
     <ClInclude Include="src\renderer\ViewportClipper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

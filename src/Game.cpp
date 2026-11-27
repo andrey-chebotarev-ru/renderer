@@ -14,7 +14,6 @@
 #include "common/Vector.h"
 #include "common/Camera.h"
 #include "common/Model.h"
-#include "renderer/RenderFaces.h"
 #include "renderer/BSP.h"
 #include "common/Debug.h"
 #include "common/Math.h"
@@ -52,34 +51,23 @@ static Debug debug(&sdlRenderer);
 static SurfaceCache surfaceCache;
 static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, fov, nearPlaneDistance, farPlaneDistance, textureManager, surfaceCache, debug);
 static Camera camera = Camera(fov, nearPlaneDistance, farPlaneDistance);
-static std::vector<Model> models;
-static RenderFaces world;
 static Map map;
 static ResourceLoader loader;
-static PVS pvs(map.tree);
 static WadLoader wadLoader(textureManager);
 
 
 static bool fill = false;
 static bool drawPortals = false;
-static bool renderOnlyCurrentLeaf = false;
-static float pitchOffset = 0.0f;
+static bool updateWorldPVS = true;
+static bool updateEntsPVS = true;
+
+
 
 static MapBuilder mapBuilder;
 
-PVSTable pvsTable;
-BoolList* pvsRow = nullptr;
-
-
 static bool fullscreen = true;
 
-static bool leaked = false;
-static bool update = true;
-static bool updatePvs = true;
-
 const double targetFrameTime = 1000.0 / 100.0;
-
-static RenderEntityList renderEntities;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
@@ -113,67 +101,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     gameRenderer.prepare(map, remap);
 
-    /*
-    for (auto& face : map.tree.faces) {
-        face.face.texIdx = remap[face.face.texIdx];
-
-        const Texture& tex = textureManager.get(face.face.texIdx);
-
-        float minU = face.face.poly.verts[0].uv.x;
-        float minV = face.face.poly.verts[0].uv.y;
-
-        for (const auto& vert : face.face.poly.verts) {
-            minU = std::min(minU, vert.uv.x);
-            minU = std::min(minV, vert.uv.y);
-        }
-
-        float offsetU = -std::floor(minU / tex.getWidth()) * tex.getWidth();
-        float offsetV = -std::floor(minV / tex.getHeight()) * tex.getHeight();
-
-        for (auto& vert : face.face.poly.verts) {
-            vert.uv.x += offsetU;
-            vert.uv.y += offsetV;
-        }
-    }
-
-
-
-    Debug::printf("Caching surfaces...");
-
-    for (auto& face : map.tree.faces) {
-        const Texture& tex = textureManager.get(face.face.texIdx);
-        face.face.surfIdx = surfaceCache.cache(face.face, tex);
-    }
-
-    
-
-    for (auto& ent : map.entities) {
-
-        if (ent.getClassname() == "worldspawn" || ent.getClassname().starts_with("func_")) {
-
-            if (!ent.faces.size()) {
-                continue;
-            }
-
-            RenderEntity renderEntity;
-            Bounds::AABB3 aabb = Bounds::create(ent.faces);
-
-            BSP::findTouchedLeaves(map.tree, map.tree.rootNodeIdx, aabb, renderEntity.touchedLeaves);
-
-            for (auto& face : ent.faces) {
-                face.texIdx = remap[face.texIdx];
-                const Texture& tex = textureManager.get(face.texIdx);
-                face.surfIdx = surfaceCache.cache(face, tex);
-            }
-
-     //       renderEntity.entity = ent;
-
-            renderEntities.push_back(renderEntity);
-        }
-    }
-
-    */
-
+  
     std::cout << "Press any key...\n";
     _getch();
     
@@ -240,13 +168,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
-static float boxYawSpeed = 0, boxPitchSpeed = 0;
-static bool boxMode = false;
-
 static bool moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 
 static bool ctrlPressed = false;
-static bool drawAABBs = false;
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
@@ -254,41 +178,20 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
     case SDL_EVENT_KEY_DOWN:
-        if (event->key.key == SDLK_PAGEUP) {
-            pitchOffset += 10;
-        }
-        if (event->key.key == SDLK_PAGEDOWN) {
-            pitchOffset -= 10;
-        }
-        if (event->key.key == SDLK_END) {
-            pitchOffset = 0;
-        }
         if (event->key.key == SDLK_LCTRL) {
             ctrlPressed = true;
         }
-        if (event->key.key == SDLK_P) {
-            renderOnlyCurrentLeaf = !renderOnlyCurrentLeaf;
-        }
-        if (event->key.key == SDLK_E) {
-            boxMode = !boxMode;
-        }
-        if (event->key.key == SDLK_Q) {
+        if (event->key.key == SDLK_1) {
             fill = !fill;
         }
-        if (event->key.key == SDLK_R) {
-            renderOnlyCurrentLeaf = !renderOnlyCurrentLeaf;
-        }
-        if (event->key.key == SDLK_F) {
+        if (event->key.key == SDLK_2) {
             drawPortals = !drawPortals;
         }
-        if (event->key.key == SDLK_C) {
-            drawAABBs = !drawAABBs;
+        if (event->key.key == SDLK_3) {
+            updateWorldPVS = !updateWorldPVS;
         }
-        if (event->key.key == SDLK_U) {
-            BSP::clipByFrustrum = !BSP::clipByFrustrum;
-        }
-        if (event->key.key == SDLK_V) {
-            updatePvs = !updatePvs;
+        if (event->key.key == SDLK_4) {
+            updateEntsPVS = !updateEntsPVS;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -301,18 +204,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_A) {
             moveLeft = true;
-        }
-        if (event->key.key == SDLK_LEFT) {
-            boxYawSpeed = 60;
-        }
-        if (event->key.key == SDLK_RIGHT) {
-            boxYawSpeed = -60;
-        }
-        if (event->key.key == SDLK_UP) {
-            boxPitchSpeed = -60;
-        }
-        if (event->key.key == SDLK_DOWN) {
-            boxPitchSpeed = 60;
         }
         if (event->key.key == SDLK_ESCAPE) {
             return SDL_APP_SUCCESS;
@@ -333,12 +224,6 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         }
         if (event->key.key == SDLK_A) {
             moveLeft = false;
-        }
-        if (event->key.key == SDLK_LEFT || event->key.key == SDLK_RIGHT) {
-            boxYawSpeed = 0;
-        }
-        if (event->key.key == SDLK_UP || event->key.key == SDLK_DOWN) {
-            boxPitchSpeed = 0;
         }
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -417,50 +302,16 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
 
     if (move.length() > 0.0f) {
-        move = Vec3::normalize(move);
-        if (!boxMode) {
-            camera.move(move * moveSpeed * deltaTime);
-        }
-        else {
-            models[0].move(move * moveSpeed * deltaTime);
-        }
-        
+        camera.move(move * moveSpeed * deltaTime);
     }
-
-    gameRenderer.setPitchOffset(pitchOffset);
-
-    if (boxYawSpeed != 0) {
-        models[0].yaw(boxYawSpeed * deltaTime);
-    }
-
-    if (boxPitchSpeed != 0) {
-        models[0].pitch(boxPitchSpeed * deltaTime);
-    }
-
-    int count = 0;
+  
+    RenderStat renderStat;
 
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
         gameRenderer.setFramebuffer(pitch, pixels);
 
-        world.clear();
-
-        
-
-        if (updatePvs) {
-            pvsRow = &map.pvsTable[BSP::getLeafIdx(map.tree, camera.position)];
-        }
-
-
-
-       
-
-
-        
-       
-
-        count = gameRenderer.drawScene(camera, fill, !updatePvs);
-
+        renderStat = gameRenderer.drawScene(camera, fill, drawPortals, updateWorldPVS, updateEntsPVS);
 
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
     }
@@ -477,7 +328,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_RenderTexture(sdlRenderer, sdlFramebufferTexture, NULL, &dst_rect);
 
     if (drawPortals) {
-        gameRenderer.drawLabels(BSP::renderPortalLabels(map.tree, camera.position), camera);
+        gameRenderer.drawPortalLabels(camera);
     }
     
     int leafIdx = BSP::getLeafIdx(map.tree, camera.position);
@@ -494,18 +345,12 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Triangles: %i", count);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 30, "Leaf: %i (%s) portals: %i", leafIdx, type.c_str(), leaf.portalIdxs.size());
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "%s", BSP::clipByFrustrum ? "Clip by frustrum enabled" : "");
-
-    if (leaked) {
-        SDL_RenderDebugText(sdlRenderer, 10, 60, "Leak detected!");
-    }
-
-    if (!update) {
-        SDL_RenderDebugText(sdlRenderer, 10, 70, "Hold");
-    }
-    
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Polys: %i Tris: %i Ents: %i", renderStat.polyCount, renderStat.trisCount, renderStat.entCount);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i (%s) Portals: %i", leafIdx, type.c_str(), leaf.portalIdxs.size());
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 60, "[1] Fill mode: %s", fill ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 70, "[2] Render portals: %s", drawPortals ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 80, "[3] World PVS: %s", updateWorldPVS ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 90, "[4] Ents PVS: %s", updateEntsPVS ? "On" : "Off");
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 

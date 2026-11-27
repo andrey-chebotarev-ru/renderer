@@ -2,6 +2,7 @@
 
 #include "Vector.h"
 #include "Plane.h"
+#include "Bounds.h"
 
 class Camera
 {
@@ -25,10 +26,15 @@ public:
     void roll(float deg);
     float roll();
 
+    void updateFrustrum();
+    bool aabbInFrustrum(const Bounds::AABB3& aabb) const;
+
     float fov;
     float nearPlaneDistance;
     float farPlaneDistance;
     
     Vec3 position;
     Vec3 rotation;
+
+    PlaneList frustrum;
 };

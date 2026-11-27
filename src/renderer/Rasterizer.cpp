@@ -55,9 +55,9 @@ EdgeStep2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
     return edge;
 }
 
-Span Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
+Span __forceinline Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
 {
-    Span span;
+    Span span{};
 
     const EdgeStep2D* left = &a;
     const EdgeStep2D* right = &b;
@@ -71,12 +71,16 @@ Span Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
     span.x1 = std::ceilf(left->x);
     span.x2 = std::ceilf(right->x);
 
-    float prestep = span.x1 - left->x;
-    float idx = 1.0f / (right->x - left->x);
+    if (span.x1 >= span.x2) {
+        return span;
+    }
 
-    span.uzStep = (right->uz - left->uz) * idx;
-    span.vzStep = (right->vz - left->vz) * idx;
-    span.izStep = (right->iz - left->iz) * idx;
+    float prestep = span.x1 - left->x;
+    float invDx = 1.0f / (right->x - left->x);
+
+    span.uzStep = (right->uz - left->uz) * invDx;
+    span.vzStep = (right->vz - left->vz) * invDx;
+    span.izStep = (right->iz - left->iz) * invDx;
 
     span.uz1 = left->uz + prestep * span.uzStep;
     span.vz1 = left->vz + prestep * span.vzStep;
@@ -100,7 +104,7 @@ void Rasterizer::setPixel(int x, int y, const Color& color)
 }
 
 template<bool depthTest>
-void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
+inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
 {
     float scale = mipScales[mipLevel];
 
@@ -187,10 +191,6 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
 
         if (clamp) {
 
-           // drawBlock<depthTest, true, false>(blockLength, pos, zindex, uStart, vStart, izStart, duDx, dvDx, span.izStep, surf, mipLevel);
-           // zindex += blockLength;
-           // pos += (blockLength << 2);
-
             for (int i = 0; i < blockLength; i++) {
 
                 if (!depthTest || zBuffer[zindex] < iz) {
@@ -217,11 +217,6 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
             }                       
         }
         else {
-
-            //drawBlock<depthTest, true, true>(blockLength, pos, zindex, uStart, vStart, izStart, duDx, dvDx, span.izStep, surf, mipLevel);
-            //zindex += blockLength;
-            //pos += (blockLength << 2);
-
 
             for (int i = 0; i < blockLength; i++) {
 
@@ -252,6 +247,153 @@ void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, uint8_t m
         vzStart = vzEnd;
         izStart = izEnd;
     }
+}
+
+inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurface& surf, uint8_t mipLevel)
+{
+    float scale = mipScales[mipLevel];
+
+    if (span.y < 0 || span.y >= screenHeight) {
+        return;
+    }
+
+    if ((span.x1 < 0 && span.x2 < 0) || (span.x1 >= screenWidth && span.x2 >= screenWidth)) {
+        return;
+    }
+
+    if (span.x1 == span.x2 || span.x2 <= span.x1) {
+        return;
+    }
+
+    int x1 = span.x1;
+    int x2 = span.x2;
+
+    float uzStart = span.uz1;
+    float vzStart = span.vz1;
+    float izStart = span.iz1;
+
+    if (x1 < 0)
+    {
+        uzStart = span.uz1 - x1 * span.uzStep;
+        vzStart = span.vz1 - x1 * span.vzStep;
+        izStart = span.iz1 - x1 * span.izStep;
+
+        x1 = 0;
+    }
+
+    if (x2 > screenWidth) {
+        x2 = screenWidth - 1;
+    }
+
+    int pos = (static_cast<unsigned long long>(x1) << 2) + span.y * pitch;
+    int zindex = x1 + span.y * screenWidth;
+
+    int x = x1;
+
+    int width = surf.widths[mipLevel];
+    int height = surf.heights[mipLevel];
+    uint32_t alpha = surf.alpha;
+
+    uint32_t* fbPtr = (uint32_t*)(&framebuffer[(x1 << 2) + span.y * pitch]);
+    uint32_t* pixels = (uint32_t*)(surf.pixels[mipLevel]);
+
+    while (x < x2)
+    {
+        int blockLength = std::min(x2 - x, 16);
+
+        float izEnd = izStart + span.izStep * blockLength;
+        float uzEnd = uzStart + span.uzStep * blockLength;
+        float vzEnd = vzStart + span.vzStep * blockLength;
+
+        float zStart = 1.0f / izStart;
+        float uStart = uzStart * zStart;
+        float vStart = vzStart * zStart;
+
+        // Оптимизация
+        uStart = (uStart - surf.startU) * scale;
+        vStart = (vStart - surf.startV) * scale;
+
+        float zEnd = 1.0f / izEnd;
+        float uEnd = uzEnd * zEnd;
+        float vEnd = vzEnd * zEnd;
+
+        // Оптимизация
+        uEnd = (uEnd - surf.startU) * scale;
+        vEnd = (vEnd - surf.startV) * scale;
+
+        float duDx = (uEnd - uStart) * invTable[blockLength - 1];
+        float dvDx = (vEnd - vStart) * invTable[blockLength - 1];
+
+        float u = uStart;
+        float v = vStart;
+        float iz = izStart;
+
+        // Оптимизация
+        float uMin = std::min(uStart, uEnd);
+        float uMax = std::max(uStart, uEnd);
+
+        // Оптимизация
+        float vMin = std::min(vStart, vEnd);
+        float vMax = std::max(vStart, vEnd);
+
+        bool clamp = (uMin < 0.0f || uMax >= width || vMin < 0.0f || vMax >= height);
+
+        if (clamp) {
+
+            for (int i = 0; i < blockLength; i++) {
+
+                if (zBuffer[zindex] < iz) {
+
+                    int s = static_cast<int>(u);
+                    int t = static_cast<int>(v);
+
+                    s = std::clamp(s, 0, width - 1);
+                    t = std::clamp(t, 0, height - 1);
+
+                   
+                    
+                    *fbPtr = blend(pixels[t * width + s], *fbPtr, alpha);
+                    
+                }
+
+                u += duDx;
+                v += dvDx;
+                iz += span.izStep;
+                pos += 4;
+                zindex++;
+                fbPtr++;
+            }
+        }
+        else {
+
+            for (int i = 0; i < blockLength; i++) {
+
+                if (zBuffer[zindex] < iz) {
+
+                    int s = static_cast<int>(u);
+                    int t = static_cast<int>(v);
+
+                    
+
+                    *fbPtr = blend(pixels[t * width + s], *fbPtr, alpha);
+                }
+
+                u += duDx;
+                v += dvDx;
+                iz += span.izStep;
+                pos += 4;
+                zindex++;
+                fbPtr++;
+            }
+        }
+
+        x += blockLength;
+
+        uzStart = uzEnd;
+        vzStart = vzEnd;
+        izStart = izEnd;
+    }
+
 }
 
 template<bool depthTest, bool masked, bool clamp>
@@ -296,8 +438,8 @@ inline void Rasterizer::drawBlock(int blockLength, int fbOffset, int zbOffset, f
     }
 }
 
-template<bool depthTest, bool screenDoor>
-void Rasterizer::drawColoredSpan(const Span& span, const Color& fill)
+template<bool depthTest>
+inline void Rasterizer::drawColoredSpan(const Span& span, const Color& fill)
 {
     if (span.y < 0 || span.y >= screenHeight) {
         return;
@@ -334,33 +476,11 @@ void Rasterizer::drawColoredSpan(const Span& span, const Color& fill)
 
     while (x < x2)
     {
-        if constexpr (depthTest) {
-            if (zBuffer[zindex] >= iz) {
-                if constexpr (screenDoor) {
-                    if (((x ^ span.y) & 1)) {
-                        *(Color*)(framebuffer + pos) = fill;
-                        zBuffer[zindex] = iz;
-                    }
-                }
-                else {
-                    *(Color*)(framebuffer + pos) = fill;
-                    zBuffer[zindex] = iz;
-                }
-            }
+        if (!depthTest || zBuffer[zindex] >= iz) {
+            *(Color*)(framebuffer + pos) = fill;
+            zBuffer[zindex] = iz;
         }
-        else {
-            if constexpr (screenDoor) {
-                if (((x ^ span.y) & 1)) {
-                    *(Color*)(framebuffer + pos) = fill;
-                    zBuffer[zindex] = iz;
-                }
-            }
-            else {
-                *(Color*)(framebuffer + pos) = fill;
-                zBuffer[zindex] = iz;
-            }
-        }
-       
+        
         zindex++;
         x++;
         pos += 4;
@@ -405,7 +525,7 @@ void Rasterizer::drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color
     }
 }
 
-template<bool depthTest, bool screenDoor>
+template<bool depthTest>
 bool Rasterizer::drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t mipLevel)
 {
     sortTriangle(tri);
@@ -450,12 +570,10 @@ bool Rasterizer::drawTriangle(Triangle2 tri, const CachedSurface& surf, uint8_t 
     return true;
 }
 
-template bool Rasterizer::drawColoredTriangle<false, false>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawColoredTriangle<true, false>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawColoredTriangle<false, true>(Triangle2 tri, const Color& fillColor);
-template bool Rasterizer::drawColoredTriangle<true, true>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<false>(Triangle2 tri, const Color& fillColor);
+template bool Rasterizer::drawColoredTriangle<true>(Triangle2 tri, const Color& fillColor);
 
-template<bool depthTest, bool screenDoor>
+template<bool depthTest>
 bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
 {
     sortTriangle(tri);
@@ -475,7 +593,7 @@ bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
 
         for (int y = topEdge.y1; y < topEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, topEdge);
-            drawColoredSpan<depthTest, screenDoor>(span, fillColor);
+            drawColoredSpan<depthTest>(span, fillColor);
             
             longEdge.step();
             topEdge.step();
@@ -487,7 +605,7 @@ bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
 
         for (int y = bottomEdge.y1; y < bottomEdge.y2; y++) {
             Span span = makeSpan(y, longEdge, bottomEdge);
-            drawColoredSpan<depthTest, screenDoor>(span, fillColor);
+            drawColoredSpan<depthTest>(span, fillColor);
             
             longEdge.step();
             bottomEdge.step();
@@ -498,38 +616,128 @@ bool Rasterizer::drawColoredTriangle(Triangle2 tri, const Color& fillColor)
 }
 
 template int Rasterizer::drawPolygon<false, false>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
-template int Rasterizer::drawPolygon<true, false>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
 template int Rasterizer::drawPolygon<false, true>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
+template int Rasterizer::drawPolygon<true, false>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
 template int Rasterizer::drawPolygon<true, true>(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel);
 
-template<bool depthTest, bool screenDoor>
+
+/*
+* Отрисовка выпуклого многоугольника
+* 
+* Находим верхнюю и нижнюю точки многоугольниа,
+* затем берм два ребра которые соединяются с верхней вершиной.
+* Определяем и отрисовываем диапазон до окончания ближ. ребра
+* и обновляем его. Повторяем до достижении нижней вершины. 
+*/
+template<bool depthTest, bool translucent>
 int Rasterizer::drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8_t mipLevel)
 {
-    Triangle2DList tris = poly.triangulate();
-    int count = 0;
+    const auto& verts = poly.verts;
+    const int count = verts.size();
 
-    for (int i = 0; i < tris.size(); i++) {
-        if (drawTriangle<depthTest, screenDoor>(tris[i], surf, mipLevel)) {
-            count++;
+    if (count < 3) {
+        return 0;
+    }
+
+    int topVertIdx = 0;
+    int bottomVertIdx = 0;
+
+    // Находим индекс самой верхней и самой нижней вершины
+    for (int i = 1; i < count; i++) {
+
+        if (verts[i].pos.y < verts[topVertIdx].pos.y) {
+            topVertIdx = i;
+        }
+
+        if (verts[i].pos.y > verts[bottomVertIdx].pos.y) {
+            bottomVertIdx = i;
         }
     }
 
-    return count;
+    int y = std::ceilf(verts[topVertIdx].pos.y);
+    const int maxY = std::ceilf(verts[bottomVertIdx].pos.y);
+
+    if (y >= maxY) {
+        return 0;
+    }
+
+    // Начинаем от самой верхней вершины,
+    // двигаясь по ребрам в противоположные стороны
+    int vert1Idx = topVertIdx;
+    int vert2Idx = topVertIdx;
+
+    EdgeStep2D edge1, edge2;
+
+    edge1.y2 = y;
+    edge2.y2 = y;
+
+    while (y < maxY) {
+
+        // Обход первой стороны
+        while (y >= edge1.y2) {
+            int nextVertIdx = vert1Idx + 1;
+
+            if (nextVertIdx == count) {
+                nextVertIdx = 0;
+            }
+
+            if (std::ceilf(verts[nextVertIdx].pos.y) > y) {
+                edge1 = makeEdge(verts[vert1Idx], verts[nextVertIdx]);
+            }
+
+            vert1Idx = nextVertIdx;
+        }
+
+        // Обход противополодной стороны
+        while (y >= edge2.y2) {
+            int nextVertIdx = vert2Idx - 1;
+
+            if (nextVertIdx < 0) {
+                nextVertIdx = count - 1;
+            }
+
+            if (std::ceilf(verts[nextVertIdx].pos.y) > y) {
+                edge2 = makeEdge(verts[vert2Idx], verts[nextVertIdx]);
+            }
+
+            vert2Idx = nextVertIdx;
+        }
+
+        const int endY = std::min(edge1.y2, edge2.y2);
+
+        // Отрисовка диапазона
+        while (y < endY) {
+
+            Span span = makeSpan(y, edge1, edge2);
+
+            if (translucent) {
+                drawTranslucentSpan(span, surf, mipLevel);
+            }
+            else {
+                drawSpan<depthTest>(span, surf, mipLevel);
+            }
+            
+            edge1.step();
+            edge2.step();
+
+            y++;
+        }
+    }
+
+    return 1;
 }
 
-template int Rasterizer::drawColoredPolygon<false, false>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawColoredPolygon<true, false>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawColoredPolygon<false, true>(const Poly2D& poly, const Color& fillColor);
-template int Rasterizer::drawColoredPolygon<true, true>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<false>(const Poly2D& poly, const Color& fillColor);
+template int Rasterizer::drawColoredPolygon<true>(const Poly2D& poly, const Color& fillColor);
 
-template<bool depthTest, bool screenDoor>
+template<bool depthTest>
 int Rasterizer::drawColoredPolygon(const Poly2D& poly, const Color& fillColor)
 {
     Triangle2DList tris = poly.triangulate();
     int count = 0;
     
     for (int i = 0; i < tris.size(); i++) {
-        if (drawColoredTriangle<depthTest, screenDoor>(tris[i], fillColor)) {
+        if (drawColoredTriangle<depthTest>(tris[i], fillColor)) {
             count++;
         }
     }
@@ -537,13 +745,21 @@ int Rasterizer::drawColoredPolygon(const Poly2D& poly, const Color& fillColor)
     return count;
 }
 
-Color Rasterizer::blend(const Color& dstColor, const Color& srcColor, float alpha)
+inline uint32_t Rasterizer::blend(uint32_t src, uint32_t dst, uint32_t alpha)
 {
-    int r = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
-    int g = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
-    int b = int(srcColor.r * alpha + dstColor.r * (1.0f - alpha));
+    const uint32_t inv = 256 - alpha;
 
-    return Color(r, g, b);
+    uint32_t rb = (
+        (src & 0x00FF00FF) * alpha +
+        (dst & 0x00FF00FF) * inv
+    ) >> 8;
+    
+    uint32_t ga = (
+        ((src >> 8) & 0x00FF00FF) * alpha +
+        ((dst >> 8) & 0x00FF00FF) * inv
+    );
+
+    return (rb & 0x00FF00FF) | (ga & 0Xff00ff00);
 }
 
 Color Rasterizer::darken(const Color& color)

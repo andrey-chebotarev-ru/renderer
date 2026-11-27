@@ -11,36 +11,21 @@
 class CachedSurface
 {
 public:
+    std::string name;
     int32_t startU;
     int32_t startV;
     int32_t widths[4];
     int32_t heights[4];
     Color* pixels[4];
     bool masked;
-
-    template<bool clamp>
-    inline const Color& getSample(float s, float t, uint8_t mipLevel) const
-    {
-        int w = widths[mipLevel];
-        int h = heights[mipLevel];
-        
-        int u = static_cast<int>(s);
-        int v = static_cast<int>(t);
-
-        if constexpr (clamp) {
-            u = std::clamp(u, 0, w - 1);
-            v = std::clamp(v, 0, h - 1);
-        }
-        
-        return pixels[mipLevel][v * w + u];
-    }
+    uint32_t alpha = 255;
 };
 
 class SurfaceCache
 {
 public:
     
-    size_t cache(const Face& face, const Texture& tex);
+    size_t cache(const Face& face, const Texture& tex, float amt);
     const CachedSurface& get(size_t idx) const;
 
     ~SurfaceCache();

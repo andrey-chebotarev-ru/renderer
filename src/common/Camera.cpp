@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "Math.h"
+#include "Geometry.h"
 
 Vec3 Camera::getForwardVector() const
 {
@@ -24,6 +25,8 @@ Vec3 Camera::getUpVector() const
 void Camera::move(const Vec3& dist)
 {
     position += dist;
+
+    updateFrustrum();
 }
 
 void Camera::pitch(float deg)
@@ -33,21 +36,27 @@ void Camera::pitch(float deg)
 
     rotation.x += Math::degToRad(deg);
     rotation.x = std::clamp(rotation.x, min, max);
+
+    updateFrustrum();
 }
 
 void Camera::yaw(float deg)
 {
     rotation.y += Math::degToRad(deg);
+
+    updateFrustrum();
 }
 
 void Camera::roll(float deg)
 {
     rotation.z += Math::degToRad(deg);
+
+    updateFrustrum();
 }
 
-PlaneList Camera::getFrustrum() const
+void Camera::updateFrustrum()
 {
-    PlaneList frustrum;
+    frustrum.clear();
 
     float fovSin = sinf(Math::degToRad(fov * 0.5f));
     float fovCos = cosf(Math::degToRad(fov * 0.5f));
@@ -72,6 +81,22 @@ PlaneList Camera::getFrustrum() const
     frustrum.push_back(Plane(bottomNormal, Vec3::dot(bottomNormal, position)));
     frustrum.push_back(Plane(nearNormal, Vec3::dot(nearNormal, nearPoint)));
     frustrum.push_back(Plane(farNormal, Vec3::dot(farNormal, farPoint)));
+}
 
-    return frustrum;
+bool Camera::aabbInFrustrum(const Bounds::AABB3& aabb) const
+{
+    for (const auto& plane : frustrum) {
+
+        Vec3 p;
+
+        p.x = plane.normal.x >= 0 ? aabb.max.x : aabb.min.x;
+        p.y = plane.normal.y >= 0 ? aabb.max.y : aabb.min.y;
+        p.z = plane.normal.z >= 0 ? aabb.max.z : aabb.min.z;
+
+        if (Geometry::test(p, plane, 0.0f) == Side::Back) {
+            return false;
+        }
+    }
+
+    return true;
 }

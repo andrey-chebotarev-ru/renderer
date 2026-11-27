@@ -12,7 +12,6 @@
 #include "common/Geometry.h"
 #include "common/Debug.h"
 
-#include "RenderFaces.h"
 #include "BSP.h"
 
 class PVS

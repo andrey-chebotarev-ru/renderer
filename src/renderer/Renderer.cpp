@@ -6,6 +6,7 @@
 void Renderer::prepare(const Map& inMap, const IndicesList& remap)
 {
     renderEntities.clear();
+    translucentEntities.clear();
 
     map = inMap;
 
@@ -39,7 +40,7 @@ void Renderer::prepare(const Map& inMap, const IndicesList& remap)
 
     for (auto& face : map.tree.faces) {
         const Texture& tex = textureManager.get(face.face.texIdx);
-        face.face.surfIdx = surfaceCache.cache(face.face, tex);
+        face.face.surfIdx = surfaceCache.cache(face.face, tex, 1.0f);
     }
 
 
@@ -57,23 +58,58 @@ void Renderer::prepare(const Map& inMap, const IndicesList& remap)
 
             BSP::findTouchedLeaves(map.tree, map.tree.rootNodeIdx, aabb, renderEntity.touchedLeaves);
 
+            std::string renderamt = ent.getProperty("renderamt");
+            int renderamtVal = 255;
+
+            bool translucent = false;
+
+            if (renderamt != "" && renderamt != "0") {
+                renderamtVal = atoi(renderamt.c_str());
+
+                if (renderamtVal != 255) {
+
+                    translucent = true;
+                    renderEntity.alpha = renderamtVal;
+                }
+            }
+
             for (auto& face : ent.faces) {
                 face.texIdx = remap[face.texIdx];
                 const Texture& tex = textureManager.get(face.texIdx);
-                face.surfIdx = surfaceCache.cache(face, tex);
+                face.surfIdx = surfaceCache.cache(face, tex, renderEntity.alpha);
                 renderEntity.faces.push_back(face);
             }
 
-            renderEntities.push_back(renderEntity);
+            renderEntity.aabb = Bounds::create(renderEntity.faces);
+
+            if (translucent) {
+                translucentEntities.push_back(renderEntity);
+            }
+            else {
+                renderEntities.push_back(renderEntity);
+            }
+
+            
         }
     }
 }
 
-int Renderer::drawFaces(const Camera& cam, bool fill)
+bool Renderer::checkEntityVisibility(const RenderEntity& ent, const Camera& cam, const BoolList& pvsRow)
 {
-    int count = 0;
+    if (cam.aabbInFrustrum(ent.aabb)) {
+        for (auto leafIdx : ent.touchedLeaves) {
+            if (pvsRow[leafIdx]) {
+                return true;
+            }
+        }
+    }
 
-    for (const auto& face : renderFaces) {
+    return false;
+}
+
+void Renderer::drawFaces(const FaceList& faces, const Camera& cam, bool fill, RenderStat& stat)
+{
+    for (const auto& face : faces) {
 
         if (face.type == FaceType::Bounds) {
             continue;
@@ -92,7 +128,7 @@ int Renderer::drawFaces(const Camera& cam, bool fill)
             }
 
             // Drawing
-            count += rasterizer.drawColoredPolygon<false, true>(renderPoly, fillColor);
+            stat.trisCount += rasterizer.drawColoredPolygon<false>(renderPoly, fillColor);
             drawWireframe(renderPoly, Color(0, 0, 0));
         }
         else
@@ -109,112 +145,118 @@ int Renderer::drawFaces(const Camera& cam, bool fill)
 
             // Drawing
             if (fill) {
-                count += rasterizer.drawColoredPolygon<false, false>(renderPoly, fillColor);
+                stat.trisCount += rasterizer.drawColoredPolygon<false>(renderPoly, fillColor);
                 drawWireframe(renderPoly, Color(0, 0, 0));
             }
             else {
-                if (notWater) {
-                    count += rasterizer.drawPolygon<false, false>(renderPoly, surf, mipLevel);
+                if (surf.alpha == 1.0f) {
+                    stat.polyCount += rasterizer.drawPolygon<false, false>(renderPoly, surf, mipLevel);
                 }
                 else {
-                    count += rasterizer.drawPolygon<false, true>(renderPoly, surf, mipLevel);
+                    stat.polyCount += rasterizer.drawPolygon<false, true>(renderPoly, surf, mipLevel);
                 }
             }
         }
 
     }
-
-    return count;
 }
 
-int Renderer::drawEntities(const Camera& cam, const BoolList& pvsRow, bool debug, bool fill)
+void Renderer::drawEntities(const RenderEntityList& ents, const Camera& cam, const BoolList& pvsRow, RenderStat& stat)
 {
-    int count = 0;
+    for (const auto &ent : ents) {
 
-    for (const auto &renderEntity : renderEntities) {
-
-        bool visible = false;
-
-        for (auto leafIdx : renderEntity.touchedLeaves) {
-            if (pvsRow[leafIdx]) {
-                visible = true;
-                break;
-            }
-        }
-
-        if (!visible) {
+        if (!checkEntityVisibility(ent, cam, pvsRow)) {
             continue;
         }
 
-        for (const auto& face : renderEntity.faces) {
+        for (const auto& face : ent.faces) {
 
             uint8_t mipLevel = 0;
 
-            if (face.type == FaceType::Debug)
-            {
-                Color fillColor = face.debugColor;
+            const CachedSurface& surf = surfaceCache.get(face.surfIdx);
+            Color fillColor = face.debugColor;
 
-                Poly2D renderPoly;
-
-                if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, false)) {
-                    continue;
-                }
-
-                // Drawing
-                count += rasterizer.drawColoredPolygon<false, true>(renderPoly, fillColor);
-                drawWireframe(renderPoly, Color(0, 0, 0));
-            }
-            else
-            {
-                const CachedSurface& surf = surfaceCache.get(face.surfIdx);
-                Color fillColor = face.debugColor;
-
-                bool notWater = (face.type != FaceType::Liquid);
-
-                Poly2D renderPoly;
-                if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, notWater)) {
-                    continue;
-                }
-
-                // Drawing
-                if (fill) {
-                    count += rasterizer.drawColoredPolygon<false, false>(renderPoly, fillColor);
-                    drawWireframe(renderPoly, Color(0, 0, 0));
-                }
-                else {
-                    if (notWater) {
-                        count += rasterizer.drawPolygon<true, false>(renderPoly, surf, mipLevel);
-                    }
-                    else {
-                        count += rasterizer.drawPolygon<true, true>(renderPoly, surf, mipLevel);
-                    }
-                }
+            Poly2D renderPoly;
+            if (!prepareForRendering(renderPoly, face.poly, cam, mipLevel, true)) {
+                continue;
             }
 
+            // Drawing
+
+            if (surf.alpha == 255) {
+                stat.polyCount += rasterizer.drawPolygon<true, false>(renderPoly, surf, mipLevel);
+            }
+            else {
+                stat.polyCount += rasterizer.drawPolygon<true, true>(renderPoly, surf, mipLevel);
+            }
+            
+            stat.entCount++;
         }
     }
-
-    return count;
 }
 
-int Renderer::drawScene(const Camera& cam, bool debug, bool freezePvs)
+RenderStat Renderer::drawScene(const Camera& cam, bool debug, bool includePortals, bool updateWorldPVS, bool updateEntsPVS)
 {
-    static const BoolList* pvsRowPtr = nullptr;
+    static const BoolList* worldPVSRow = nullptr;
+    static const BoolList* entitiesPVSRow = nullptr;
+
+    RenderStat stat;
 
     renderFaces.clear();
     rasterizer.clearBuffers();
 
-    size_t leafIdx = BSP::getLeafIdx(map.tree, cam.position);
+   currentLeafIdx = BSP::getLeafIdx(map.tree, cam.position);
 
-    if (!freezePvs) {
-        pvsRowPtr = &map.pvsTable[leafIdx];
+    if (updateWorldPVS) {
+        worldPVSRow = &map.pvsTable[currentLeafIdx];
     }
 
-    BSP::render(map.tree, cam, renderFaces, *pvsRowPtr);
+    if (updateEntsPVS) {
+        entitiesPVSRow = &map.pvsTable[currentLeafIdx];
+    }
 
-    int count = drawFaces(cam, debug);
+    BSP::render(map.tree, cam, renderFaces, *worldPVSRow);
 
-    count += drawEntities(cam, *pvsRowPtr, debug, false);
+    drawFaces(renderFaces, cam, debug, stat);
 
-    return count;
+    drawEntities(renderEntities, cam, *entitiesPVSRow, stat);
+    drawEntities(translucentEntities, cam, *entitiesPVSRow, stat);
+
+    if (includePortals) {
+        drawPortals(cam, stat);
+    }
+
+    return stat;
+}
+
+void Renderer::drawPortals(const Camera& cam, RenderStat& stat)
+{
+    const BSP::Leaf& leaf = map.tree.getLeaf(currentLeafIdx);
+
+    FaceList faces;
+
+    for (int portalIdx : leaf.portalIdxs) {
+        const BSP::Portal& portal = map.tree.getPortal(portalIdx);
+
+        faces.push_back(Face(portal.poly, -1, FaceType::Debug, Color::getDebugColor(currentLeafIdx + portal.frontLeafIdx)));
+    }
+
+    drawFaces(faces, cam, true, stat);
+}
+
+void Renderer::drawPortalLabels(const Camera& cam)
+{
+    const BSP::Leaf& leaf = map.tree.getLeaf(currentLeafIdx);
+
+    LabelList portalLabels;
+    static char buf[256];
+
+    for (int portalIdx : leaf.portalIdxs) {
+        const BSP::Portal& portal = map.tree.getPortal(portalIdx);
+
+        sprintf_s(buf, "#%i %i <=> %i", portalIdx, currentLeafIdx, portal.frontLeafIdx);
+        portalLabels.push_back(Label(portal.poly.getCenter(), Color::getDebugColor(currentLeafIdx - portal.frontLeafIdx), buf));
+    }
+
+    drawLabels(portalLabels, cam);
 }
