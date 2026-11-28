@@ -2,11 +2,20 @@
 
 #include "BaseRenderer.h"
 
+struct RenderOptions
+{
+	bool renderTextures = true;
+	bool renderEnts = true;
+	bool renderPortals = false;
+	bool updatePVS = true;
+};
+
 struct RenderStat
 {
 	size_t polyCount = 0;
 	size_t trisCount = 0;
 	size_t entCount = 0;
+	size_t spanCount = 0;
 };
 
 class Renderer : public BaseRenderer
@@ -24,7 +33,7 @@ public:
 	void drawFaces(const FaceList& faces, const Camera& cam, bool fill, RenderStat& stat);
 	void drawEntities(const RenderEntityList& ents, const Camera& cam, const BoolList& pvsRow, RenderStat& stat);
 
-	RenderStat drawScene(const Camera& cam, bool debug, bool includePortals, bool updateWorldPVS, bool updateEntsPVS);
+	RenderStat drawScene(const Camera& cam, const RenderOptions& opts);
 
 	void drawPortals(const Camera& cam, RenderStat& stat);
 	void drawPortalLabels(const Camera& cam);
@@ -41,4 +50,6 @@ private:
 
 	const TextureManager& textureManager;
 	SurfaceCache& surfaceCache;
+
+
 };

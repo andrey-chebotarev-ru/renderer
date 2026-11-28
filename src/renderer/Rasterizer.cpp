@@ -5,16 +5,19 @@
 const float Rasterizer::invTable[16] = { 1.0f, 1.0f / 2, 1.0f / 3, 1.0f / 4, 1.0f / 5, 1.0f / 6, 1.0f / 7, 1.0f / 8, 1.0f / 9, 1.0f / 10, 1.0f / 11, 1.0f / 12, 1.0f / 13, 1.0f / 14, 1.0f / 15, 1.0f / 16 };
 const float Rasterizer::mipScales[4] = { 1.0f, 0.5f, 0.25f, 0.125f };
 
-void Rasterizer::setFramebuffer(int pitch, uint8_t* framebuffer)
+const uint32_t* Rasterizer::getFrameBuffer() const
 {
-    this->pitch = pitch;
-    this->framebuffer = framebuffer;
+    return frameBuffer;
 }
 
 void Rasterizer::clearBuffers()
 {
-    memset(framebuffer, 0, screenHeight * pitch);
+    memset(frameBuffer, 0, screenWidth * screenHeight * 4);
     memset(zBuffer, 0, screenWidth * screenHeight * sizeof(float));
+
+    for (int i = 0; i < regionCount; i++) {
+        regions[i].clear();
+    }
 }
 
 void Rasterizer::sortTriangle(Triangle2& triangle)
@@ -55,7 +58,7 @@ EdgeStep2D Rasterizer::makeEdge(const Vertex2D& a, const Vertex2D& b)
     return edge;
 }
 
-Span __forceinline Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
+Span Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b)
 {
     Span span{};
 
@@ -93,14 +96,15 @@ Span __forceinline Rasterizer::makeSpan(int y, const EdgeStep2D& a, const EdgeSt
     return span;
 }
 
-void Rasterizer::setPixel(int x, int y, const Color& color)
+void Rasterizer::setPixel(uint32_t x, uint32_t y, const Color& color)
 {
     if (x < 0 || x >= screenWidth || y < 0 || y >= screenHeight) {
         return;
     }
 
-    int pos = (static_cast<unsigned long long>(x) << 2) + y * pitch;
-    *(Color*)(framebuffer + pos) = color;
+    size_t offset = x + y * screenWidth;
+
+    *(Color*)(frameBuffer + offset) = color;
 }
 
 template<bool depthTest>
@@ -140,13 +144,20 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
         x2 = screenWidth - 1;
     }
 
-    int pos = (static_cast<unsigned long long>(x1) << 2) + span.y * pitch;
-    int zindex = x1 + span.y * screenWidth;
-
     int x = x1;
 
     int width = surf.widths[mipLevel];
     int height = surf.heights[mipLevel];
+
+    uint32_t* fbPtr = &frameBuffer[x1 + span.y * screenWidth];
+    float* zbPtr = &zBuffer[x1 + span.y * screenWidth];
+    uint32_t* pixPtr = reinterpret_cast<uint32_t*>(surf.pixels[mipLevel]);
+    
+    float izStep = span.izStep;
+
+    float zStart = 1.0f / izStart;
+    float uStart = (uzStart * zStart - surf.startU) * scale;
+    float vStart = (vzStart * zStart - surf.startV) * scale;
 
     while (x < x2)
     {
@@ -156,14 +167,7 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
         float uzEnd = uzStart + span.uzStep * blockLength;
         float vzEnd = vzStart + span.vzStep * blockLength;
 
-        float zStart = 1.0f / izStart;
-        float uStart = uzStart * zStart;
-        float vStart = vzStart * zStart;
-
-        // Оптимизация
-        uStart = (uStart - surf.startU) * scale;
-        vStart = (vStart - surf.startV) * scale;
-
+        
         float zEnd = 1.0f / izEnd;
         float uEnd = uzEnd * zEnd;
         float vEnd = vzEnd * zEnd;
@@ -193,7 +197,7 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
 
             for (int i = 0; i < blockLength; i++) {
 
-                if (!depthTest || zBuffer[zindex] < iz) {
+                if (!depthTest || *zbPtr < iz) {
 
                     int s = static_cast<int>(u);
                     int t = static_cast<int>(v);
@@ -201,47 +205,53 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
                     s = std::clamp(s, 0, width - 1);
                     t = std::clamp(t, 0, height - 1);
 
-                    const Color* c = &surf.pixels[mipLevel][t * width + s];
+                    const uint32_t c = pixPtr[t * width + s];
 
-                    if (!surf.masked || c->a != 0) {
-                        *(Color*)(framebuffer + pos) = *c;
-                        zBuffer[zindex] = iz;
+                    if (!surf.masked || (c & 0xFF) != 0) {
+                        *fbPtr = c;
+                        *zbPtr = iz;
                     }
                 }
 
                 u += duDx;
                 v += dvDx;
-                iz += span.izStep;
-                pos += 4;
-                zindex++;
-            }                       
+                iz += izStep;
+                fbPtr++;
+                zbPtr++;
+                
+            }
         }
         else {
 
             for (int i = 0; i < blockLength; i++) {
 
-                if (!depthTest || zBuffer[zindex] < iz) {
+                if (!depthTest || *zbPtr < iz) {
 
                     int s = static_cast<int>(u);
                     int t = static_cast<int>(v);
 
-                    const Color* c = &surf.pixels[mipLevel][t * width + s];
                     
-                    if (!surf.masked || c->a != 0) {
-                        *(Color*)(framebuffer + pos) = *c;
-                        zBuffer[zindex] = iz;
+                    const uint32_t c = pixPtr[t * width + s];
+
+                    if (!surf.masked || (c & 0xFF) != 0) {
+                        *fbPtr = c;
+                        *zbPtr = iz;
                     }
                 }
 
                 u += duDx;
                 v += dvDx;
-                iz += span.izStep;
-                pos += 4;
-                zindex++;
+                iz += izStep;
+                fbPtr++;
+                zbPtr++;
+            
             }
         }
 
         x += blockLength;
+
+        uStart = uEnd;
+        vStart = vEnd;
 
         uzStart = uzEnd;
         vzStart = vzEnd;
@@ -285,17 +295,23 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
         x2 = screenWidth - 1;
     }
 
-    int pos = (static_cast<unsigned long long>(x1) << 2) + span.y * pitch;
-    int zindex = x1 + span.y * screenWidth;
-
     int x = x1;
 
     int width = surf.widths[mipLevel];
     int height = surf.heights[mipLevel];
-    uint32_t alpha = surf.alpha;
+    
+    uint32_t* fbPtr = &frameBuffer[x1 + span.y * screenWidth];
+    float* zbPtr = &zBuffer[x1 + span.y * screenWidth];
+    uint32_t* pixPtr = reinterpret_cast<uint32_t*>(surf.pixels[mipLevel]);
 
-    uint32_t* fbPtr = (uint32_t*)(&framebuffer[(x1 << 2) + span.y * pitch]);
-    uint32_t* pixels = (uint32_t*)(surf.pixels[mipLevel]);
+    float izStep = span.izStep;
+
+    float zStart = 1.0f / izStart;
+    float uStart = (uzStart * zStart - surf.startU) * scale;
+    float vStart = (vzStart * zStart - surf.startV) * scale;
+    
+    const uint32_t alpha = surf.alpha;
+    const uint32_t invAlpha = 256 - alpha;
 
     while (x < x2)
     {
@@ -304,14 +320,6 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
         float izEnd = izStart + span.izStep * blockLength;
         float uzEnd = uzStart + span.uzStep * blockLength;
         float vzEnd = vzStart + span.vzStep * blockLength;
-
-        float zStart = 1.0f / izStart;
-        float uStart = uzStart * zStart;
-        float vStart = vzStart * zStart;
-
-        // Оптимизация
-        uStart = (uStart - surf.startU) * scale;
-        vStart = (vStart - surf.startV) * scale;
 
         float zEnd = 1.0f / izEnd;
         float uEnd = uzEnd * zEnd;
@@ -342,7 +350,7 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
 
             for (int i = 0; i < blockLength; i++) {
 
-                if (zBuffer[zindex] < iz) {
+                if (*zbPtr < iz) {
 
                     int s = static_cast<int>(u);
                     int t = static_cast<int>(v);
@@ -350,44 +358,42 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
                     s = std::clamp(s, 0, width - 1);
                     t = std::clamp(t, 0, height - 1);
 
-                   
-                    
-                    *fbPtr = blend(pixels[t * width + s], *fbPtr, alpha);
-                    
+                    *fbPtr = blend(pixPtr[t * width + s], *fbPtr, alpha);
                 }
 
                 u += duDx;
                 v += dvDx;
-                iz += span.izStep;
-                pos += 4;
-                zindex++;
+                iz += izStep;
+
                 fbPtr++;
+                zbPtr++;
             }
         }
         else {
 
             for (int i = 0; i < blockLength; i++) {
 
-                if (zBuffer[zindex] < iz) {
+                if (*zbPtr < iz) {
 
                     int s = static_cast<int>(u);
                     int t = static_cast<int>(v);
 
-                    
-
-                    *fbPtr = blend(pixels[t * width + s], *fbPtr, alpha);
+                    *fbPtr = blend(pixPtr[t * width + s], *fbPtr, alpha);
                 }
 
                 u += duDx;
                 v += dvDx;
-                iz += span.izStep;
-                pos += 4;
-                zindex++;
+                iz += izStep;
+
                 fbPtr++;
+                zbPtr++;
             }
         }
 
         x += blockLength;
+
+        uStart = uEnd;
+        vStart = vEnd;
 
         uzStart = uzEnd;
         vzStart = vzEnd;
@@ -403,7 +409,7 @@ inline void Rasterizer::drawBlock(int blockLength, int fbOffset, int zbOffset, f
     float v = vStart;
     float iz = izStart;
 
-    Color* fbPtr = (Color*)(framebuffer + fbOffset);
+    Color* fbPtr = (Color*)(frameBuffer + fbOffset);
     float* zbPtr = (zBuffer + zbOffset);
 
     for (int i = 0; i < blockLength; i++) {
@@ -469,22 +475,23 @@ inline void Rasterizer::drawColoredSpan(const Span& span, const Color& fill)
         x2 = screenWidth - 1;
     }
 
-    int pos = (static_cast<unsigned long long>(x1) << 2) + span.y * pitch;
-    int zindex = x1 + span.y * screenWidth;
+    uint32_t* fbPtr = &frameBuffer[x1 + span.y * screenWidth];
+    float* zbPtr = &zBuffer[x1 + span.y * screenWidth];
 
     int x = x1;
 
     while (x < x2)
     {
-        if (!depthTest || zBuffer[zindex] >= iz) {
-            *(Color*)(framebuffer + pos) = fill;
-            zBuffer[zindex] = iz;
+        if (!depthTest || *zbPtr > iz) {
+            *fbPtr = fill.val;
+            *zbPtr = iz;
         }
         
-        zindex++;
         x++;
-        pos += 4;
         iz += span.izStep;
+
+        fbPtr++;
+        zbPtr++;
     }
 }
 
@@ -710,12 +717,19 @@ int Rasterizer::drawPolygon(const Poly2D& poly, const CachedSurface& surf, uint8
 
             Span span = makeSpan(y, edge1, edge2);
 
-            if (translucent) {
-                drawTranslucentSpan(span, surf, mipLevel);
-            }
-            else {
-                drawSpan<depthTest>(span, surf, mipLevel);
-            }
+            int regionIdx = y * regionCount / screenHeight;
+
+            SpanCommand command = {
+                .span = span,
+                .surf = surf,
+                .y = y,
+                .mipLevel = mipLevel,
+                .translucent = translucent,
+                .depthTest = depthTest
+            };
+
+            regions[regionIdx].push_back(command);
+
             
             edge1.step();
             edge2.step();
@@ -769,4 +783,33 @@ Color Rasterizer::darken(const Color& color)
     c.a = 255;
 
     return c;
+}
+
+size_t Rasterizer::rasterize()
+{
+    size_t spanCount = 0;
+
+    for (int regionIdx = 0; regionIdx < regionCount; regionIdx++) {
+
+        pool.submit([this, &spanCount, regionIdx]()
+        {
+                spanCount += regions[regionIdx].size();
+
+                for (const SpanCommand& cmd : regions[regionIdx]) {
+                    if (cmd.translucent) {
+                        drawTranslucentSpan(cmd.span, cmd.surf, cmd.mipLevel);
+                    }
+                    else if (cmd.depthTest) {
+                        drawSpan<true>(cmd.span, cmd.surf, cmd.mipLevel);
+                    }
+                    else {
+                        drawSpan<false>(cmd.span, cmd.surf, cmd.mipLevel);
+                    }
+                }
+        });
+    }
+
+    pool.wait();
+
+    return spanCount;
 }

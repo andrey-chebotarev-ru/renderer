@@ -27,8 +27,8 @@
 #include "renderer/RenderEntity.h"
 
 
-#define VIEWPORT_WIDTH 1600
-#define VIEWPORT_HEIGHT 900
+constexpr size_t viewportWidth = 1600;
+constexpr size_t viewportHeight = 900;
 
 static int windowWidth = 0, windowHeight = 0;
 
@@ -49,18 +49,15 @@ static SDL_Texture* sdlFramebufferTexture = NULL;
 static TextureManager textureManager;
 static Debug debug(&sdlRenderer);
 static SurfaceCache surfaceCache;
-static Renderer gameRenderer(VIEWPORT_WIDTH, VIEWPORT_HEIGHT, fov, nearPlaneDistance, farPlaneDistance, textureManager, surfaceCache, debug);
+static Renderer gameRenderer(viewportWidth, viewportHeight, fov, nearPlaneDistance, farPlaneDistance, textureManager, surfaceCache, debug);
 static Camera camera = Camera(fov, nearPlaneDistance, farPlaneDistance);
 static Map map;
 static ResourceLoader loader;
 static WadLoader wadLoader(textureManager);
 
 
-static bool fill = false;
-static bool drawPortals = false;
-static bool updateWorldPVS = true;
-static bool updateEntsPVS = true;
-
+static bool limitFps = true;
+static RenderOptions renderOpts;
 
 
 static MapBuilder mapBuilder;
@@ -123,20 +120,18 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     fullscreen = false;
 #endif
 
-    /*
     if (fullscreen) {
         windowWidth = displayMode->w;
         windowHeight = displayMode->h;
     }
     else {
-        windowWidth = VIEWPORT_WIDTH;
-        windowHeight = VIEWPORT_HEIGHT;
+        windowWidth = viewportWidth;
+        windowHeight = viewportHeight;
     }
-    */
 
 
-    windowWidth = VIEWPORT_WIDTH;
-    windowHeight = VIEWPORT_HEIGHT;
+   // windowWidth = viewportWidth;
+   // windowHeight = viewportHeight;
 
 
     if (!SDL_CreateWindowAndRenderer("Game", windowWidth, windowHeight, SDL_WINDOW_RESIZABLE, &window, &sdlRenderer)) {
@@ -147,7 +142,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
 
 
-    sdlFramebufferTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    sdlFramebufferTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, viewportWidth, viewportHeight);
     if (!sdlFramebufferTexture) {
         SDL_Log("Couldn't create streaming texture: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -182,16 +177,19 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
             ctrlPressed = true;
         }
         if (event->key.key == SDLK_1) {
-            fill = !fill;
+            renderOpts.renderTextures = !renderOpts.renderTextures;
         }
         if (event->key.key == SDLK_2) {
-            drawPortals = !drawPortals;
+            renderOpts.renderEnts = !renderOpts.renderEnts;
         }
         if (event->key.key == SDLK_3) {
-            updateWorldPVS = !updateWorldPVS;
+            renderOpts.renderPortals = !renderOpts.renderPortals;
         }
         if (event->key.key == SDLK_4) {
-            updateEntsPVS = !updateEntsPVS;
+            renderOpts.updatePVS = !renderOpts.updatePVS;
+        }
+        if (event->key.key == SDLK_5) {
+            limitFps = !limitFps;
         }
         if (event->key.key == SDLK_W) {
             moveForward = true;
@@ -249,7 +247,6 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     SDL_FRect dst_rect;
     const Uint64 now = SDL_GetTicks();
 
-    uint8_t* pixels = nullptr;
     int pitch;
 
     static float moveSpeed = 90.0f;
@@ -306,13 +303,25 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
   
     RenderStat renderStat;
-
+    uint32_t* pixels = nullptr;
     if (SDL_LockTexture(sdlFramebufferTexture, NULL, (void**)&pixels, &pitch))
     {
-        gameRenderer.setFramebuffer(pitch, pixels);
 
-        renderStat = gameRenderer.drawScene(camera, fill, drawPortals, updateWorldPVS, updateEntsPVS);
+        
 
+        renderStat = gameRenderer.drawScene(camera, renderOpts);
+
+        const uint32_t* frameBuffer = gameRenderer.getFrameBuffer();
+
+        if (pitch == viewportWidth * 4) {
+            std::memcpy(pixels, frameBuffer, viewportWidth * viewportHeight * 4);
+        }
+        else {
+            for (int y = 0; y < viewportHeight; y++) {
+                std::memcpy(pixels + y * pitch, frameBuffer + y * viewportWidth * 4, viewportWidth * 4);
+            }
+        }
+        
         SDL_UnlockTexture(sdlFramebufferTexture);  /* upload the changes (and frees the temporary surface)! */
     }
 
@@ -327,7 +336,7 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     dst_rect.h = windowHeight;
     SDL_RenderTexture(sdlRenderer, sdlFramebufferTexture, NULL, &dst_rect);
 
-    if (drawPortals) {
+    if (renderOpts.renderPortals) {
         gameRenderer.drawPortalLabels(camera);
     }
     
@@ -345,18 +354,19 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     
     SDL_SetRenderDrawColor(sdlRenderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 10, "FPS: %.2f", fps);
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Polys: %i Tris: %i Ents: %i", renderStat.polyCount, renderStat.trisCount, renderStat.entCount);
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 20, "Polys: %i Tris: %i Ents: %i Spans: %i", renderStat.polyCount, renderStat.trisCount, renderStat.entCount, renderStat.spanCount);
     SDL_RenderDebugTextFormat(sdlRenderer, 10, 40, "Leaf: %i (%s) Portals: %i", leafIdx, type.c_str(), leaf.portalIdxs.size());
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 60, "[1] Fill mode: %s", fill ? "On" : "Off");
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 70, "[2] Render portals: %s", drawPortals ? "On" : "Off");
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 80, "[3] World PVS: %s", updateWorldPVS ? "On" : "Off");
-    SDL_RenderDebugTextFormat(sdlRenderer, 10, 90, "[4] Ents PVS: %s", updateEntsPVS ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 60, "[1] Textures: %s", renderOpts.renderTextures ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 70, "[2] Entities: %s", renderOpts.renderEnts ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 80, "[3] Portals: %s", renderOpts.renderPortals ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 90, "[4] PVS: %s", renderOpts.updatePVS ? "On" : "Off");
+    SDL_RenderDebugTextFormat(sdlRenderer, 10, 100, "[5] Limit FPS: %s", limitFps ? "On" : "Off");
 
     SDL_RenderPresent(sdlRenderer);  /* put it all on the screen! */
 
     double elapsed = double(SDL_GetTicks() - now);
 
-    if (elapsed < targetFrameTime) {
+    if (elapsed < targetFrameTime && limitFps) {
         SDL_Delay(Uint32(targetFrameTime) - elapsed);
     }
 

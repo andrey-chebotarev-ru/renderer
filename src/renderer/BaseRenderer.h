@@ -75,7 +75,7 @@ public:
     Triangle2DList prepareForRendering(const Triangle3& in, const Camera& cam, bool backfaceCulling) const;
     bool prepareForRendering(Poly2D& out, const Poly3D& in, const Camera& cam, uint8_t& mipLevel, bool backfaceCulling) const;
 
-    void setFramebuffer(int pitch, uint8_t* pixels);
+    const uint32_t* getFrameBuffer() const;
     
     void drawLabels(const LabelList& labels, const Camera& cam);
     void drawWireframe(const Poly2D& poly, const Color& color);

@@ -4,9 +4,13 @@
 #include "common/Texture.h"
 #include "common/Color.h"
 #include "common/Surface.h"
+#include "common/ThreadPool.h"
 #include "common/Debug.h"
 
 #include "ViewportClipper.h"
+
+constexpr size_t regionCount = 32;
+constexpr size_t threadCount = 8;
 
 struct Span
 {
@@ -55,15 +59,17 @@ public:
         : screenWidth(screenWidth), screenHeight(screenHeight), debug(debug)
     {
         zBuffer = static_cast<float*>(std::malloc(screenWidth * screenHeight * sizeof(float)));
+        frameBuffer = static_cast<uint32_t*>(std::malloc(screenWidth * screenHeight * 4));
     }
 
     ~Rasterizer()
     {
         std::free(zBuffer);
+        std::free(frameBuffer);
     }
 
     void clearBuffers();
-    void setFramebuffer(int pitch, uint8_t* pixels);
+    const uint32_t* getFrameBuffer() const;
 
     void drawLine(const Vec2& vec1, const Vec2& vec2, const Color& color);
 
@@ -82,24 +88,38 @@ public:
     static inline uint32_t blend(uint32_t src, uint32_t dst, uint32_t alpha);
     Color darken(const Color& color);
 
-    void setPixel(int x, int y, const Color& color);
+    void setPixel(uint32_t x, uint32_t y, const Color& color);
+
+    size_t rasterize();
     
 private:
+
+    struct SpanCommand
+    {
+        Span span;
+        const CachedSurface& surf;
+        int y;
+        int mipLevel;
+        bool translucent;
+        bool depthTest;
+    };
+
+    std::vector<SpanCommand> regions[regionCount];
+    ThreadPool pool = ThreadPool(threadCount);
+
     // TODO: framebuffer struct
     size_t screenWidth, screenHeight;
-    size_t pitch;
-
+    
     static const float invTable[16];
     static const float mipScales[4];
     
-    float* zBuffer;
-
-    uint8_t* framebuffer = nullptr;
-
+    uint32_t* frameBuffer = nullptr;
+    float* zBuffer = nullptr;
+    
     Debug debug;
 
-    inline EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
-    Span __forceinline makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
+    EdgeStep2D makeEdge(const Vertex2D& a, const Vertex2D& b);
+    Span makeSpan(int y, const EdgeStep2D& a, const EdgeStep2D& b);
     void sortTriangle(Triangle2& triangle);
     
     template<bool depthTest>

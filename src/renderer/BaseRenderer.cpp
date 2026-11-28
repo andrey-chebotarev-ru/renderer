@@ -4,9 +4,9 @@
 
 #include "common/Geometry.h"
 
-void BaseRenderer::setFramebuffer(int pitch, uint8_t* pixels)
+const uint32_t* BaseRenderer::getFrameBuffer() const
 {
-    rasterizer.setFramebuffer(pitch, pixels);
+    return rasterizer.getFrameBuffer();
 }
 
 void BaseRenderer::transformToWorld(Triangle3& tri, const Transform& tr) const

@@ -177,6 +177,7 @@
     <ClCompile Include="src\common\Model.cpp" />
     <ClCompile Include="src\common\Plane.cpp" />
     <ClCompile Include="src\common\Surface.cpp" />
+    <ClCompile Include="src\common\ThreadPool.cpp" />
     <ClCompile Include="src\common\Triangle.cpp" />
     <ClCompile Include="src\common\Vector.cpp" />
     <ClCompile Include="src\common\Vertex.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="src\common\Plane.h" />
     <ClInclude Include="src\common\Surface.h" />
     <ClInclude Include="src\common\Texture.h" />
+    <ClInclude Include="src\common\ThreadPool.h" />
     <ClInclude Include="src\common\Triangle.h" />
     <ClInclude Include="src\common\Vector.h" />
     <ClInclude Include="src\common\Vertex.h" />

@@ -35,9 +35,6 @@ void Renderer::prepare(const Map& inMap, const IndicesList& remap)
     }
 
 
-
-    Debug::printf("Caching surfaces...");
-
     for (auto& face : map.tree.faces) {
         const Texture& tex = textureManager.get(face.face.texIdx);
         face.face.surfIdx = surfaceCache.cache(face.face, tex, 1.0f);
@@ -195,10 +192,9 @@ void Renderer::drawEntities(const RenderEntityList& ents, const Camera& cam, con
     }
 }
 
-RenderStat Renderer::drawScene(const Camera& cam, bool debug, bool includePortals, bool updateWorldPVS, bool updateEntsPVS)
+RenderStat Renderer::drawScene(const Camera& cam, const RenderOptions& opts)
 {
-    static const BoolList* worldPVSRow = nullptr;
-    static const BoolList* entitiesPVSRow = nullptr;
+    static const BoolList* pvsRow = nullptr;
 
     RenderStat stat;
 
@@ -207,24 +203,24 @@ RenderStat Renderer::drawScene(const Camera& cam, bool debug, bool includePortal
 
    currentLeafIdx = BSP::getLeafIdx(map.tree, cam.position);
 
-    if (updateWorldPVS) {
-        worldPVSRow = &map.pvsTable[currentLeafIdx];
+    if (opts.updatePVS) {
+        pvsRow = &map.pvsTable[currentLeafIdx];
     }
 
-    if (updateEntsPVS) {
-        entitiesPVSRow = &map.pvsTable[currentLeafIdx];
-    }
+    BSP::render(map.tree, cam, renderFaces, *pvsRow);
 
-    BSP::render(map.tree, cam, renderFaces, *worldPVSRow);
+    drawFaces(renderFaces, cam, !opts.renderTextures, stat);
 
-    drawFaces(renderFaces, cam, debug, stat);
-
-    drawEntities(renderEntities, cam, *entitiesPVSRow, stat);
-    drawEntities(translucentEntities, cam, *entitiesPVSRow, stat);
-
-    if (includePortals) {
+    if (opts.renderPortals) {
         drawPortals(cam, stat);
     }
+
+    if (opts.renderEnts) {
+        drawEntities(renderEntities, cam, *pvsRow, stat);
+        drawEntities(translucentEntities, cam, *pvsRow, stat);
+    }
+
+    stat.spanCount = rasterizer.rasterize();
 
     return stat;
 }
