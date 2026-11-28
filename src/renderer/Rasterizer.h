@@ -131,6 +131,6 @@ private:
     inline void drawColoredSpan(const Span& span, const Color& fillColor);
 
     template<bool depthTest, bool masked, bool clamp>
-    inline void drawBlock(int blockLength, int fbOffset, int zbOffset, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, const CachedSurface& surf, uint8_t mipLevel);
+    inline void drawBlock(int blockLength, uint32_t*& fbPtr, float*& zbPtr, uint32_t* pixPtr, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, int width, int height);
 };
 

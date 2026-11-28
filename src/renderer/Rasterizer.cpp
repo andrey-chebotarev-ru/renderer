@@ -153,6 +153,8 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
     float* zbPtr = &zBuffer[x1 + span.y * screenWidth];
     uint32_t* pixPtr = reinterpret_cast<uint32_t*>(surf.pixels[mipLevel]);
     
+    bool masked = surf.masked;
+
     float izStep = span.izStep;
 
     float zStart = 1.0f / izStart;
@@ -169,12 +171,8 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
 
         
         float zEnd = 1.0f / izEnd;
-        float uEnd = uzEnd * zEnd;
-        float vEnd = vzEnd * zEnd;
-
-        // Оптимизация
-        uEnd = (uEnd - surf.startU) * scale;
-        vEnd = (vEnd - surf.startV) * scale;
+        float uEnd = (uzEnd * zEnd - surf.startU) * scale;
+        float vEnd = (vzEnd * zEnd - surf.startV) * scale;
 
         float duDx = (uEnd - uStart) * invTable[blockLength - 1];
         float dvDx = (vEnd - vStart) * invTable[blockLength - 1];
@@ -195,57 +193,20 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
 
         if (clamp) {
 
-            for (int i = 0; i < blockLength; i++) {
-
-                if (!depthTest || *zbPtr < iz) {
-
-                    int s = static_cast<int>(u);
-                    int t = static_cast<int>(v);
-
-                    s = std::clamp(s, 0, width - 1);
-                    t = std::clamp(t, 0, height - 1);
-
-                    const uint32_t c = pixPtr[t * width + s];
-
-                    if (!surf.masked || (c & 0xFF) != 0) {
-                        *fbPtr = c;
-                        *zbPtr = iz;
-                    }
-                }
-
-                u += duDx;
-                v += dvDx;
-                iz += izStep;
-                fbPtr++;
-                zbPtr++;
-                
+            if (surf.masked) {
+                drawBlock<depthTest, true, true>(blockLength, fbPtr, zbPtr, pixPtr, uStart, vStart, izStart, duDx, dvDx, izStep, width, height);
+            }
+            else {
+                drawBlock<depthTest, false, true>(blockLength, fbPtr, zbPtr, pixPtr, uStart, vStart, izStart, duDx, dvDx, izStep, width, height);
             }
         }
         else {
-
-            for (int i = 0; i < blockLength; i++) {
-
-                if (!depthTest || *zbPtr < iz) {
-
-                    int s = static_cast<int>(u);
-                    int t = static_cast<int>(v);
-
-                    
-                    const uint32_t c = pixPtr[t * width + s];
-
-                    if (!surf.masked || (c & 0xFF) != 0) {
-                        *fbPtr = c;
-                        *zbPtr = iz;
-                    }
-                }
-
-                u += duDx;
-                v += dvDx;
-                iz += izStep;
-                fbPtr++;
-                zbPtr++;
-            
+            if (surf.masked) {
+                drawBlock<depthTest, true, false>(blockLength, fbPtr, zbPtr, pixPtr, uStart, vStart, izStart, duDx, dvDx, izStep, width, height);
             }
+            else {
+                drawBlock<depthTest, false, false>(blockLength, fbPtr, zbPtr, pixPtr, uStart, vStart, izStart, duDx, dvDx, izStep, width, height);
+            } 
         }
 
         x += blockLength;
@@ -256,6 +217,42 @@ inline void Rasterizer::drawSpan(const Span& span, const CachedSurface& surf, ui
         uzStart = uzEnd;
         vzStart = vzEnd;
         izStart = izEnd;
+    }
+}
+
+template<bool depthTest, bool masked, bool clamp>
+inline void Rasterizer::drawBlock(int blockLength, uint32_t*& fbPtr, float*& zbPtr, uint32_t* pixPtr, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, int width, int height)
+{
+    float u = uStart;
+    float v = vStart;
+    float iz = izStart;
+
+    for (int i = 0; i < blockLength; i++) {
+
+        if (!depthTest || *zbPtr < iz) {
+
+            int s = static_cast<int>(u);
+            int t = static_cast<int>(v);
+
+            if constexpr (clamp) {
+                s = std::clamp(s, 0, width - 1);
+                t = std::clamp(t, 0, height - 1);
+            }
+
+            const uint32_t c = pixPtr[t * width + s];
+
+            if (!masked || (c & 0xFF) != 0) {
+                *fbPtr = c;
+                *zbPtr = iz;
+            }
+        }
+
+        u += uStep;
+        v += vStep;
+        iz += izStep;
+
+        fbPtr++;
+        zbPtr++;
     }
 }
 
@@ -322,12 +319,8 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
         float vzEnd = vzStart + span.vzStep * blockLength;
 
         float zEnd = 1.0f / izEnd;
-        float uEnd = uzEnd * zEnd;
-        float vEnd = vzEnd * zEnd;
-
-        // Оптимизация
-        uEnd = (uEnd - surf.startU) * scale;
-        vEnd = (vEnd - surf.startV) * scale;
+        float uEnd = (uzEnd * zEnd - surf.startU) * scale;
+        float vEnd = (vzEnd * zEnd - surf.startV) * scale;
 
         float duDx = (uEnd - uStart) * invTable[blockLength - 1];
         float dvDx = (vEnd - vStart) * invTable[blockLength - 1];
@@ -400,48 +393,6 @@ inline void Rasterizer::drawTranslucentSpan(const Span& span, const CachedSurfac
         izStart = izEnd;
     }
 
-}
-
-template<bool depthTest, bool masked, bool clamp>
-inline void Rasterizer::drawBlock(int blockLength, int fbOffset, int zbOffset, float uStart, float vStart, float izStart, float uStep, float vStep, float izStep, const CachedSurface& surf, uint8_t mipLevel)
-{
-    float u = uStart;
-    float v = vStart;
-    float iz = izStart;
-
-    Color* fbPtr = (Color*)(frameBuffer + fbOffset);
-    float* zbPtr = (zBuffer + zbOffset);
-
-    for (int i = 0; i < blockLength; i++) {
-        
-        if (!depthTest || *zbPtr < iz) {
-            
-            int w = surf.widths[mipLevel];
-            int h = surf.heights[mipLevel];
-            
-            int s = static_cast<int>(u);
-            int t = static_cast<int>(v);
-
-            if constexpr (clamp) {
-                s = std::clamp(s, 0, w - 1);
-                t = std::clamp(t, 0, h - 1);
-            }
-
-            const Color* c = &surf.pixels[mipLevel][t * w + s];
-            
-            if (!masked || c->a != 0) {
-                *fbPtr = *c;
-                *zbPtr = iz;
-            }  
-        }
-       
-        u += uStep;
-        v += vStep;
-        iz += izStep;
-        
-        ++fbPtr;
-        ++zbPtr;
-    }
 }
 
 template<bool depthTest>
